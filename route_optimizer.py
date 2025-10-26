@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 from python_tsp.heuristics import solve_tsp_local_search 
 import math
+import glob # <-- NEW: Required for file discovery
 
 # ----------------------------------------------------------------------
 # CONFIGURATION - UPDATE IF NECESSARY
 # ----------------------------------------------------------------------
-# Ensure your CSV file is named as specified here or update this path.
-CSV_FILE_PATH = "***.csv" 
+# NOTE: CSV_FILE_PATH is now dynamically found by the code.
 SYSTEM_NAME_COLUMN = 'System Name' 
 X_COORD_COLUMN = 'X'               
 Y_COORD_COLUMN = 'Y'               
@@ -37,8 +37,45 @@ def calculate_jumps(distances, jump_range):
         total_jumps += math.ceil(dist / jump_range)
     return int(total_jumps)
 
+def find_csv_file():
+    """ Searches the current working directory for CSV files and prompts the user for a selection. """
+    csv_files = glob.glob('*.csv')
+
+    if not csv_files:
+        print("ERROR: No '.csv' files found in the current directory.")
+        print("Please ensure your CSV file containing route data is in this folder and try again.")
+        return None
+
+    if len(csv_files) == 1:
+        selected_file = csv_files[0]
+        print(f"-> Auto-Detected: Single CSV file found: '{selected_file}'.")
+        return selected_file
+    else:
+        print("\nMultiple CSV files found. Please enter the number corresponding to the file you want to use:")
+        for i, file in enumerate(csv_files):
+            print(f"   [{i+1}] {file}")
+        
+        while True:
+            try:
+                selection = input("Your Choice (Number): ").strip()
+                if not selection:
+                     continue
+
+                index = int(selection) - 1
+                if 0 <= index < len(csv_files):
+                    return csv_files[index]
+                else:
+                    print("ERROR: Invalid number. Please enter a number from the list.")
+            except ValueError:
+                print("ERROR: Please enter a valid number.")
+
 def run_tsp_optimizer():
     """ Reads the CSV, calculates distance, optimizes the route, and prompts the user for inputs. """
+    
+    # 🌟 NEW: CSV File Discovery
+    CSV_FILE_PATH = find_csv_file()
+    if CSV_FILE_PATH is None:
+        return
     
     # Prompt for Ship Jump Range
     while True:
@@ -165,7 +202,7 @@ def run_tsp_optimizer():
         print(f"✨ Optimized route successfully saved to '{output_file_name}'.")
 
     except FileNotFoundError:
-        print(f"ERROR: The file '{CSV_FILE_PATH}' was not found. Please ensure the Python file and CSV file are in the same folder.")
+        print(f"ERROR: The file '{CSV_FILE_PATH}' could not be read. Please ensure your CSV file is not corrupted and is in the correct format.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         import traceback
