@@ -32,4 +32,7 @@ This tool was developed by **CMDR Ninurta Kalhu** for personal exploration missi
 
 The optimized route is saved to a CSV file that includes the jump count and range in its name (e.g., `Optimized_Route_113_J605_M70.0LY.csv`). You can manually input this file's contents into the Elite Dangerous Galaxy Map to begin your journey.
 
+
 Fly safe, Commander! O7
+
+CMDR Ninurta Kalhu
