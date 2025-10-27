@@ -1,3 +1,5 @@
+# PLEASE DOWNLOAD LATEST VERSION!
+
 # Elite Dangerous Explorer Route Optimizer
 
 This tool optimizes long-range routes for Astrobiology and general exploration missions in Elite Dangerous. It uses a **Travelling Salesperson Problem (TSP)** solver (2-Opt Heuristic) to find the **shortest distance** route based on your ship's jump range.
@@ -36,3 +38,4 @@ The optimized route is saved to a CSV file that includes the jump count and rang
 Fly safe, Commander! O7
 
 CMDR Ninurta Kalhu
+
