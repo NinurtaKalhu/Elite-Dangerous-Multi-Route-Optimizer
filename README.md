@@ -1,3 +1,8 @@
+
+## Support EDMRN
+Love EDMRN v1.0.5? Support its development with a coffee! ☕  
+[Buy me a coffee on Ko-fi]([https://ko-fi.com/yourusername](https://ko-fi.com/ninurtakalhu))  
+
 # PLEASE DOWNLOAD LATEST VERSION!
 
 # Elite Dangerous Explorer Route Optimizer
@@ -38,4 +43,5 @@ The optimized route is saved to a CSV file that includes the jump count and rang
 Fly safe, Commander! O7
 
 CMDR Ninurta Kalhu
+
 
