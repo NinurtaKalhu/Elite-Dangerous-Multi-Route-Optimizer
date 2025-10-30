@@ -2,21 +2,14 @@ import pandas as pd
 import numpy as np
 from python_tsp.heuristics import solve_tsp_local_search 
 import math
-import glob # <-- NEW: Required for file discovery
+import glob
 
-# ----------------------------------------------------------------------
-# CONFIGURATION - UPDATE IF NECESSARY
-# ----------------------------------------------------------------------
-# NOTE: CSV_FILE_PATH is now dynamically found by the code.
 SYSTEM_NAME_COLUMN = 'System Name' 
 X_COORD_COLUMN = 'X'               
 Y_COORD_COLUMN = 'Y'               
 Z_COORD_COLUMN = 'Z'
 
-# CMDR Ninurta Kalhu Information (Default):
-# Default jump range if the user leaves the prompt empty.
 DEFAULT_SHIP_JUMP_RANGE_LY = 70.0 
-# ----------------------------------------------------------------------
 
 def calculate_3d_distance_matrix(points_df):
     """ Calculates the 3D space distance (LY) between all waypoints. """
@@ -72,12 +65,12 @@ def find_csv_file():
 def run_tsp_optimizer():
     """ Reads the CSV, calculates distance, optimizes the route, and prompts the user for inputs. """
     
-    # 🌟 NEW: CSV File Discovery
+  
     CSV_FILE_PATH = find_csv_file()
     if CSV_FILE_PATH is None:
         return
     
-    # Prompt for Ship Jump Range
+    
     while True:
         try:
             jump_input = input(f"Enter your ship's maximum Jump Range (LY) [Default: {DEFAULT_SHIP_JUMP_RANGE_LY:.1f} LY]: ").strip()
@@ -95,7 +88,7 @@ def run_tsp_optimizer():
         except ValueError:
             print("ERROR: Please enter a valid number (e.g., 70.0 or 81.5).")
             
-    # Prompt for Starting System
+    
     starting_system_name = input("Enter the name of the system you want to start the route from (Leave empty to find the shortest loop): ").strip()
     
     print(f"Starting: Reading '{CSV_FILE_PATH}' file...")
@@ -103,10 +96,10 @@ def run_tsp_optimizer():
         df = pd.read_csv(CSV_FILE_PATH)
         required_columns = [SYSTEM_NAME_COLUMN, X_COORD_COLUMN, Y_COORD_COLUMN, Z_COORD_COLUMN]
         
-        # FAST DATA PRE-PROCESSING: Get only unique systems
+       
         points = df[required_columns].drop_duplicates(subset=[SYSTEM_NAME_COLUMN]).reset_index(drop=True)
         
-        # Convert Coordinates to Float
+       
         try:
              points[X_COORD_COLUMN] = points[X_COORD_COLUMN].astype(float)
              points[Y_COORD_COLUMN] = points[Y_COORD_COLUMN].astype(float)
@@ -120,41 +113,41 @@ def run_tsp_optimizer():
             print("ERROR: At least two unique waypoints are required for routing.")
             return
 
-        # STARTING SYSTEM PROCESSING
+       
         start_system_data = None
         optimization_points = points
         
         if starting_system_name:
             try:
-                # Case-insensitive comparison
+               
                 start_system_data = points[points[SYSTEM_NAME_COLUMN].str.lower() == starting_system_name.lower()].iloc[0]
-                # Remove the starting system from the list for optimization
+                
                 optimization_points = points[points[SYSTEM_NAME_COLUMN].str.lower() != starting_system_name.lower()].reset_index(drop=True)
                 print(f"Starting system fixed: {starting_system_name}")
             except IndexError:
                 print(f"WARNING: The desired starting system '{starting_system_name}' was not found in the list. All {N_all} systems will be optimized.")
-                starting_system_name = None # Cancel fixing the start
+                starting_system_name = None 
 
         print(f"🔍 {N_all} unique waypoints found. Ready for optimization.")
         print("-" * 50)
         
-        # Calculate Distance Matrix
+        
         distance_matrix_opt = calculate_3d_distance_matrix(optimization_points)
         
-        # ⚙️ Route Optimization (2-Opt Heuristic)
+        
         print("⚙️ Route optimization starting... (2-Opt Heuristic - For Fast Results)")
         
         permutation_opt, _ = solve_tsp_local_search(distance_matrix_opt, x0=None)
         
-        # Get the ordered points
+        
         optimized_points_opt = optimization_points.iloc[permutation_opt].reset_index(drop=True)
         
-        # Construct the Final Route and Calculate Distances
+       
         if start_system_data is not None:
             optimized_points = pd.concat([start_system_data.to_frame().T, optimized_points_opt], ignore_index=True)
             route_systems = optimized_points[SYSTEM_NAME_COLUMN].tolist()
             
-            # Calculate distances (including the starting system jump)
+            
             route_distances = []
             for i in range(len(route_systems) - 1):
                 p1 = optimized_points.iloc[i]
@@ -165,18 +158,18 @@ def run_tsp_optimizer():
             optimized_points = optimized_points_opt
             route_systems = optimized_points[SYSTEM_NAME_COLUMN].tolist()
             
-            # Distances for the loop route
+            
             route_distances = [
                 distance_matrix_opt[permutation_opt[i], permutation_opt[i+1]] 
                 for i in range(len(permutation_opt) - 1)
             ]
 
-        # Final Calculations
+        
         optimized_route_length = sum(route_distances)
-        # Calculate total jumps with the user-provided/default range
+        
         total_jumps = calculate_jumps(route_distances, ship_jump_range_ly) 
         
-        # --- Route Output Header ---
+        
         print("\n✅ OPTIMIZATION COMPLETE")
         print("-" * 50)
         print(f"Algorithm: 2-Opt Heuristic")
@@ -186,7 +179,7 @@ def run_tsp_optimizer():
         print(f"\n🚀 CMDR Route Details (Explorer Ship):")
         print(f"   Estimated Jumps with Range ({ship_jump_range_ly:.1f} LY): {total_jumps} jumps")
         
-        # --- Route Output ---
+        
         print("\nOptimized Route Order (First 15 Systems):")
         for i, system in enumerate(route_systems[:15]): 
             print(f"{i+1}. {system} {'(Start)' if i == 0 and starting_system_name else ''}")
@@ -196,7 +189,7 @@ def run_tsp_optimizer():
             
         print("-" * 50)
         
-        # Include jump count and range in the output filename
+        
         output_file_name = f"Optimized_Route_{len(route_systems)}_J{total_jumps}_R{ship_jump_range_ly:.1f}LY.csv"
         optimized_points.to_csv(output_file_name, index=False)
         print(f"✨ Optimized route successfully saved to '{output_file_name}'.")
@@ -208,6 +201,7 @@ def run_tsp_optimizer():
         import traceback
         traceback.print_exc()
 
-# Run the function
+
 if __name__ == '__main__':
     run_tsp_optimizer()
+
