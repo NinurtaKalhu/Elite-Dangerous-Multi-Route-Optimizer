@@ -103,7 +103,7 @@ DONATION_LINK_PATREON = "https://www.patreon.com/c/NinurtaKalhu"
 
 
 APP_NAME_SHORT = "EDMRN"
-CURRENT_VERSION = "2.0.0"  
+CURRENT_VERSION = "2.1.0"  
 GITHUB_OWNER = "NinurtaKalhu" 
 GITHUB_REPO = "Elite-Dangerous-Multi-Route-Optimizer" 
 
