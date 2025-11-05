@@ -8,8 +8,6 @@ If you find this tool useful, consider supporting development: Support its devel
 
 # ED Multi Route Navigation (EDMRN) v2.0
 
-<img width="500" height="500" alt="edmrn_logo" src="https://github.com/user-attachments/assets/1506668c-aa54-4531-be16-b888d6c5c585" />
-
 **Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms**
 
 [![Windows](https://img.shields.io/badge/Windows-11-blue?logo=windows)](https://www.microsoft.com/en-us/windows/windows-11) [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.0.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
@@ -94,18 +92,3 @@ Ninurta Kalhu - Solo Developer & Elite Dangerous Exobiologist/Explorer
 Fly safe, Commander! 🚀✨
 
 Attention! This project is not affiliated with Frontier Developments plc.
-
-
-Screenshots
-
-<img width="1002" height="1032" alt="Ekran görüntüsü 2025-11-04 224639" src="https://github.com/user-attachments/assets/788012a5-5790-4a9e-b0f8-aab670e1a498" />
-
-<img width="385" height="152" alt="Ekran görüntüsü 2025-11-04 224622" src="https://github.com/user-attachments/assets/cd8cd7bb-cb25-49e7-80c2-fd3f0e6dc647" />
-
-<img width="1002" height="1032" alt="Ekran görüntüsü 2025-11-04 224646" src="https://github.com/user-attachments/assets/45f6a8da-ee0e-42c0-9b70-3e9420ad93f7" />
-
-<img width="1002" height="1032" alt="Ekran görüntüsü 2025-11-04 224649" src="https://github.com/user-attachments/assets/af640af2-513d-4bdd-9a51-ec6ee0d4f0a6" />
-
-<img width="452" height="532" alt="Ekran görüntüsü 2025-11-04 224652" src="https://github.com/user-attachments/assets/2f9d5a69-c149-4941-a1fc-2d739128a873" />
-
-<img width="702" height="582" alt="Ekran görüntüsü 2025-11-04 224656" src="https://github.com/user-attachments/assets/493bd0b5-3190-47ac-aab7-6a78a67677b9" />
