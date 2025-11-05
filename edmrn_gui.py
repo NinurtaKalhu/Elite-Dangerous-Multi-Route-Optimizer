@@ -320,7 +320,27 @@ class JournalMonitor(threading.Thread):
                 time.sleep(5)
                 
         self.current_journal_file = None
+            
+    def run(self):
+        
+        self.log("Journal Monitor STARTED - Auto-tracking active")
+        
+        while not self._stop_event.is_set():
+            try:
+                latest_file = self._get_latest_journal_file()
+                
+                if latest_file and os.path.exists(latest_file):
+                    self._tail_file(latest_file)
+                else:
+                    self.log("No journal file found. Waiting...")
+                    time.sleep(5)
+                    
+            except Exception as e:
+                self.log(f"Journal monitor error: {e}")
+                time.sleep(5)
 
+    def stop(self):
+        self._stop_event.set()
     def stop(self):
         self._stop_event.set()
 
