@@ -1,16 +1,15 @@
 ## ☕ Support EDMRN 
 
-If you find this tool useful, consider supporting development: Support its development with a coffee! ☕  
-# [Buy me a coffee on Ko-fi](https://ko-fi.com/ninurtakalhu)  or [Patreon](https://www.patreon.com/c/NinurtaKalhu) ☕
+*> If you find this tool useful, consider supporting development: Support > its development with a coffee! ☕ > # [Buy me a coffee on Ko-fi](https://ko-fi.com/ninurtakalhu) or [Patreon](https://www.patreon.com/c/NinurtaKalhu) ☕*
+
 [![KOFI](https://img.shields.io/badge/Ko--fi-Buy_me_a_coffee-FF5E5B?logo=kofi)](https://ko-fi.com/ninurtakalhu) [![patreon](https://img.shields.io/badge/Patreon-Support-FF424D?logo=patreon)](https://www.patreon.com/c/NinurtaKalhu)
 
 **[Virus Total Scan Report](https://www.virustotal.com/gui/file/193214e4eefff07f7b89f758bb5f716faeca546ca8e8bc8486dc667cbd12170d?nocache=1)**
 
 # ED Multi Route Navigation (EDMRN) v2.0
-
 **Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms**
 
-[![Windows](https://img.shields.io/badge/Windows-11-blue?logo=windows)](https://www.microsoft.com/en-us/windows/windows-11) [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.0.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.1.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
 
 ## 🚀 Features
 
@@ -25,10 +24,9 @@ If you find this tool useful, consider supporting development: Support its devel
 
 ### Latest Release: v2.0.0
 
-📥 **Download**: [EDMRN_v2.0_Windows.exe](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
+📥 **Download**: [EDMRN_v2.0_Windows](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
 
 **System Requirements**:
-- Windows 10/11 (64-bit)
 - .NET Framework 4.8+
 - Elite Dangerous with Journal logging enabled
 
@@ -80,18 +78,22 @@ Found a bug? Please [create an issue](https://github.com/NinurtaKalhu/Elite-Dang
 - Journal file excerpt (if relevant)
 
 
+
 👨‍💻 Developer
 Ninurta Kalhu - Solo Developer & Elite Dangerous Exobiologist/Explorer
 
 📧 Email: ninurtakalhu@gmail.com
 
+🌐 X (twitter):  @NinurtaKalhu
+
 🌐 GitHub: @NinurtaKalhu
 
 💬 Discord: [Join our EDMRN community](https://discord.gg/jxVTyev8)
 
+
 Fly safe, Commander! 🚀✨
 
-Attention! This project is not affiliated with Frontier Developments plc.
+#Attention! This project is not affiliated with Frontier Developments plc.
 
 
 ## 🛡️ Security Notice: False Positive Warnings
@@ -163,6 +165,18 @@ Some antivirus programs may incorrectly identify ED Multi Route Navigation as po
 
 ### 🔧 Advanced: Source Code
 **Compile from source** for maximum security verification
-```bash
-pip install -r requirements.txt
-python edmrn_gui.py
+
+    pip install -r requirements.txt
+    python edmrn_gui.py
+
+![SS1](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS1.png)
+
+![SS2](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS2.png)
+
+![SS3](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS3.png)
+
+![SS4](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS4.png)
+
+![SS5](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS5.png)
+
+![SS6](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS6.png)
