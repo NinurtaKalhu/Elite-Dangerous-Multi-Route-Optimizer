@@ -6,7 +6,7 @@
 
 **[Virus Total Scan Report](https://www.virustotal.com/gui/file/193214e4eefff07f7b89f758bb5f716faeca546ca8e8bc8486dc667cbd12170d?nocache=1)**
 
-# ED Multi Route Navigation (EDMRN) v2.0
+# ED Multi Route Navigation (EDMRN) v2.1
 **Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms**
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.1.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
