@@ -22,7 +22,7 @@
 
 ## 📦 Download
 
-### Latest Release: v2.0.0
+### Latest Release: v2.1.0
 
 📥 **Download**: [EDMRN_v2.0_Windows](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
 
