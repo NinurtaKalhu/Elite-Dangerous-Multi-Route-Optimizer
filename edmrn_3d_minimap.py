@@ -35,8 +35,12 @@ class MiniMapFrame(ctk.CTkFrame):
         self.route_points = []
         self._scatter = None
         self._annot = None
+        
+        # Event listeners
         self.cid_scroll = self.canvas.mpl_connect('scroll_event', self._on_scroll)
         self.cid_click = self.canvas.mpl_connect('button_press_event', self._on_click)
+        
+        # Axes styling
         self.ax.tick_params(colors=colors['text'])
         self.ax.xaxis.label.set_color(colors['text'])
         self.ax.yaxis.label.set_color(colors['text'])
@@ -46,22 +50,55 @@ class MiniMapFrame(ctk.CTkFrame):
         self.ax.set_ylabel('Y (LY)')
         self.ax.set_zlabel('Z (LY)')
         self.ax.view_init(elev=20., azim=-60)
+        
+        # Grid and appearance
+        self.ax.xaxis.pane.set_alpha(0.05)
+        self.ax.yaxis.pane.set_alpha(0.05)
+        self.ax.zaxis.pane.set_alpha(0.05)
+        self.ax.grid(color='rgba(200,200,200,0.2)', linestyle=':', linewidth=0.3, alpha=0.2)
+        
         self.fig.tight_layout()
 
     def _on_scroll(self, event):
+        """Handle mouse scroll for zooming - OPTIMIZED VERSION"""
         if event.inaxes != self.ax:
             return
-        zoom_factor = 1.1 if event.button == 'up' else 0.9
-        xlim = self.ax.get_xlim()
-        ylim = self.ax.get_ylim() 
-        zlim = self.ax.get_zlim()
-        new_xlim = [(xlim[0] + xlim[1])/2 + (x - (xlim[0] + xlim[1])/2) * zoom_factor for x in xlim]
-        new_ylim = [(ylim[0] + ylim[1])/2 + (y - (ylim[0] + ylim[1])/2) * zoom_factor for y in ylim]
-        new_zlim = [(zlim[0] + zlim[1])/2 + (z - (zlim[0] + zlim[1])/2) * zoom_factor for z in zlim]
-        self.ax.set_xlim(new_xlim)
-        self.ax.set_ylim(new_ylim) 
-        self.ax.set_zlim(new_zlim)
-        self.canvas.draw_idle()
+            
+        # Daha hassas zoom kontrolü
+        zoom_factor = 1.15 if event.button == 'up' else 0.85
+        
+        try:
+            # Mevcut limitleri al
+            xlim = self.ax.get_xlim()
+            ylim = self.ax.get_ylim() 
+            zlim = self.ax.get_zlim()
+            
+            # Zoom merkezi olarak tıklanan noktayı kullan
+            x_center = event.xdata if event.xdata else (xlim[0] + xlim[1]) / 2
+            y_center = event.ydata if event.ydata else (ylim[0] + ylim[1]) / 2
+            
+            # Yeni limitleri hesapla
+            new_xlim = [x_center + (x - x_center) * zoom_factor for x in xlim]
+            new_ylim = [y_center + (y - y_center) * zoom_factor for y in ylim]
+            new_zlim = [(zlim[0] + zlim[1])/2 + (z - (zlim[0] + zlim[1])/2) * zoom_factor for z in zlim]
+            
+            # Limitleri uygula
+            self.ax.set_xlim(new_xlim)
+            self.ax.set_ylim(new_ylim) 
+            self.ax.set_zlim(new_zlim)
+            
+            # Canvas'ı güncelle
+            self.canvas.draw_idle()
+            
+        except Exception as e:
+            # Hata durumunda basit zoom
+            try:
+                self.ax.set_xlim([x * zoom_factor for x in self.ax.get_xlim()])
+                self.ax.set_ylim([y * zoom_factor for y in self.ax.get_ylim()])
+                self.ax.set_zlim([z * zoom_factor for z in self.ax.get_zlim()])
+                self.canvas.draw_idle()
+            except Exception:
+                pass
         
     def plot_route(self, route_list, show_lines=True, point_size=30):
         """Plot or replot a full route."""
@@ -69,10 +106,12 @@ class MiniMapFrame(ctk.CTkFrame):
         xs, ys, zs = [], [], []
         colors_list = []
         
+        # Clear existing texts
         for t in self.fig.texts:
             t.set_visible(False)
         self.fig.texts = []
 
+        # Collect route data
         for item in route_list:
             name = item.get('name')
             coords = item.get('coords')
@@ -92,6 +131,7 @@ class MiniMapFrame(ctk.CTkFrame):
             
             self.route_points.append({'name': name, 'coords': (x, y, z), 'status': status})
         
+        # Clear and setup axes
         self.ax.cla()
         colors = self._get_mpl_colors()
         text_color = colors['text']
@@ -107,6 +147,7 @@ class MiniMapFrame(ctk.CTkFrame):
         self.ax.zaxis.pane.set_alpha(0.05)
         self.ax.grid(color='rgba(200,200,200,0.2)', linestyle=':', linewidth=0.3, alpha=0.2)
         
+        # Plot data if available
         if xs:
             self._scatter = self.ax.scatter(xs, ys, zs, 
                                             s=point_size, 
@@ -114,8 +155,12 @@ class MiniMapFrame(ctk.CTkFrame):
                                             marker='o', 
                                             picker=True, 
                                             zorder=5)
+            
+            # Plot route lines
             if show_lines and len(xs) > 1:
                 self.ax.plot(xs, ys, zs, c=COLOR_ROUTE_LINE, linewidth=1.0, zorder=1, alpha=0.8)
+            
+            # Auto-scale view
             max_range = np.array([max(xs)-min(xs), max(ys)-min(ys), max(zs)-min(zs)]).max() / 2.0
         
             mid_x = (max(xs)+min(xs)) * 0.5
@@ -126,6 +171,7 @@ class MiniMapFrame(ctk.CTkFrame):
             self.ax.set_ylim(mid_y - max_range, mid_y + max_range)
             self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
             
+            # Legend
             visited_handle = self.ax.scatter([], [], [], color=COLOR_VISITED, s=point_size, label='Visited')
             skipped_handle = self.ax.scatter([], [], [], color=COLOR_SKIPPED, s=point_size, label='Skipped')
             pending_handle = self.ax.scatter([], [], [], color=COLOR_PENDING, s=point_size, label='Pending')
@@ -144,36 +190,67 @@ class MiniMapFrame(ctk.CTkFrame):
         self.canvas.draw_idle()
 
     def _on_click(self, event):
-        """Handle click event to select the nearest star."""
-        if event.inaxes != self.ax:
+        """Handle click event to select the nearest star - OPTIMIZED VERSION"""
+        # Sadece sol tıklama ve axes içinde ise işle
+        if event.inaxes != self.ax or event.button != 1:
             return
             
-        x, y = event.xdata, event.ydata
-        
-        if self._scatter is None:
+        if self._scatter is None or len(self.route_points) == 0:
             return
             
-        points = self._scatter._offsets3d
-        xs_3d, ys_3d, zs_3d = points
-        display_coords = self.ax.transData.transform(np.vstack([xs_3d, ys_3d, zs_3d]).T)
-        
-        if display_coords.size == 0:
-            return
-
-        clicked_pos = np.array([event.x, event.y])
-        distances = np.sum((display_coords - clicked_pos) ** 2, axis=1)
-        nearest_idx = np.argmin(distances)
-        MAX_DISTANCE_SQ = 100 
-        
-        if distances[nearest_idx] < MAX_DISTANCE_SQ:
-            x_3d, y_3d, z_3d = xs_3d[nearest_idx], ys_3d[nearest_idx], zs_3d[nearest_idx]
-            for p in self.route_points:
-                if all(math.isclose(p['coords'][i], [x_3d, y_3d, z_3d][i], abs_tol=0.01) for i in range(3)):
-                    selected_name = p['name']
-                    self.highlight_system(selected_name)
-                    if self.on_system_selected:
-                        self.on_system_selected(selected_name)
-                    return
+        try:
+            points = self._scatter._offsets3d
+            xs_3d, ys_3d, zs_3d = points
+            
+            if len(xs_3d) == 0:
+                return
+            
+            # Performans için: sadece görünür alandaki noktaları kontrol et
+            xlim = self.ax.get_xlim()
+            ylim = self.ax.get_ylim()
+            zlim = self.ax.get_zlim()
+            
+            nearest_idx = None
+            min_distance = float('inf')
+            click_threshold = 0.1  # Tıklama hassasiyeti
+            
+            for i in range(len(xs_3d)):
+                x_3d, y_3d, z_3d = xs_3d[i], ys_3d[i], zs_3d[i]
+                
+                # Görünür alan kontrolü (performans için)
+                if not (xlim[0] <= x_3d <= xlim[1] and 
+                        ylim[0] <= y_3d <= ylim[1] and 
+                        zlim[0] <= z_3d <= zlim[1]):
+                    continue
+                
+                # Basit 2D mesafe hesaplama (projeksiyon olmadan)
+                # Bu daha güvenli ve hızlı
+                dx = (x_3d - event.xdata) 
+                dy = (z_3d - event.ydata) * 0.5  # Z ekseni için scale faktörü
+                distance = np.sqrt(dx**2 + dy**2)
+                
+                if distance < min_distance and distance < click_threshold:
+                    min_distance = distance
+                    nearest_idx = i
+            
+            if nearest_idx is not None:
+                x_3d, y_3d, z_3d = xs_3d[nearest_idx], ys_3d[nearest_idx], zs_3d[nearest_idx]
+                
+                # Route points'te eşleşen sistemi bul
+                for p in self.route_points:
+                    if (math.isclose(p['coords'][0], x_3d, abs_tol=0.1) and
+                        math.isclose(p['coords'][1], y_3d, abs_tol=0.1) and
+                        math.isclose(p['coords'][2], z_3d, abs_tol=0.1)):
+                        
+                        selected_name = p['name']
+                        self.highlight_system(selected_name)
+                        if self.on_system_selected:
+                            self.on_system_selected(selected_name)
+                        return
+                        
+        except Exception as e:
+            # Hata durumunda sessizce devam et
+            pass
 
     def highlight_system(self, name):
         """Highlights the system on the map, centers the view, and re-plots."""
@@ -182,8 +259,11 @@ class MiniMapFrame(ctk.CTkFrame):
             return
             
         x, y, z = self.route_points[idx]['coords']
+        
+        # Mevcut route'u tekrar çiz
         self.plot_route(self.route_points, point_size=30) 
         
+        # Seçilen sistemi vurgula
         try:
             self.ax.scatter([x], [y], [z], s=150, edgecolors='yellow', linewidths=2.0, facecolors='none', zorder=100)            
             self.canvas.draw_idle()
@@ -191,6 +271,7 @@ class MiniMapFrame(ctk.CTkFrame):
             pass
 
     def _center_on_point(self, x, y, z):
+        """Center the view on a specific point"""
         span = 20.0 
         self.ax.set_xlim(x - span, x + span)
         self.ax.set_ylim(y - span, y + span)
