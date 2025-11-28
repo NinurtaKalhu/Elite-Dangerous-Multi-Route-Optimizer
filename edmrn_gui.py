@@ -46,8 +46,8 @@ except ImportError:
             pass
         def highlight_system(self, *args):
             pass
-def get_app_data_path():
 
+def get_app_data_path():
     try:
         if platform.system() == "Windows":
             documents_path = os.path.join(os.path.expanduser('~'), 'Documents')
@@ -97,20 +97,17 @@ ALL_POSSIBLE_COLUMNS = [
 ]
 
 GITHUB_LINK = "https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer"
-DISCORD_LINK = "https://discord.gg/jxVTyev8"
+DISCORD_LINK = "https://discord.gg/DWvCEXH7ae"
 DONATION_LINK_KOFI = "https://ko-fi.com/ninurtakalhu"
 DONATION_LINK_PATREON = "https://www.patreon.com/c/NinurtaKalhu"
 
-
-APP_NAME_SHORT = "EDMRN"
-CURRENT_VERSION = "2.1.0"  
+APP_NAME_SHORT = "EDMRN Tool"
+CURRENT_VERSION = "2.2.0"  
 GITHUB_OWNER = "NinurtaKalhu" 
 GITHUB_REPO = "Elite-Dangerous-Multi-Route-Optimizer" 
 
 def check_for_updates(current_version, owner, repo):
-   
     try:
-       
         url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
         response = requests.get(url, timeout=5)
         response.raise_for_status() 
@@ -118,13 +115,11 @@ def check_for_updates(current_version, owner, repo):
         latest_release = response.json()
         latest_version = latest_release.get('tag_name', '0.0.0').lstrip('v') 
 
-
         version_pattern = re.compile(r'[^0-9\.]')
         
         latest_version_clean = version_pattern.sub('', latest_version).strip('.')
         
         try:
-
             current_parts = [int(x) for x in current_version.split('.')]
             latest_parts = [int(x) for x in latest_version_clean.split('.')]
         except ValueError:
@@ -140,7 +135,6 @@ def check_for_updates(current_version, owner, repo):
             return False, latest_version, None
 
     except requests.exceptions.RequestException as e:
-
         print(f"WARNING: Update check failed: {e}")
         return False, None, None
     except Exception as e:
@@ -148,7 +142,6 @@ def check_for_updates(current_version, owner, repo):
         return False, None, None
 
 def resource_path(relative_path):
-
     try:
         base_path = sys._MEIPASS
     except Exception:
@@ -235,36 +228,58 @@ def load_last_output_path():
             pass
     return None
 
-
 class JournalMonitor(threading.Thread):
-    def __init__(self, callback, log_func):
+    def __init__(self, callback, log_func, manual_journal_path=None):
         super().__init__(daemon=True)
         self.callback = callback
         self.log = log_func
         self._stop_event = threading.Event()
         self.last_tell = 0
         self.current_journal_file = None
-        self.journal_path = self._find_journal_dir()
+        self.journal_path = manual_journal_path if manual_journal_path else self._find_journal_dir()
         self.monitor_interval = 2
 
     def _find_journal_dir(self):
-        if platform.system() == "Windows":
-            path = os.path.join(os.path.expanduser('~'), 'Saved Games', 'Frontier Developments', 'Elite Dangerous')
-            if os.path.exists(path):
-                return path
-        return None
+
+        system = platform.system()
+        
+        if system == "Windows":
+            path = os.path.join(os.path.expanduser('~'), 
+                               'Saved Games', 
+                               'Frontier Developments', 
+                               'Elite Dangerous')
+        elif system == "Darwin":
+            path = os.path.join(os.path.expanduser('~'),
+                               'Library',
+                               'Application Support',
+                               'Frontier Developments',
+                               'Elite Dangerous')
+        else:
+            path = os.path.join(os.path.expanduser('~'),
+                               '.local',
+                               'share',
+                               'Frontier Developments',
+                               'Elite Dangerous')
+        
+        if os.path.exists(path):
+            return path
+        else:
+            self.log(f"WARNING: Default journal path not found: {path}")
+            return None
 
     def _get_latest_journal_file(self):
+
         if not self.journal_path:
             return None
         
-        list_of_files = glob.glob(os.path.join(self.journal_path, 'Journal.*.log'))
-        
-        if not list_of_files:
+        try:
+            list_of_files = glob.glob(os.path.join(self.journal_path, 'Journal.*.log'))
+            if not list_of_files:
+                return None
+            return max(list_of_files, key=os.path.getmtime)
+        except Exception as e:
+            self.log(f"ERROR reading journal directory {self.journal_path}: {e}")
             return None
-            
-        latest_file = max(list_of_files, key=os.path.getmtime)
-        return latest_file
 
     def _process_line(self, line):
         try:
@@ -283,7 +298,6 @@ class JournalMonitor(threading.Thread):
             self.log(f"Journal Line Processing Error: {e}")
 
     def _tail_file(self, filename):
-        
         if self.current_journal_file != filename:
             self.current_journal_file = filename
             self.last_tell = 0
@@ -322,7 +336,6 @@ class JournalMonitor(threading.Thread):
         self.current_journal_file = None
             
     def run(self):
-        
         self.log("Journal Monitor STARTED - Auto-tracking active")
         
         while not self._stop_event.is_set():
@@ -332,15 +345,16 @@ class JournalMonitor(threading.Thread):
                 if latest_file and os.path.exists(latest_file):
                     self._tail_file(latest_file)
                 else:
-                    self.log("No journal file found. Waiting...")
+                    if not self.journal_path:
+                        self.log("Journal path not configured. Auto-tracking disabled.")
+                    else:
+                        self.log("No journal file found. Waiting...")
                     time.sleep(5)
                     
             except Exception as e:
                 self.log(f"Journal monitor error: {e}")
                 time.sleep(5)
 
-    def stop(self):
-        self._stop_event.set()
     def stop(self):
         self._stop_event.set()
 
@@ -425,14 +439,12 @@ class ManualWindow(ctk.CTkToplevel):
         self.manual_textbox.insert("end", manual_text)
         self.manual_textbox.configure(state="disabled", font=ctk.CTkFont(family="Consolas", size=11))
 
-
 class AboutWindow(ctk.CTkToplevel):
     def __init__(self, master, open_link_callback, show_manual_callback): 
         super().__init__(master)
         self.title(f"{APP_NAME_FULL} ({APP_NAME_SHORT})")
         self.open_link = open_link_callback 
         self.show_manual = show_manual_callback
-        
         
         try:
             self.iconbitmap(resource_path('explorer_icon.ico'))
@@ -457,13 +469,11 @@ class AboutWindow(ctk.CTkToplevel):
         def open_url(url):
             self.open_link(url)
 
-        
         logo_frame = ctk.CTkFrame(self, fg_color="transparent")
         logo_frame.grid(row=0, column=0, pady=(20, 10), sticky="ew")
         logo_frame.columnconfigure(0, weight=1)
 
         try:
-            
             logo_path = resource_path('explorer_icon.png')
             if os.path.exists(logo_path):
                 original_image = Image.open(logo_path)
@@ -484,7 +494,7 @@ class AboutWindow(ctk.CTkToplevel):
         app_frame.columnconfigure(0, weight=1)
 
         ctk.CTkLabel(app_frame, text="Software Version:", anchor="w").grid(row=0, column=0, sticky="w", pady=2)
-        ctk.CTkLabel(app_frame, text="2.0 (Lin–Kernighan algorithm + Auto-Tracking)", anchor="e").grid(row=0, column=1, sticky="e", pady=2)
+        ctk.CTkLabel(app_frame, text="2.2", anchor="e").grid(row=0, column=1, sticky="e", pady=2)
         
         ctk.CTkLabel(app_frame, text="Developer:", anchor="w").grid(row=1, column=0, sticky="w", pady=2)
         ctk.CTkLabel(app_frame, text="Ninurta Kalhu", anchor="e").grid(row=1, column=1, sticky="e", pady=2)
@@ -524,7 +534,6 @@ class AboutWindow(ctk.CTkToplevel):
         
         self.grab_set()
 
-
 class RouteOptimizerApp:
     def __init__(self, master):
         self.master = master
@@ -546,6 +555,7 @@ class RouteOptimizerApp:
         current_settings = load_settings()
         self.theme_mode = ctk.StringVar(value=current_settings['appearance_mode'])
         self.theme_color = ctk.StringVar(value=current_settings['color_theme'])
+        self.journal_path_var = ctk.StringVar(value="")
         self.route_lock = threading.Lock() 
         self.current_route = load_route_status()
         self.system_labels = {}
@@ -697,12 +707,50 @@ class RouteOptimizerApp:
         ctk.CTkLabel(main_frame, text="Application Settings", 
                     font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 20))
 
+
+        journal_frame = ctk.CTkFrame(main_frame, corner_radius=8)
+        journal_frame.pack(fill="x", padx=20, pady=15)
+
+        ctk.CTkLabel(journal_frame, text="Elite Dangerous Journal Settings", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(12, 8))
+
+
+        path_frame = ctk.CTkFrame(journal_frame, fg_color="transparent")
+        path_frame.pack(fill="x", padx=15, pady=8)
+
+        ctk.CTkLabel(path_frame, text="Manual Journal Path:", width=140).grid(row=0, column=0, sticky="w", padx=5)
+        
+        journal_entry = ctk.CTkEntry(path_frame, textvariable=self.journal_path_var, placeholder_text="Auto-detected path will be used")
+        journal_entry.grid(row=0, column=1, sticky="ew", padx=5)
+        
+        browse_btn = ctk.CTkButton(path_frame, text="Browse...", 
+                                  command=self._browse_journal_path, width=80)
+        browse_btn.grid(row=0, column=2, padx=5)
+        
+        path_frame.columnconfigure(1, weight=1)
+
+
+        auto_path = self._get_auto_journal_path()
+        info_text = f"Auto-detected path: {auto_path if auto_path else 'Not found'}"
+        info_label = ctk.CTkLabel(journal_frame, text=info_text, 
+                                 font=ctk.CTkFont(size=11), text_color=("gray50", "gray70"))
+        info_label.pack(pady=(0, 8))
+
+
+        test_btn = ctk.CTkButton(journal_frame, text="Test Journal Path", 
+                                command=self._test_journal_path, height=28)
+        test_btn.pack(pady=(0, 5))
+
+        apply_btn = ctk.CTkButton(journal_frame, text="Apply & Restart Monitor", 
+                                 command=self._apply_journal_settings, 
+                                 fg_color="#4CAF50", hover_color="#45a049", height=28)
+        apply_btn.pack(pady=(0, 8))
+
         appearance_frame = ctk.CTkFrame(main_frame, corner_radius=8)
         appearance_frame.pack(fill="x", padx=20, pady=10)
 
         ctk.CTkLabel(appearance_frame, text="Appearance Settings", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(12, 8))
-
 
         mode_frame = ctk.CTkFrame(appearance_frame, fg_color="transparent")
         mode_frame.pack(fill="x", padx=15, pady=4)
@@ -743,19 +791,86 @@ class RouteOptimizerApp:
                                    command=lambda: self.open_link(DONATION_LINK_PATREON),
                                    fg_color="#FF424D", hover_color="#E03A45", height=28)
         patreon_btn.grid(row=0, column=1, padx=5, pady=3, sticky="ew")
+
+    def _get_auto_journal_path(self):
+
+        temp_monitor = JournalMonitor(None, lambda x: None)
+        return temp_monitor._find_journal_dir()
+
+    def _browse_journal_path(self):
+
+        folder = filedialog.askdirectory(title="Select Elite Dangerous Journal Folder")
+        if folder:
+            self.journal_path_var.set(folder)
+
+    def _test_journal_path(self):
+
+        test_path = self.journal_path_var.get().strip()
+        if not test_path:
+            test_path = self._get_auto_journal_path()
+        
+        if not test_path:
+            messagebox.showerror("Error", "No journal path specified and auto-detection failed.")
+            return
+        
+        if not os.path.exists(test_path):
+            messagebox.showerror("Error", f"Path does not exist:\n{test_path}")
+            return
+        
+
+        journal_files = glob.glob(os.path.join(test_path, 'Journal.*.log'))
+        if journal_files:
+            latest = max(journal_files, key=os.path.getmtime)
+            messagebox.showinfo("Success", 
+                              f"Journal path is valid!\n\n"
+                              f"Found {len(journal_files)} journal files\n"
+                              f"Latest: {os.path.basename(latest)}")
+        else:
+            messagebox.showwarning("Warning", 
+                                 f"Path exists but no journal files found.\n\n"
+                                 f"Make sure:\n"
+                                 f"1. Elite Dangerous is running\n"
+                                 f"2. Journal logging is enabled\n"
+                                 f"3. You're in the correct folder")
+
+    def _apply_journal_settings(self):
+
+        manual_path = self.journal_path_var.get().strip() or None
+        
+        if self.journal_monitor:
+            self.journal_monitor.stop()
+            self.journal_monitor = None
+        
+
+        self.journal_monitor = JournalMonitor(
+            callback=self.handle_system_jump,
+            log_func=self.log,
+            manual_journal_path=manual_path
+        )
+        self.journal_monitor.start()
+        
+        path_used = manual_path if manual_path else "Auto-detected path"
+        self.log(f"Journal Monitor restarted with: {path_used}")
+        messagebox.showinfo("Success", "Journal monitor restarted with new settings!")
     
     def _start_journal_monitor(self):
         if self.journal_monitor:
             self.journal_monitor.stop()
         
+
+        manual_path = self.journal_path_var.get().strip() or None
+        
         self.route_names = set(item['name'] for item in self.current_route) 
         
         self.journal_monitor = JournalMonitor(
             callback=self.handle_system_jump,
-            log_func=self.log
+            log_func=self.log,
+            manual_journal_path=manual_path
         )
         self.journal_monitor.start()
-        self.log("INFO: Started Elite Dangerous Journal Monitor for auto-tracking.")
+        
+        path_info = manual_path if manual_path else "auto-detected path"
+        self.log(f"INFO: Started Journal Monitor with {path_info}")
 
     def handle_system_jump(self, system_name):
         self.master.after(0, lambda: self._update_system_status_from_monitor(system_name, STATUS_VISITED))
@@ -913,19 +1028,16 @@ class RouteOptimizerApp:
         main_container.columnconfigure(1, weight=40) 
         main_container.rowconfigure(0, weight=1)
 
-
         left_frame = ctk.CTkFrame(main_container, corner_radius=10)
         left_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         left_frame.columnconfigure(0, weight=1)
         left_frame.rowconfigure(0, weight=85)  
         left_frame.rowconfigure(1, weight=15)  
 
-
         self.map_frame = MiniMapFrame(left_frame,
                                     on_system_selected=self.handle_system_click,
                                     corner_radius=8)
         self.map_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-
 
         button_frame = ctk.CTkFrame(left_frame, corner_radius=8)
         button_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
@@ -947,12 +1059,10 @@ class RouteOptimizerApp:
                                    height=32)
         open_csv_btn.grid(row=2, column=0, padx=10, pady=4, sticky="ew")
 
-
         right_frame = ctk.CTkFrame(main_container, corner_radius=10)
         right_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         right_frame.columnconfigure(0, weight=1)
         right_frame.rowconfigure(0, weight=1)
-
 
         self.progress_label = ctk.CTkLabel(right_frame, text="Loading route status...", 
                                          font=ctk.CTkFont(weight="bold"))
@@ -960,7 +1070,6 @@ class RouteOptimizerApp:
 
         ctk.CTkLabel(right_frame, text="Route Details:", 
                     font=ctk.CTkFont(weight="bold")).pack(pady=(0, 10))
-
 
         self.scroll_frame = ctk.CTkScrollableFrame(right_frame, width=300)
         self.scroll_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
