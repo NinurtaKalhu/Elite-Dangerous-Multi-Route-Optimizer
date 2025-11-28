@@ -1,3 +1,19 @@
+## 📜 License
+
+**This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only) – effective 28 November 2025.**
+
+![License](https://img.shields.io/badge/License-AGPL%203.0%20only-red?style=for-the-badge&logo=gnu&logoColor=white)
+
+### What this means in plain language:
+- You are free to use, study, modify, and share EDRMN
+- If you modify it and run it as a network service (web tool, server, etc.), you **must** provide the full source code to users
+- Any derivative work or fork **must** also be licensed under AGPL-3.0-only
+- The copyright notice and this license must remain in all copies
+
+**Previous versions were MIT. As of today, the current codebase is AGPL-3.0-only.**
+
+Full license text: [/LICENSE](LICENSE)
+
 ## ☕ Support EDMRN 
 
 *> If you find this tool useful, consider supporting development: Support > its development with a coffee! ☕ > # [Buy me a coffee on Ko-fi](https://ko-fi.com/ninurtakalhu) or [Patreon](https://www.patreon.com/c/NinurtaKalhu) ☕*
