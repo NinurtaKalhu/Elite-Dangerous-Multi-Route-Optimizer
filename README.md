@@ -38,10 +38,10 @@ Full license text: [/LICENSE](LICENSE)
 
 ### Latest Release: v2.1.0
 
-📥 **Download**: [EDMRN_v2.0_Windows](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
+📥 **Download**: [EDMRN_v2.1_Windows](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
 
 **System Requirements**:
-- .NET Framework 4.8+
+- .NET Framework 4.8+ (for .exe)
 - Elite Dangerous with Journal logging enabled
 
 ## 🛠 Installation
