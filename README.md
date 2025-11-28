@@ -10,8 +10,6 @@
 - Any derivative work or fork **must** also be licensed under AGPL-3.0-only
 - The copyright notice and this license must remain in all copies
 
-**Previous versions were MIT. As of today, the current codebase is AGPL-3.0-only.**
-
 Full license text: [/LICENSE](LICENSE)
 
 ## ☕ Support EDMRN 
