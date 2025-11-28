@@ -9,7 +9,7 @@
 # ED Multi Route Navigation (EDMRN) v2.1
 **Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms**
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.1.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-GPL%203.0%20only-red?style=flat-square&logo=gnu&logoColor=white)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.1.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
 
 ## 🚀 Features
 
