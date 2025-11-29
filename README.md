@@ -1,6 +1,6 @@
 ## 📜 License
 
-**This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only) – effective 28 November 2025.**
+**This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only)**
 
 ![License](https://img.shields.io/badge/License-AGPL%203.0%20only-red?style=for-the-badge&logo=gnu&logoColor=white)
 
@@ -20,80 +20,116 @@ Full license text: [/LICENSE](LICENSE)
 
 **[Virus Total Scan Report](https://www.virustotal.com/gui/file/193214e4eefff07f7b89f758bb5f716faeca546ca8e8bc8486dc667cbd12170d?nocache=1)**
 
-# ED Multi Route Navigation (EDMRN) v2.1
-**Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms**
+# ED Multi Route Navigation (EDMRN) v2.2
+**Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms - Now Cross-Platform!**
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-GPL%203.0%20only-red?style=flat-square&logo=gnu&logoColor=white)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.1.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org) [![License](https://img.shields.io/badge/License-AGPL%203.0%20only-red?style=flat-square&logo=gnu&logoColor=white)](LICENSE) [![Version](https://img.shields.io/badge/Version-2.2.0-orange)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases) [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer)
+
+## 🆕 WHAT'S NEW IN v2.2
+
+### ✨ Cross-Platform Support
+- **Full Linux & macOS compatibility**
+- **Auto-detection** of journal paths on all platforms
+- **Manual journal path** configuration in Settings
+- **Path testing** and real-time monitor restart
+
+### 🐛 Bug Fixes & Improvements
+- **Stable 3D Map** - Fixed zoom and click issues
+- **Enhanced error handling** - No more crashes on invalid paths
+- **Optimized performance** - Better handling of large routes (200+ systems)
+- **Improved user experience** - Better feedback and controls
 
 ## 🚀 Features
 
 - **Advanced Route Optimization**: Uses Lin-Kernighan TSP algorithm for shortest paths
-- **Real-time Journal Monitoring**: Auto-tracks your in-game progress
-- **3D Interactive Map**: Visualize your route in 3D space
+- **Real-time Journal Monitoring**: Auto-tracks your in-game progress (Cross-Platform)
+- **3D Interactive Map**: Visualize your route in 3D space with smooth zoom/pan
 - **Smart Body Tracking**: Track multiple signals per system
 - **Modern GUI**: Built sleek dark/light themes
 - **Find "USER MANUAL" in to "About page"**
 
 ## 📦 Download
 
-### Latest Release: v2.1.0
+### Latest Release: v2.2.0
 
-📥 **Download**: [EDMRN_v2.1_Windows](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
+📥 **Download**: [EDMRN_v2.2_Windows](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest)
 
 **System Requirements**:
-- .NET Framework 4.8+ (for .exe)
+- Windows: .NET Framework 4.8+ (for .exe)
+- Linux/macOS: Python 3.8+ (run from source)
 - Elite Dangerous with Journal logging enabled
 
-## 🛠 Installation
+## 🛠️ Installation
 
-### For End Users:
+### For End Users (Windows):
 1. Download the latest `.exe` from [Releases](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
-2. Run `ED Multi Route Navigation v2.0.exe`
+2. Run `ED Multi Route Navigation v2.2.exe`
 3. No installation required - portable application
 
----------------------------------------------------------------------------------------------------------
+### For Linux/macOS Users:
+```bash
+# Clone the repository
+git clone https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer.git
+cd Elite-Dangerous-Multi-Route-Optimizer
 
-### 📋 Usage
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python edmrn_gui.py
+```
+
+## 🎮 Cross-Platform Journal Setup
+
+### Automatic Detection:
+EDMRN automatically detects Elite Dangerous journal paths on:
+- **Windows**: `~/Saved Games/Frontier Developments/Elite Dangerous`
+- **macOS**: `~/Library/Application Support/Frontier Developments/Elite Dangerous`
+- **Linux**: `~/.local/share/Frontier Developments/Elite Dangerous`
+
+### Manual Configuration:
+1. Go to **Settings** tab
+2. Set your **Manual Journal Path**
+3. Click **"Test Journal Path"** to verify
+4. Click **"Apply & Restart Monitor"** to activate
+
+## 📋 Usage
 
 **Route Optimization Tab:**
-
-- Select your CSV file with X,Y,Z Columns (from Spansh or anothers)
+- Select your CSV file with X,Y,Z Columns (from Spansh or others)
 - Set ship jump range
 - Choose output columns
 - Click "Optimize Route"
 
 **Route Tracking Tab:**
-
-- View 3D map of your route and zoom in/out with mouse scroll-lock
+- View 3D map of your route - zoom with mouse wheel, rotate with click+drag
 - Auto-tracking via Elite Dangerous journal
 - Auto status updates
-- Auto Copy next system to clipboard
+- Auto copy next system to clipboard
 
 **Settings Tab:**
-
 - Customize appearance (Dark/Light mode)
 - Change color themes
+- Configure journal path (Cross-Platform)
 
 ### 🎮 CMDR Features
 
 - Auto CMDR Detection: Reads your commander name and credits from journal
-- Real-time Tracking: Monitors FSDJump events automatically
+- Real-time Tracking: Monitors FSDJump events automatically on all platforms
 - Multi-body Support: Track multiple biological/geological signals per system
 - Backup System: Automatic route status backups
 
-
-### **🐛 Reporting Issues**
+## 🐛 Reporting Issues
 
 Found a bug? Please [create an issue](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/issues) with:
 
 - Elite Dangerous version
+- Your operating system (Windows/Linux/macOS)
 - Steps to reproduce
 - Error message (if any)
 - Journal file excerpt (if relevant)
 
-
-
-👨‍💻 Developer
+## 👨‍💻 Developer
 Ninurta Kalhu - Solo Developer & Elite Dangerous Exobiologist/Explorer
 
 📧 Email: ninurtakalhu@gmail.com
@@ -104,11 +140,9 @@ Ninurta Kalhu - Solo Developer & Elite Dangerous Exobiologist/Explorer
 
 💬 Discord: [Join our EDMRN community](https://discord.gg/jxVTyev8)
 
-
 Fly safe, Commander! 🚀✨
 
 #Attention! This project is not affiliated with Frontier Developments plc.
-
 
 ## 🛡️ Security Notice: False Positive Warnings
 
@@ -169,19 +203,45 @@ Some antivirus programs may incorrectly identify ED Multi Route Navigation as po
 | `.csv` files | Route data import/export | Route optimization |
 | `.json` files | Settings and progress | Local configuration |
 
+## 🌐 Cross-Platform Support
+
+### Windows
+- ✅ Full support - standalone .exe available
+- ✅ Auto journal detection
+- ✅ All features available
+
+### Linux
+- ✅ Full support - run from source
+- ✅ Auto journal detection
+- ✅ All features available
+- ✅ Tested on Ubuntu, Fedora, Arch
+
+### macOS
+- ✅ Full support - run from source  
+- ✅ Auto journal detection
+- ✅ All features available
+- ✅ Tested on macOS 12+
 
 ## 📦 Download & Installation
 
-### 🟢 Recommended: Standalone Executable  
+### 🟢 Recommended: Standalone Executable (Windows)  
 **`ED_Multi_Route_Navigation.exe`** - Single file executable
 - May trigger antivirus false positives
 - Add to exclusions if needed
 
-### 🔧 Advanced: Source Code
+### 🔧 Advanced: Source Code (All Platforms)
 **Compile from source** for maximum security verification
 
     pip install -r requirements.txt
     python edmrn_gui.py
+
+## 🗺️ 3D Map Controls
+
+- **Zoom**: Mouse wheel
+- **Rotate**: Left click + drag
+- **Pan**: Right click + drag
+- **Select System**: Click on any star
+- **Reset View**: Re-plot route
 
 ![SS1](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS1.png)
 
