@@ -243,7 +243,7 @@ Some antivirus programs may incorrectly identify ED Multi Route Navigation as po
 - **Select System**: Click on any star
 - **Reset View**: Re-plot route
 
-###The CSV file must contain the following columns: system name, celestial body name, x, y, and z coordinates.
+### The CSV file must contain the following columns: system name, celestial body name, x, y, and z coordinates.
 
 ![SS1](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS1.png)
 
