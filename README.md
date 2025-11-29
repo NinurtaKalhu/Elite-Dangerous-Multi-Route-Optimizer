@@ -18,7 +18,7 @@ Full license text: [/LICENSE](LICENSE)
 
 [![KOFI](https://img.shields.io/badge/Ko--fi-Buy_me_a_coffee-FF5E5B?logo=kofi)](https://ko-fi.com/ninurtakalhu) [![patreon](https://img.shields.io/badge/Patreon-Support-FF424D?logo=patreon)](https://www.patreon.com/c/NinurtaKalhu)
 
-**[Virus Total Scan Report](https://www.virustotal.com/gui/file/193214e4eefff07f7b89f758bb5f716faeca546ca8e8bc8486dc667cbd12170d?nocache=1)**
+**[Virus Total Scan Report](https://www.virustotal.com/gui/file-analysis/Y2I1NTYwZThlNDZiNjgzMGY1MGIwZDRhOTZlYmM4ZmU6MTc2NDM3NjYzMg==)**
 
 # ED Multi Route Navigation (EDMRN) v2.2
 **Optimize Your Elite Dangerous Exploration Routes with Advanced TSP Algorithms - Now Cross-Platform!**
