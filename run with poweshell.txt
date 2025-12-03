@@ -4,7 +4,10 @@ python edmrn_gui.py
 ----------------------
 ----------------------
 
-pyinstaller --noconfirm --onefile --windowed --name "EDMRN_v2.3" --icon "explorer_icon.ico" --add-data "explorer_icon.ico;." --add-data "explorer_icon.png;." --add-data "edmrn_3d_minimap.py;." --add-data "edmrn_overlay.py;." --add-data "edmrn_backup.py;." --add-data "edmrn_autosave.py;." --add-data "edmrn_platform.py;." --hidden-import "pandas" --hidden-import "numpy" --hidden-import "matplotlib" --hidden-import "matplotlib.backends.backend_tkagg" --hidden-import "scipy" --hidden-import "customtkinter" --hidden-import "requests" --hidden-import "PIL" --hidden-import "tqdm" --hidden-import "psutil" --hidden-import "distro" --hidden-import "tkcalendar" --hidden-import "python_tsp" --hidden-import "json" --hidden-import "typing" --hidden-import "dataclasses" --hidden-import "threading" --hidden-import "queue" --hidden-import "concurrent.futures" "edmrn_gui.py"
+python -m venv edmrn_build_env
+edmrn_build_env\Scripts\activate
+pip install -r requirements.txt
+python build_all.py
 
 ----------------------
 ----------------------
