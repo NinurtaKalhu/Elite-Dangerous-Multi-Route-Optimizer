@@ -13,6 +13,10 @@ pip install pyinstaller
 
 ----------------------
 
+python build_all.py
+
+----------------------
+
 Windows:
 pyinstaller build_windows.spec
 
