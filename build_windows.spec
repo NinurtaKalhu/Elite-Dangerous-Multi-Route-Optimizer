@@ -6,8 +6,10 @@ from pathlib import Path
 
 block_cipher = None
 
-base_dir = Path(__file__).parent.absolute()
+# Ana dizin - güncellenmiş versiyon
+base_dir = Path(os.getcwd()).absolute()
 
+# Data dosyaları
 datas = [
     ('explorer_icon.ico', '.'),
     ('explorer_icon.png', '.'),
@@ -18,6 +20,7 @@ datas = [
     ('edmrn_platform.py', '.'),
 ]
 
+# Hidden imports
 hiddenimports = [
     'matplotlib.backends.backend_tkagg',
     'mpl_toolkits.mplot3d',
@@ -44,10 +47,16 @@ hiddenimports = [
     'dataclasses',
     'concurrent.futures',
     'ctypes',
-    'psutil._psutil_windows' if sys.platform == 'win32' else 'psutil._psutil_posix',
+    'psutil._psutil_windows',
+    'tqdm',
+    'distro',
+    'tkcalendar',
+    'python_tsp',
+    'python_tsp.distances',
+    'python_tsp.heuristics',
 ]
 
-
+# Excludes
 excludes = [
     'test',
     'unittest',
@@ -57,8 +66,10 @@ excludes = [
     'numpy.test',
     'pandas.tests',
     'scipy.tests',
+    'pillow.tests',
 ]
 
+# PyInstaller ayarları
 a = Analysis(
     ['edmrn_gui.py'],
     pathex=[str(base_dir)],
@@ -75,22 +86,19 @@ a = Analysis(
     noarchive=False,
 )
 
+# Pyz ve exe ayarları
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
-    name='ED_Multi_Route_Navigation',
+    exclude_binaries=True,
+    name='ED_Multi_Route_Navigation_v2.3',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -98,4 +106,16 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='explorer_icon.ico',
+)
+
+# COLLECT bölümü (onefile için gerekli)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='ED_Multi_Route_Navigation_v2.3'
 )
