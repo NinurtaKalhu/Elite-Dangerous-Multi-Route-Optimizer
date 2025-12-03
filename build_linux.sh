@@ -1,81 +1,110 @@
-#!/bin/bash
+# -*- mode: python ; coding: utf-8 -*-
 
-# EDMRN Linux Build Script
-# Usage: ./build_linux.sh [--onefile|--onedir]
+import sys
+import os
+from pathlib import Path
 
-BUILD_TYPE=${1:-"--onefile"}
-APP_NAME="ED_Multi_Route_Navigation"
-ICON_PATH="explorer_icon.png"
-MAIN_FILE="edmrn_gui.py"
+block_cipher = None
 
-echo "Building EDMRN for Linux..."
+# Ana dizin
+base_dir = Path(os.getcwd()).absolute()
 
-echo "Checking Python dependencies..."
-pip install -r requirements.txt
+# Data dosyaları (Linux formatı)
+datas = [
+    ('explorer_icon.ico', '.'),
+    ('explorer_icon.png', '.'),
+    ('edmrn_3d_minimap.py', '.'),
+    ('edmrn_overlay.py', '.'),
+    ('edmrn_backup.py', '.'),
+    ('edmrn_autosave.py', '.'),
+    ('edmrn_platform.py', '.'),
+]
 
-if [ "$BUILD_TYPE" == "--onedir" ]; then
-    echo "Building as directory..."
-    pyinstaller \
-        --name "$APP_NAME" \
-        --icon "$ICON_PATH" \
-        --windowed \
-        --onedir \
-        --add-data "explorer_icon.png:." \
-        --add-data "explorer_icon.ico:." \
-        --add-data "edmrn_3d_minimap.py:." \
-        --add-data "edmrn_overlay.py:." \
-        --add-data "edmrn_backup.py:." \
-        --add-data "edmrn_autosave.py:." \
-        --add-data "edmrn_platform.py:." \
-        --hidden-import "matplotlib.backends.backend_tkagg" \
-        --hidden-import "mpl_toolkits.mplot3d" \
-        --hidden-import "matplotlib.backends.backend_tk" \
-        --hidden-import "pandas._libs.tslibs.timedeltas" \
-        --hidden-import "PIL._tkinter_finder" \
-        --hidden-import "numpy.core._multiarray_umath" \
-        --hidden-import "scipy.spatial.ckdtree" \
-        --hidden-import "scipy.spatial._qhull" \
-        --hidden-import "webbrowser" \
-        --hidden-import "certifi" \
-        --hidden-import "requests" \
-        --hidden-import "urllib3" \
-        --hidden-import "psutil._psutil_posix" \
-        --collect-all "customtkinter" \
-        --collect-all "requests" \
-        --clean \
-        "$MAIN_FILE"
-else
-    echo "Building as single executable..."
-    pyinstaller \
-        --name "$APP_NAME" \
-        --icon "$ICON_PATH" \
-        --windowed \
-        --onefile \
-        --add-data "explorer_icon.png:." \
-        --add-data "explorer_icon.ico:." \
-        --add-data "edmrn_3d_minimap.py:." \
-        --add-data "edmrn_overlay.py:." \
-        --add-data "edmrn_backup.py:." \
-        --add-data "edmrn_autosave.py:." \
-        --add-data "edmrn_platform.py:." \
-        --hidden-import "matplotlib.backends.backend_tkagg" \
-        --hidden-import "mpl_toolkits.mplot3d" \
-        --hidden-import "matplotlib.backends.backend_tk" \
-        --hidden-import "pandas._libs.tslibs.timedeltas" \
-        --hidden-import "PIL._tkinter_finder" \
-        --hidden-import "numpy.core._multiarray_umath" \
-        --hidden-import "scipy.spatial.ckdtree" \
-        --hidden-import "scipy.spatial._qhull" \
-        --hidden-import "webbrowser" \
-        --hidden-import "certifi" \
-        --hidden-import "requests" \
-        --hidden-import "urllib3" \
-        --hidden-import "psutil._psutil_posix" \
-        --collect-all "customtkinter" \
-        --collect-all "requests" \
-        --clean \
-        "$MAIN_FILE"
-fi
+# Hidden imports (Linux için)
+hiddenimports = [
+    'matplotlib.backends.backend_tkagg',
+    'mpl_toolkits.mplot3d',
+    'matplotlib.backends.backend_tk',
+    'pandas._libs.tslibs.timedeltas',
+    'pandas._libs.tslibs.base',
+    'PIL._tkinter_finder',
+    'numpy.core._multiarray_umath',
+    'numpy.core._dtype_ctypes',
+    'scipy.spatial.ckdtree',
+    'scipy.spatial._qhull',
+    'scipy.special._ufuncs_cxx',
+    'webbrowser',
+    'certifi',
+    'requests',
+    'urllib3',
+    'chardet',
+    'idna',
+    'json',
+    'tkinter',
+    'queue',
+    'threading',
+    'typing',
+    'dataclasses',
+    'concurrent.futures',
+    'ctypes',
+    'psutil._psutil_posix',
+    'tqdm',
+    'distro',
+    'tkcalendar',
+    'python_tsp',
+    'python_tsp.distances',
+    'python_tsp.heuristics',
+]
 
-echo "Build complete! Executable is in dist/ folder"
-echo "To run: ./dist/$APP_NAME"
+# Excludes
+excludes = [
+    'test',
+    'unittest',
+    'pytest',
+    'tkinter.test',
+    'matplotlib.tests',
+    'numpy.test',
+    'pandas.tests',
+    'scipy.tests',
+    'pillow.tests',
+]
+
+# PyInstaller ayarları
+a = Analysis(
+    ['edmrn_gui.py'],
+    pathex=[str(base_dir)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=excludes,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='ED_Multi_Route_Navigation_v2.3',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='explorer_icon.png',
+)
