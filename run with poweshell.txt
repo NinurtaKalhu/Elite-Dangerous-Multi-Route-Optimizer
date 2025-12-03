@@ -8,6 +8,7 @@ python edmrn_gui.py
 
 ----------------------
 ----------------------
+
 pip install -r requirements.txt
 pip install pyinstaller
 
