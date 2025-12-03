@@ -4,7 +4,7 @@ python edmrn_gui.py
 ----------------------
 ----------------------
 
-
+pyinstaller --noconfirm --onefile --windowed --name "ED_Multi_Route_Navigation_v2.3" --icon "explorer_icon.ico" --add-data "explorer_icon.ico;." --add-data "explorer_icon.png;." --add-data "edmrn_3d_minimap.py;." --add-data "edmrn_overlay.py;." --add-data "edmrn_backup.py;." --add-data "edmrn_autosave.py;." --add-data "edmrn_platform.py;." --hidden-import "matplotlib.backends.backend_tkagg" --hidden-import "mpl_toolkits.mplot3d" --hidden-import "matplotlib.backends.backend_tk" --hidden-import "pandas._libs.tslibs.timedeltas" --hidden-import "PIL._tkinter_finder" --hidden-import "numpy.core._multiarray_umath" --hidden-import "scipy.spatial.ckdtree" --hidden-import "scipy.spatial._qhull" --hidden-import "webbrowser" --hidden-import "certifi" --hidden-import "requests" --hidden-import "urllib3" --hidden-import "psutil._psutil_windows" --hidden-import "tqdm" --hidden-import "distro" --hidden-import "tkcalendar" --hidden-import "python_tsp" --hidden-import "python_tsp.distances" --hidden-import "python_tsp.heuristics" --collect-all "customtkinter" --collect-all "requests" "edmrn_gui.py"
 
 ----------------------
 ----------------------
