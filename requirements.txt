@@ -1,5 +1,5 @@
 customtkinter>=5.2.0
-matplotlib>=3.7.0
+matplotlib>=3.8.0
 numpy>=1.24.0
 pandas>=2.0.0
 scipy>=1.10.0
@@ -10,6 +10,7 @@ tqdm>=4.66.0
 psutil>=5.9.0
 tkcalendar>=1.6.1
 distro>=1.8.0
+pyinstaller>=6.0
 
 # Platform-specific dependencies (optional)
 # Windows: pywin32 (for some Windows-specific features)
