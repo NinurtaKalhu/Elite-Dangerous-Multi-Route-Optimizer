@@ -1,12 +1,32 @@
+----------------------
+----------------------
 python edmrn_gui.py
+----------------------
+----------------------
+
+
+
+----------------------
+----------------------
+pip install -r requirements.txt
+pip install pyinstaller
+
+----------------------
 
 Windows:
 pyinstaller build_windows.spec
+
+----------------------
 
 Linux:
 chmod +x build_linux.sh
 ./build_linux.sh --onefile
 
+----------------------
+
 macOS:
 chmod +x build_macos.sh
 ./build_macos.sh
+
+----------------------
+----------------------
