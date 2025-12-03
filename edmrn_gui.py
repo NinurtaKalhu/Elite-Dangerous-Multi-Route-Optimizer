@@ -1,11 +1,14 @@
+import sys
+import os
+if getattr(sys, 'frozen', False):
+    sys.stdout = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w')
 import pandas as pd
 import numpy as np
 import math
 import glob
 import tkinter as tk
 import json
-import os
-import sys
 import threading
 import tempfile
 import time
@@ -216,7 +219,7 @@ STATUS_UNVISITED = 'unvisited'
 
 APP_NAME_SHORT = "EDMRN"
 APP_NAME_FULL = "ED Multi Route Navigation"
-CURRENT_VERSION = "2.3.0"
+CURRENT_VERSION = "2.6.1"
 
 GITHUB_LINK = "https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer"
 DISCORD_LINK = "https://discord.gg/DWvCEXH7ae"
@@ -650,350 +653,66 @@ class ManualWindow(ctk.CTkToplevel):
 
     def _insert_manual_content(self):
         manual_text = """
-=========================================================
-ED MULTI ROUTE NAVIGATION (EDMRN) v2.3.0
-=========================================================
+        =========================================================
+        ED Multi Route Navigation (EDMRN) v2.6.1 - User Manual
+        =========================================================
 
-EDMRN optimizes your multi-system exploration/data collection 
-routes in Elite Dangerous for shortest distance (TSP) and 
-provides real-time in-game tracking.
+        EDMRN optimizes your multi-system exploration/data collection routes in Elite Dangerous for shortest distance (TSP) and provides in-game tracking.
 
-=========================================================
-1. BASICS
-=========================================================
+        ---------------------------------------------------------
+        TAB 1: ROUTE OPTIMIZATION
+        ---------------------------------------------------------
+        1. Route Data File (CSV):
+           - Source: Exported system list from Elite Dangerous (e.g., EDDiscovery, EDMC, or Spansh).
+           - REQUIRED COLUMNS: 'System Name', 'X', 'Y', and 'Z' coordinate columns must be present.
 
-SYSTEM REQUIREMENTS:
-• Python 3.8 or higher
-• 4GB RAM minimum (8GB recommended)
-• 500MB free disk space
-• Windows 10/11, macOS 10.14+, or Linux with GUI
+        2. Ship Jump Range (LY):
+           - Enter your current ship's FSD jump range.
 
-QUICK START GUIDE:
-1. INSTALLATION:
-   - Install required packages: pip install -r requirements.txt
-   - Run the application: python edmrn_gui.py
-   
-2. BASIC WORKFLOW:
-   a. Tab 1: Load your CSV file with system data
-   b. Set your ship's jump range
-   c. Click "Optimize Route and Start Tracking"
-   d. Switch to Tab 2 for route tracking
-   e. Use Tab 3 to configure settings
-   
-3. CSV FILE FORMAT:
-   REQUIRED COLUMNS:
-   • 'System Name' - Name of the star system
-   • 'X', 'Y', 'Z' - Galactic coordinates
-   
-   OPTIONAL COLUMNS:
-   • 'Body Name' or 'Name' - Planetary bodies to scan
-   • Any additional columns will be preserved
+        3. Starting System (Optional):
+           - Enter a system name if you want to fix the starting point of the route.
 
-KEY CONCEPTS:
-• TSP OPTIMIZATION: Traveling Salesman Problem algorithm 
-  finds the shortest route between multiple points
-  
-• AUTO-TRACKING: Monitors Elite Dangerous journal files 
-  to automatically update visited systems
-  
-• IN-GAME OVERLAY: Transparent window showing current 
-  progress while playing
-  
-• CROSS-PLATFORM: Works on Windows, Linux, and macOS
+        4. Select Output CSV Columns:
+           - Select the columns you want to appear in the optimized output CSV file.
 
-=========================================================
-2. MAIN FEATURES - DETAILED
-=========================================================
+        5. Optimize Route and Start Tracking:
+           - Starts the optimization process.
 
-TAB 1: ROUTE OPTIMIZATION:
-1. ROUTE DATA FILE (CSV):
-   • Source: Exported from EDDiscovery, EDMC, or Spansh
-   • Auto-detection of CSV files in current directory
-   • Column validation with visual indicators
-   
-2. SHIP JUMP RANGE (LY):
-   • Enter your ship's maximum jump range
-   • Used to calculate estimated jumps
-   • Supports decimal values (e.g., 72.5)
-   
-3. STARTING SYSTEM (Optional):
-   • Fix starting point for the route
-   • System must exist in CSV file
-   • Case-insensitive matching
-   
-4. CSV COLUMN STATUS:
-   • Real-time validation of required columns
-   • Visual indicators (✓/✗) for each column
-   • Automatic detection of body scanning columns
-   
-5. OPTIONAL COLUMNS SELECTION:
-   • Choose which additional columns to include in output
-   • Preserves custom data from source CSV
-   • Supports batch selection/deselection
-   
-6. OPTIMIZE ROUTE:
-   • Uses Lin-Kernighan heuristic algorithm
-   • Calculates 3D distances between systems
-   • Estimates total jumps based on ship range
-   • Creates backup files automatically
+        ---------------------------------------------------------
+        TAB 2: ROUTE TRACKING
+        ---------------------------------------------------------
+        AUTO-TRACKING:
+           - The program monitors your Elite Dangerous journal files in the background.
+           - When you perform an FSD jump, it automatically updates the system status.
 
-TAB 2: ROUTE TRACKING:
-AUTO-TRACKING SYSTEM:
-• Monitors Elite Dangerous journal files in real-time
-• Detects FSD jumps automatically
-• Supports multiple commanders
-• Cross-platform journal path detection
+        MANUAL TRACKING:
+           - Click on system names in the list to manually update their status.
 
-MANUAL TRACKING:
-• Click on system names to update status
-• Three statuses: Visited, Skipped, Unvisited
-• Visual color coding (Green/Red/Default)
-• Double click on system names for neutralization
+        3D MINI MAP:
+           - Displays your route in 3D space.
 
-3D MINI MAP:
-• Interactive 3D visualization of route
-• Zoom with mouse wheel
-• Rotate by clicking and dragging
-• Click systems on map to select them
-• Color-coded by visit status
-• Real-time highlighting
+        IN-GAME OVERLAY:
+           - Transparent overlay shows current system, bodies to scan, and next system while playing.
+           - Press Ctrl+O to toggle overlay visibility in game.
+           - Drag the title bar to move the overlay anywhere on screen.
+           - Always on top of your game window.
 
-IN-GAME OVERLAY:
-• Always-on-top transparent window
-• Shows: Current system, Next system, Progress
-• Displays bodies to scan
-• Draggable interface
-• Adjustable opacity (50-100%)
-• Three size options
+        ACTION BUTTONS:
+           - Copy Next System: Copies the next system to clipboard.
+           - Open Data Folder: Opens the data folder.
+           - Open Route in Excel: Opens the CSV file.
+           - Load from Backup: Load previous optimized routes from backup files.
+           - Start Overlay: Launch in-game overlay (Settings tab).
 
-ACTION BUTTONS:
-• Copy Next System: Copies next unvisited system to clipboard
-• Open Data Folder: Opens application data directory
-• Open in Excel: Opens optimized CSV file
-• Load from Backup: Restore previous routes
-
-STATISTICS PANEL:
-• Total route distance
-• Distance traveled
-• Average jump range
-• Progress percentage
-
-TAB 3: SETTINGS:
-OVERLAY SETTINGS:
-• Start/Stop overlay
-• Opacity control (slider)
-• Size selection (Small/Medium/Large)
-• Platform-specific optimizations
-
-JOURNAL SETTINGS:
-• Manual journal path selection
-• Auto-detection for all platforms
-• Multi-commander support
-• Commander activity detection
-• Test journal path functionality
-
-AUTO-SAVE SYSTEM:
-• Configurable intervals (1/5/10 minutes)
-• Manual save option
-• Status indicator
-• Background saving
-
-APPEARANCE:
-• Dark/Light/System theme
-• Color scheme selection
-• Real-time theme switching
-
-=========================================================
-3. ADVANCED FEATURES & TECHNICAL DETAILS
-=========================================================
-
-OPTIMIZATION ALGORITHM:
-• Algorithm: Lin-Kernighan heuristic (python-tsp library)
-• Distance calculation: 3D Euclidean distance
-• Memory optimization: Chunked processing for large datasets
-• Parallel processing support for multi-core systems
-
-PERFORMANCE TIPS:
-• For routes > 1000 systems, consider splitting CSV
-• Use SSD storage for faster file operations
-• Close other applications during optimization
-• Enable hardware acceleration in settings
-
-DATA MANAGEMENT:
-DATA FOLDER STRUCTURE:
-EDMRN_Route_Data/
-├── backups/           # Auto-backup files
-├── settings.json      # Application settings
-├── route_status.json  # Current route status
-└── last_output.txt    # Last generated route
-
-BACKUP SYSTEM:
-• Automatic backups during optimization
-• Manual backup creation
-• Version tracking
-• Configurable retention policy
-
-JOURNAL MONITORING:
-• Real-time file tailing
-• Multi-file detection
-• Commander switching
-• Error recovery
-• Performance monitoring
-
-CUSTOMIZATION:
-THEME SYSTEM:
-• Three appearance modes
-• Multiple color schemes
-• Real-time switching
-• Persistent settings
-
-CONFIGURATION FILES:
-• settings.json: All application settings
-• Supports manual editing
-• JSON format
-• Version migration
-
-=========================================================
-4. TROUBLESHOOTING GUIDE
-=========================================================
-
-COMMON ISSUES & SOLUTIONS:
-ISSUE: CSV file not loading
-SOLUTION:
-  1. Check file is not open in another program
-  2. Verify ".CSV" format (not Excel .xlsx)
-  3. Check required columns exist
-  4. Try opening in text editor to check encoding
-  
-ISSUE: Journal not auto-tracking
-SOLUTION:
-  1. Ensure Elite Dangerous is running
-  2. Check journal logging is enabled in game settings
-  3. Verify correct commander is selected
-  4. Test journal path in Settings tab
-  5. Restart EDMRN after changing commander
-  
-ISSUE: Overlay not working
-SOLUTION:
-  1. Set Elite Dangerous to Borderless Window mode
-  2. Check overlay is started in Settings tab
-  3. Adjust opacity if too transparent
-  4. Try different size settings
-  5. Restart overlay if unresponsive
-  
-ISSUE: Memory/performance issues
-SOLUTION:
-  1. Split large CSV files (>5000 systems)
-  2. Close other applications
-  3. Disable 3D map for very large routes
-  4. Increase virtual memory (Windows)
-  5. Use 64-bit Python if available
-  
-ISSUE: 3D Map not displaying
-SOLUTION:
-  1. Install matplotlib: pip install matplotlib
-  2. Check numpy installation
-  3. Update graphics drivers
-  4. Try software rendering mode
-  5. Disable hardware acceleration in settings
-
-ERROR MESSAGES:
-"CSV missing required columns"
-• Verify CSV has 'System Name', 'Body Name', 'X', 'Y', 'Z' columns
-• Check column names exactly match (case-sensitive)
-• Open CSV in text editor to verify
-
-"Journal path not found"
-• Run Elite Dangerous at least once
-• Check game installation directory
-• Use manual path selection in Settings
-• Verify file permissions
-
-"Optimization failed"
-• Reduce number of systems in CSV
-• Check for invalid coordinates
-• Ensure sufficient disk space
-• Restart application
-
-"Overlay not available"
-• Install required dependencies
-• Check platform compatibility
-• Update CustomTkinter
-• Run as administrator (Windows)
-
-PERFORMANCE OPTIMIZATION:
-FOR LARGE DATASETS:
-• Pre-filter systems before importing
-• Use region-based CSV files
-• Disable real-time 3D rendering
-• Increase autosave interval
-
-MEMORY MANAGEMENT:
-• Regular application restarts
-• Use system cleanup button
-• Monitor memory usage in task manager
-• Adjust Python garbage collection
-
-STARTUP OPTIMIZATION:
-• Clear old backup files
-• Compact CSV files
-• Disable unnecessary startup features
-• Use SSD storage
-
-SUPPORT & COMMUNITY:
-OFFICIAL CHANNELS:
-• GitHub: https://github.com/NinurtaKalhu/EDMRN
-• Discord: https://discord.gg/DWvCEXH7ae
-• Email: ninurtakalhu@gmail.com
-
-REPORTING ISSUES:
-When reporting bugs, include:
-1. EDMRN version number
-2. Operating system and version
-3. Python version
-4. Error message (screenshot if possible)
-5. Steps to reproduce
-
-COMMUNITY RESOURCES:
-• Sample CSV files
-• User guides
-
-FAQ:
-
-Q: Can I import from EDSM?
-A: Yes, export from EDSM as CSV and ensure proper column names.
-
-Q: Is my data secure?
-A: All data stored locally. No internet transmission of data.
-
-Q: How often should I backup?
-A: After major route changes. Auto-backup runs after each optimization.
-
-Q: Can I run multiple instances?
-A: Not recommended. Use one instance to avoid journal conflicts.
-
-Q: Does it support fleet carriers?
-A: Basic support through manual tracking. No automatic carrier jump detection.
-
-Q: How to update EDMRN?
-A: Download latest release from GitHub. Settings and routes will be preserved.
-
-=========================================================
-COPYRIGHT & LICENSE (GPL 3.0)
-=========================================================
-ED Multi Route Navigation (EDMRN)
-Developed by Ninurta Kalhu
-Copyright (C) 2025 | All Rights Reserved
-
-This software is provided for Elite Dangerous commanders
-to optimize exploration routes. Not affiliated with
-Frontier Developments.
-
-For updates, bug reports, and community support,
-visit our GitHub repository or Discord server.
-
-Happy exploring, Commander!
-=========================================================
+        ---------------------------------------------------------
+        TAB 3: SETTINGS
+        ---------------------------------------------------------
+        - In-Game Overlay: Start/stop the overlay and check status
+        - Journal Settings: Configure Elite Dangerous journal monitoring
+        - Multi-CMDR Select: Switch between different commanders automatically
+        - Appearance: Change theme and color scheme
+        - Auto-save: Configure automatic saving of route progress
+        - Advanced: Additional application settings
         """
         self.manual_textbox.insert("end", manual_text)
         self.manual_textbox.configure(state="disabled", font=ctk.CTkFont(family="Consolas", size=11))
