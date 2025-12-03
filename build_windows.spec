@@ -6,7 +6,7 @@ from pathlib import Path
 
 block_cipher = None
 
-# Ana dizin - güncellenmiş versiyon
+# Ana dizin - DÜZGÜN VERSİYON
 base_dir = Path(os.getcwd()).absolute()
 
 # Data dosyaları
@@ -92,13 +92,17 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='ED_Multi_Route_Navigation_v2.3',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -106,16 +110,4 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='explorer_icon.ico',
-)
-
-# COLLECT bölümü (onefile için gerekli)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='ED_Multi_Route_Navigation_v2.3'
 )
