@@ -219,7 +219,7 @@ STATUS_UNVISITED = 'unvisited'
 
 APP_NAME_SHORT = "EDMRN"
 APP_NAME_FULL = "ED Multi Route Navigation"
-CURRENT_VERSION = "2.6.1"
+CURRENT_VERSION = "2.3.0"
 
 GITHUB_LINK = "https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer"
 DISCORD_LINK = "https://discord.gg/DWvCEXH7ae"
@@ -654,7 +654,7 @@ class ManualWindow(ctk.CTkToplevel):
     def _insert_manual_content(self):
         manual_text = """
         =========================================================
-        ED Multi Route Navigation (EDMRN) v2.6.1 - User Manual
+        ED Multi Route Navigation (EDMRN) v2.3.0 - User Manual
         =========================================================
 
         EDMRN optimizes your multi-system exploration/data collection routes in Elite Dangerous for shortest distance (TSP) and provides in-game tracking.
