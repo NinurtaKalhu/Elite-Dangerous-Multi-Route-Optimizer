@@ -1,4 +1,4 @@
-### 🚧🚧🚧Attention!Repo is currently under development for a new version; please use the v2.2 exe file. The release of v2.3 has been delayed due to some issues.🚧🚧🚧
+### 🚧🚧🚧Attention! Repo is currently under development for a new version; please use the v2.2 exe file. The release of v2.3 has been delayed due to some issues.🚧🚧🚧
 
 ## 📜 License
 
