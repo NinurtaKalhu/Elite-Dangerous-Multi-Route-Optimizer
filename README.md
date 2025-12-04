@@ -1,3 +1,5 @@
+###🚧🚧🚧Attention! Repo is currently under development for the new version; please use the v2.2 exe file.🚧🚧🚧
+
 ## 📜 License
 
 **This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only)**
