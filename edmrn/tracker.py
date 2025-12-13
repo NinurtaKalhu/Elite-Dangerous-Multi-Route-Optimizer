@@ -1,0 +1,228 @@
+import threading
+import json
+import math
+from pathlib import Path
+from edmrn.logger import get_logger
+from edmrn.config import Paths
+from edmrn.utils import atomic_write_json
+
+logger = get_logger('Tracker')
+
+STATUS_VISITED = 'visited'
+STATUS_SKIPPED = 'skipped'
+STATUS_UNVISITED = 'unvisited'
+
+COLOR_VISITED = '#4CAF50'
+COLOR_SKIPPED = '#E53935'
+COLOR_DEFAULT_TEXT = ('#DCE4EE', '#212121')
+
+class ThreadSafeRouteManager:
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._route = []
+        self._route_names = set()
+    
+    def __enter__(self):
+        self._lock.acquire()
+        return self._route
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._lock.release()
+    
+    def load_route(self, route_data):
+        with self._lock:
+            self._route = route_data.copy()
+            self._route_names = {item.get('name', '') for item in route_data}
+    
+    def get_route(self):
+        with self._lock:
+            return self._route.copy()
+    
+    def update_system_status(self, system_name, status):
+        with self._lock:
+            for item in self._route:
+                if item.get('name') == system_name:
+                    if item.get('status') != status:
+                        item['status'] = status
+                        return True
+                    return False
+            return False
+    
+    def contains_system(self, system_name):
+        with self._lock:
+            return system_name in self._route_names
+    
+    def clear(self):
+        with self._lock:
+            self._route.clear()
+            self._route_names.clear()
+
+class RouteTracker:
+    def __init__(self, route_manager):
+        self.route_manager = route_manager
+        self.total_distance_ly = 0.0
+        self.traveled_distance_ly = 0.0
+        self.average_jump_range = 70.0
+    
+    def load_route_status(self):
+        route_status_file = Paths.get_route_status_file()
+        if Path(route_status_file).exists():
+            try:
+                with open(route_status_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                pass
+        return []
+    
+    def save_route_status(self, route_list):
+        route_status_file = Paths.get_route_status_file()
+        return atomic_write_json(route_status_file, route_list)
+    
+    def get_next_unvisited_system(self):
+        with self.route_manager as route:
+            for item in route:
+                if item.get('status') == STATUS_UNVISITED:
+                    return item.get('name')
+            return None
+    
+    def update_route_statistics(self, ship_jump_range=70.0):
+        route_data = self.route_manager.get_route()
+        
+        if not route_data or len(route_data) < 2:
+            self.total_distance_ly = 0.0
+            self.traveled_distance_ly = 0.0
+            self.average_jump_range = ship_jump_range
+            return
+
+        total_distance = 0.0
+        for i in range(len(route_data) - 1):
+            coords1 = route_data[i]['coords']
+            coords2 = route_data[i + 1]['coords']
+            distance = math.sqrt(
+                (coords2[0] - coords1[0])**2 + 
+                (coords2[1] - coords1[1])**2 + 
+                (coords2[2] - coords1[2])**2
+            )
+            total_distance += distance
+        
+        self.total_distance_ly = total_distance
+
+        traveled_distance = 0.0
+        last_visited_index = -1
+        
+        for i, item in enumerate(route_data):
+            if item.get('status') == STATUS_VISITED:
+                last_visited_index = i
+        
+        if last_visited_index < 0:
+            self.traveled_distance_ly = 0.0
+        else:
+            for i in range(last_visited_index):
+                coords1 = route_data[i]['coords']
+                coords2 = route_data[i + 1]['coords']
+                distance = math.sqrt(
+                    (coords2[0] - coords1[0])**2 + 
+                    (coords2[1] - coords1[1])**2 + 
+                    (coords2[2] - coords1[2])**2
+                )
+                traveled_distance += distance
+            
+            self.traveled_distance_ly = traveled_distance
+
+        total_jumps = 0
+        for i in range(len(route_data) - 1):
+            coords1 = route_data[i]['coords']
+            coords2 = route_data[i + 1]['coords']
+            distance = math.sqrt(
+                (coords2[0] - coords1[0])**2 + 
+                (coords2[1] - coords1[1])**2 + 
+                (coords2[2] - coords1[2])**2
+            )
+            jumps_for_segment = math.ceil(distance / ship_jump_range)
+            total_jumps += jumps_for_segment
+        
+        if total_jumps > 0:
+            self.average_jump_range = total_distance / total_jumps
+        else:
+            self.average_jump_range = ship_jump_range
+    
+    def get_progress_info(self):
+        route_data = self.route_manager.get_route()
+        if not route_data:
+            return "No route loaded"
+        
+        visited_count = sum(1 for item in route_data if item.get('status') == STATUS_VISITED)
+        skipped_count = sum(1 for item in route_data if item.get('status') == STATUS_SKIPPED)
+        total_count = len(route_data)
+        unvisited_count = total_count - visited_count - skipped_count
+        
+        return f"Total: {total_count} | Visited: {visited_count} | Skipped: {skipped_count} | Remaining: {unvisited_count}"
+    
+    def get_overlay_data(self, app_instance):
+        if not app_instance:
+            return None
+        
+        try:
+            route_data = self.route_manager.get_route()
+            if not route_data:
+                return {
+                    'current_system': 'No Route',
+                    'current_status': 'READY',
+                    'bodies_to_scan': ['Load route...'],
+                    'next_system': 'N/A',
+                    'progress': '0/0 (0%)',
+                    'total_distance': '0.00 LY',
+                    'traveled_distance': '0.00 LY'
+                }
+            
+            current_system = None
+            current_status = 'unvisited'
+            
+            visited = [item for item in route_data if item.get('status') == STATUS_VISITED]
+            unvisited = [item for item in route_data if item.get('status') == STATUS_UNVISITED]
+            
+            if visited:
+                current_system = visited[-1]
+                current_status = 'visited'
+            elif unvisited:
+                current_system = unvisited[0]
+            else:
+                current_system = route_data[0] if route_data else None
+            
+            next_system = "Complete"
+            if current_system and route_data:
+                current_index = next((i for i, item in enumerate(route_data) 
+                                   if item['name'] == current_system['name']), -1)
+                if current_index < len(route_data) - 1:
+                    next_system = route_data[current_index + 1]['name']
+            
+            total = len(route_data)
+            visited_count = len(visited)
+            progress_pct = int((visited_count / total) * 100) if total > 0 else 0
+            progress_text = f"{visited_count}/{total} ({progress_pct}%)"
+            
+            bodies = []
+            if current_system:
+                bodies = current_system.get('bodies_to_scan', [])
+                simplified = []
+                prefix = f"{current_system['name']} "
+                for body in bodies:
+                    if isinstance(body, str) and body.startswith(prefix):
+                        simplified.append(body[len(prefix):])
+                    else:
+                        simplified.append(str(body))
+                bodies = simplified
+            
+            return {
+                'current_system': current_system['name'] if current_system else 'Unknown',
+                'current_status': current_status,
+                'bodies_to_scan': bodies if bodies else ['No bodies to scan'],
+                'next_system': next_system,
+                'progress': progress_text,
+                'total_distance': f"{self.total_distance_ly:.2f} LY",
+                'traveled_distance': f"{self.traveled_distance_ly:.2f} LY"
+            }
+                
+        except Exception as e:
+            logger.error(f"Overlay data error: {e}")
+            return None
