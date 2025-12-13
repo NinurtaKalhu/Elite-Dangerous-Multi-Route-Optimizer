@@ -44,7 +44,7 @@ class ManualWindow(ctk.CTkToplevel):
         =========================================================
 
         EDMRN optimizes your multi-system exploration/data collection routes 
-        in Elite Dangerous for shortest distance (TSP algorithm) and provides 
+        in Elite Dangerous for shortest distance and provides 
         in-game tracking with overlay.
 
         -----------------------------------------------------------------------
@@ -52,8 +52,6 @@ class ManualWindow(ctk.CTkToplevel):
         -----------------------------------------------------------------------
         1. ROUTE DATA FILE (CSV):
            • Source: Exported system list from Elite Dangerous tools:
-             - EDDiscovery: Market → Export to CSV
-             - EDMC: With appropriate plugins
              - Spansh.co.uk: Galaxy plotter exports
            
            • REQUIRED COLUMNS:
@@ -247,13 +245,6 @@ class ManualWindow(ctk.CTkToplevel):
         • Discord: https://discord.gg/DWvCEXH7ae
         • Email: ninurtakalhu@gmail.com
         • Ko-fi: https://ko-fi.com/ninurtakalhu
-
-        -----------------------------------------------------------------------
-        VERSION HISTORY
-        -----------------------------------------------------------------------
-        v2.3.0 - Complete modular rewrite with enhanced features
-        v2.2.0 - Added 3D map and overlay
-        v2.1.0 - Initial public release with basic optimization
 
         -----------------------------------------------------------------------
         CREDITS
