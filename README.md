@@ -170,7 +170,9 @@ EDMRN_v2.3.0/
 ├── requirements.txt      # Python dependencies
 ├── run.py               # Application entry point
 ├── main.py              # Main launcher
+├── build.bat            # Run for building .exe
 └── README.md            # This file
+
 ```
 
 ## 🎯 **Keyboard Shortcuts**
