@@ -91,7 +91,7 @@ class RouteOptimizer:
     def _distance_matrix_vectorized_optimized(self, coords: np.ndarray) -> np.ndarray:
         n = coords.shape[0]
         
-        required_memory = (n * n * 4 * 4) / (1024 ** 3)
+        required_memory = (n * n * 4 * 2) / (1024 ** 3)
         if required_memory > 2.0:
             logger.warning(f"Vectorized method would use {required_memory:.2f}GB, using chunked instead")
             return self._distance_matrix_chunked_optimized(coords)
@@ -108,10 +108,8 @@ class RouteOptimizer:
         dist_sq += dy * dy
         dist_sq += dz * dz
         
-        # dist = np.sqrt(dist_sq, out=dist_sq)
-       np.sqrt(dist_sq, out=dist_sq)
-       dist = dist_sq  # explicit
-
+        dist = np.sqrt(dist_sq, out=dist_sq)
+        
         np.fill_diagonal(dist, 0.0)
         
         return dist.astype(np.float32)
