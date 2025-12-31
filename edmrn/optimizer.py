@@ -48,7 +48,6 @@ class RouteOptimizer:
     
     
     def calculate_distance_matrix(self, coords: np.ndarray, method: str = 'auto') -> np.ndarray:
-
         n = len(coords)
         logger.info(f"Calculating distance matrix for {n} points...")
         
@@ -91,11 +90,11 @@ class RouteOptimizer:
     def _distance_matrix_vectorized_optimized(self, coords: np.ndarray) -> np.ndarray:
         n = coords.shape[0]
         
-        required_memory = (n * n * 4 * 2) / (1024 ** 3)
-        if required_memory > 2.0:
-            logger.warning(f"Vectorized method would use {required_memory:.2f}GB, using chunked instead")
+        required_memory_gb = (n * n * 4) / (1024 ** 3)
+        if required_memory_gb > 2.0:
+            logger.warning(f"Vectorized method would use ~{required_memory_gb:.2f} GB RAM, falling back to chunked method")
             return self._distance_matrix_chunked_optimized(coords)
-
+        
         x = coords[:, 0:1]
         y = coords[:, 1:2]
         z = coords[:, 2:3]
@@ -115,7 +114,6 @@ class RouteOptimizer:
         return dist.astype(np.float32)
     
     def _distance_matrix_chunked_optimized(self, coords: np.ndarray, chunk_size: int = None) -> np.ndarray:
-
         n = coords.shape[0]
         
         if chunk_size is None:
@@ -152,6 +150,7 @@ class RouteOptimizer:
         np.fill_diagonal(dist, 0.0)
         return dist
     
+    
     def _distance_matrix_simple(self, coords: np.ndarray) -> np.ndarray:
         n = coords.shape[0]
         dist = np.zeros((n, n), dtype=np.float32)
@@ -171,7 +170,6 @@ class RouteOptimizer:
     
     
     def calculate_jumps(self, distances: np.ndarray, jump_range: float) -> int:
-
         if len(distances) == 0:
             return 0
         
@@ -185,7 +183,6 @@ class RouteOptimizer:
     
     
     def check_csv_columns(self, file_path: str) -> Tuple[Dict[str, bool], List[str]]:
-
         try:
             df = pd.read_csv(file_path, nrows=1)
             
@@ -235,10 +232,9 @@ class RouteOptimizer:
         return grouped_df
     
     
-    def optimize_route(self, csv_path: str, jump_range: float, 
-                      starting_system_name: str = '', 
+    def optimize_route(self, csv_path: str, jump_range: float,
+                      starting_system_name: str = '',
                       existing_status: Dict[str, str] = None) -> Dict[str, Any]:
-
         self._reset_performance_stats()
         total_start_time = time.time()
         
@@ -248,7 +244,6 @@ class RouteOptimizer:
             
             if jump_range <= 0:
                 raise ValueError(f"Jump range must be positive, got {jump_range}")
-
             logger.info(f"Loading CSV: {csv_path}")
             df = pd.read_csv(csv_path)
             
@@ -368,9 +363,9 @@ class RouteOptimizer:
             self._performance_stats['processing_time'] = total_time
             
             logger.info(f"Optimization completed in {total_time:.2f} seconds")
-            logger.info(f"  - Distance matrix: {self._performance_stats['distance_matrix_time']:.2f}s")
-            logger.info(f"  - TSP: {self._performance_stats['tsp_time']:.2f}s")
-            logger.info(f"  - Total: {total_time:.2f}s")
+            logger.info(f" - Distance matrix: {self._performance_stats['distance_matrix_time']:.2f}s")
+            logger.info(f" - TSP: {self._performance_stats['tsp_time']:.2f}s")
+            logger.info(f" - Total: {total_time:.2f}s")
             
             return {
                 'success': True,
@@ -404,7 +399,6 @@ class RouteOptimizer:
     
     
     def estimate_memory_usage(self, n_points: int, dtype: str = 'float32') -> float:
-
         bytes_per_element = 4 if dtype == 'float32' else 8
         total_elements = n_points * n_points
         memory_bytes = total_elements * bytes_per_element
@@ -421,7 +415,6 @@ class RouteOptimizer:
             return 'chunked'
     
     def validate_coordinates(self, coords: np.ndarray) -> bool:
-
         if not isinstance(coords, np.ndarray):
             return False
         
@@ -434,7 +427,7 @@ class RouteOptimizer:
         return True
 
 
-def quick_optimize(csv_path: str, jump_range: float = 70.0, 
+def quick_optimize(csv_path: str, jump_range: float = 70.0,
                    starting_system: str = '', method: str = 'auto') -> Dict[str, Any]:
     optimizer = RouteOptimizer()
     return optimizer.optimize_route(csv_path, jump_range, starting_system)
@@ -452,10 +445,10 @@ if __name__ == "__main__":
         
         if result['success']:
             print(f"✓ Optimization successful!")
-            print(f"  Systems: {result['num_systems']}")
-            print(f"  Distance: {result['total_distance']:.2f} LY")
-            print(f"  Jumps: {result['total_jumps']}")
-            print(f"  Output: {result['output_file']}")
+            print(f" Systems: {result['num_systems']}")
+            print(f" Distance: {result['total_distance']:.2f} LY")
+            print(f" Jumps: {result['total_jumps']}")
+            print(f" Output: {result['output_file']}")
         else:
             print(f"✗ Optimization failed: {result['error']}")
     else:
