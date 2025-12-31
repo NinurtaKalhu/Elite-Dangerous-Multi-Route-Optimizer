@@ -40,7 +40,7 @@ class ManualWindow(ctk.CTkToplevel):
     def _insert_manual_content(self):
         manual_text = """
         =========================================================
-        ED Multi Route Navigation (EDMRN) v2.3.0 - User Manual
+        ED Multi Route Navigation (EDMRN) v2.3.1 - User Manual
         =========================================================
 
         EDMRN optimizes your multi-system exploration/data collection routes 
