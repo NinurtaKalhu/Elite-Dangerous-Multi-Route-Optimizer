@@ -1,5 +1,5 @@
 @echo off
-echo Building EDMRN v2.3.0...
+echo Building EDMRN v2.3.1...
 
 python -m venv venv
 call venv\Scripts\activate.bat
