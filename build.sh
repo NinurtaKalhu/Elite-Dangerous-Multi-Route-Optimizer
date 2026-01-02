@@ -1,4 +1,4 @@
-echo "Building EDMRN v2.3.0..."
+echo "Building EDMRN v2.3.1..."
 
 python3 -m venv venv
 source venv/bin/activate
