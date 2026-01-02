@@ -1,4 +1,3 @@
-# EDMRN v2.3.0 - Requirements
 customtkinter>=5.2.0
 numpy>=1.24.0
 pandas>=2.0.0
