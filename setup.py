@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="edmrn",
-    version="2.3.0",
+    version="2.3.1",
     author="Ninurta Kalhu",
     author_email="ninurtakalhu@gmail.com",
     description="ED Multi Route Navigation - Elite Dangerous route optimization and tracking tool",
