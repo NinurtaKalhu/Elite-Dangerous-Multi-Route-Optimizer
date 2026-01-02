@@ -104,7 +104,7 @@ class EDMRN_App:
     
     def _create_root_window(self):
         self.root = ctk.CTk()
-        self.root.title(f"ED Multi Route Navigation (EDMRN) v2.3.0")
+        self.root.title(f"ED Multi Route Navigation (EDMRN) v2.3.1")
         self.root.geometry("1100x800")
         self.root.minsize(1000, 700)
         try:
