@@ -4,7 +4,6 @@ import json
 import pandas as pd
 import subprocess
 import webbrowser
-import traceback
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from datetime import datetime
@@ -39,7 +38,7 @@ class FileOperations:
     def open_app_data_folder(self):
         try:
             path = Paths.get_app_data_dir()
-            Path(path).mkdir(exist_ok=True)
+            Path(path).mkdir(parents=True, exist_ok=True)
             if os.name == 'nt':
                 os.startfile(path)
             elif sys.platform == 'darwin':
@@ -56,7 +55,8 @@ class FileOperations:
                 backup_path = Path(self.app.current_backup_folder)
                 csv_files = list(backup_path.glob("*.csv"))
                 if csv_files:
-                    latest_file = csv_files[0]
+                    # latest_file = csv_files[0]
+                    latest_file = max(csv_files, key=lambda x: x.stat().st_mtime)
                     self._open_file(latest_file)
                     return
             backup_dir = Path(Paths.get_backup_folder())
