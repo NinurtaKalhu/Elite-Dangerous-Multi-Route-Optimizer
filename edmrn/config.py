@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 from dataclasses import dataclass, asdict
-
 @dataclass
 class AppConfig:
     appearance_mode: str = 'Dark'
@@ -12,7 +11,9 @@ class AppConfig:
     journal_path: str = ''
     selected_commander: str = 'Auto'
     autosave_interval: str = '5 minutes'
-    
+    ship_jump_range: str = '70.0'
+    current_theme: str = 'elite_dangerous'
+    window_geometry: str = '1100x800+100+100'
     @classmethod
     def get_app_data_path(cls):
         try:
@@ -25,12 +26,10 @@ class AppConfig:
             return str(app_data)
         except Exception:
             return str(Path.cwd() / "EDMRN_Route_Data")
-    
     @classmethod
     def get_settings_file(cls):
         app_data = cls.get_app_data_path()
         return str(Path(app_data) / 'settings.json')
-    
     @classmethod
     def load(cls):
         settings_file = cls.get_settings_file()
@@ -42,7 +41,6 @@ class AppConfig:
             except Exception:
                 pass
         return cls()
-    
     def save(self):
         settings_file = self.get_settings_file()
         try:
@@ -52,26 +50,23 @@ class AppConfig:
             return True
         except Exception:
             return False
-
 class Paths:
     @staticmethod
     def get_app_data_dir():
         return AppConfig.get_app_data_path()
-    
     @staticmethod
     def get_backup_folder():
         backup_dir = Path(AppConfig.get_app_data_path()) / 'backups'
-        backup_dir.mkdir(exist_ok=True)
+        backup_dir.mkdir(parents=True, exist_ok=True)
         return str(backup_dir)
-    
     @staticmethod
-    def get_route_status_file():
-        return str(Path(AppConfig.get_app_data_path()) / 'route_status.json')
-    
+    def get_backup_subfolder(timestamp_str: str):
+        subfolder = Path(Paths.get_backup_folder()) / timestamp_str
+        subfolder.mkdir(parents=True, exist_ok=True)
+        return str(subfolder)
     @staticmethod
     def get_last_csv_file():
         return str(Path(AppConfig.get_app_data_path()) / 'last_output.txt')
-    
     @staticmethod
     def get_assets_dir():
         assets_dir = Path.cwd() / 'assets'

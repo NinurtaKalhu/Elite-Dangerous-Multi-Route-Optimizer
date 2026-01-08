@@ -1,12 +1,10 @@
 from setuptools import setup, find_packages
 import os
-
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
-
 setup(
     name="edmrn",
-    version="2.3.1",
+    version="3.0",
     author="Ninurta Kalhu",
     author_email="ninurtakalhu@gmail.com",
     description="ED Multi Route Navigation - Elite Dangerous route optimization and tracking tool",
@@ -16,13 +14,14 @@ setup(
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU Affero General Public License v3",
         "Operating System :: OS Independent",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: End Users/Desktop",
         "Topic :: Games/Entertainment",
     ],
-    python_requires=">=3.8",
+    license="AGPL-3.0-only",
+    python_requires=">=3.13",
     install_requires=[
         "customtkinter>=5.2.0",
         "numpy>=1.24.0",
@@ -41,6 +40,10 @@ setup(
     },
     include_package_data=True,
     package_data={
-        "edmrn": ["assets/*"],
+        "edmrn": [
+            "assets/*",
+            "backgrounds/*",
+            "themes/*.json",
+        ],
     },
 )
