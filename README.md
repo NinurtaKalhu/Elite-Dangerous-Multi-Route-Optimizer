@@ -91,23 +91,26 @@ python run.py
 ## 📖 Quick Start Guide
 
 ### Step 1: Export Your Route
-1. Use EDDiscovery, EDMC, or Spansh.co.uk to create your system list
+1. Use Spansh.co.uk to create your system list
 2. Export as CSV with columns: `System Name`, `X`, `Y`, `Z`
 3. Optional: Include `Body Name` for biological/geological signals
 
 ### Step 2: Optimize Route
 1. **Tab 1: Route Optimization**
    - Select your CSV file (Browse button)
-   - Enter ship jump range (e.g., 70.0 LY)
+   - Enter ship jump range (e.g., 75.23 LY)
    - Optional: Set starting system
    - Click "Optimize Route and Start Tracking"
 
 ### Step 3: Track Progress
-1. **Tab 2: Route Tracking**
+1. **Tab 3: Route Tracking**
    - 3D map automatically displays your route
    - Systems update automatically via journal monitoring
    - Click systems to manually update status
    - Use buttons: Copy Next, Data Folder, Open Excel, Load Backup
+
+2. **Tab 2: Neutron Highway**
+   - Just click to 'Calculate route' button for automatic calculate neutron route plotter.
 
 ### Step 4: Use In-Game Overlay
 1. **Tab 3: Settings → Overlay**
@@ -166,7 +169,7 @@ python run.py
 
 ### 🎨 Appearance
 • 11 Themes: Elite Dangerous PowerPlay faction colors
-• Real-time theme switching with automatic restart
+• Theme switching with restart
 • Color tone generation from faction colors
 • Professional dark UI aesthetics
 
@@ -183,24 +186,22 @@ EDMRN_v3.0/
 │   ├── minimap.py             # 3D visualization module
 │   ├── overlay.py             # In-game overlay system
 │   ├── journal.py             # Journal monitoring
-│   ├── debug.py               # Debug and error tracking
-│   ├── debug_gui.py           # Debug console GUI
-│   ├── config.py              # Configuration management
+│   ├── tracking.py
 │   ├── logger.py              # Logging system
-│   ├── backup.py              # Backup management (RESTRUCTURED)
+│   ├── backup.py              # Backup management
 │   ├── autosave.py            # Auto-save functionality
 │   ├── platform_detector.py   # Platform detection
 │   ├── exceptions.py          # Custom exceptions
 │   ├── utils.py               # Utility functions
 │   ├── gui.py                 # GUI components
-│   ├── theme_manager.py       # Theme switching and management (NEW)
-│   ├── route_management.py    # Route handling and UI (NEW)
-│   ├── settings_manager.py    # Settings and configuration (NEW)
-│   ├── neutron_manager.py     # Neutron highway routing (NEW)
-│   ├── journal_operations.py  # Journal file operations (NEW)
-│   ├── file_operations.py     # File I/O operations (NEW)
-│   ├── neutron.py             # Neutron routing engine (NEW)
-│   ├── themes/                # JSON-based theme definitions (NEW)
+│   ├── theme_manager.py       # Theme switching and management
+│   ├── route_management.py    # Route handling and UI
+│   ├── settings_manager.py    # Settings and configuration
+│   ├── neutron_manager.py     # Neutron highway routing
+│   ├── journal_operations.py  # Journal file operations
+│   ├── file_operations.py     # File I/O operations
+│   ├── neutron.py             # Neutron routing engine
+│   ├── themes/                # JSON-based theme definitions
 │   │   ├── elite_dangerous.json
 │   │   ├── aisling_duval.json
 │   │   ├── archon_delaine.json
@@ -212,12 +213,12 @@ EDMRN_v3.0/
 │   │   ├── pranav_antal.json
 │   │   ├── zachary_hudson.json
 │   │   └── zemina_torval.json
-│   ├── backgrounds/           # Background assets
+│   |
 │   └── __init__.py            # Package initialization
 ├── assets/                     # Application assets
 │   ├── explorer_icon.ico
 │   └── explorer_icon.png
-├── CHANGELOG.md               # Detailed changelog (NEW)
+|
 ├── requirements.txt           # Python dependencies
 ├── version_info.txt           # Version information
 ├── run.py                     # Application entry point
@@ -225,40 +226,6 @@ EDMRN_v3.0/
 ├── build.bat                  # Build Windows .exe
 └── README.md                  # This file
 ```
-
----
-
-## 🎯 Keyboard Shortcuts
-
-| Shortcut | Action | Context |
-|----------|--------|---------|
-| Ctrl+D or F12 | Open Debug Console | Anywhere in EDMRN |
-| Ctrl+O | Toggle In-Game Overlay | Elite Dangerous (with overlay active) |
-| Mouse Wheel | Zoom 3D Map | Route Tracking tab |
-| Left Click + Drag | Rotate 3D Map | Route Tracking tab |
-
----
-
-## 🔧 Troubleshooting
-
-### Common Issues & Solutions
-
-| Issue | Solution |
-|-------|----------|
-| CSV not loading | Ensure columns: System Name, X, Y, Z |
-| Journal not detected | Check Settings → Journal → Test Path |
-| Overlay not visible | Press Ctrl+O, check Elite is Borderless Window |
-| 3D map blank | Install matplotlib: `pip install matplotlib` |
-| Performance issues | Reduce 3D map detail, close other applications |
-| Theme not applying | Check if app restarted automatically |
-| Old backups not loading | May need migration due to v3.0 restructuring |
-
-### Debug Mode
-Press Ctrl+D or F12 anytime to open the debug console:
-• View real-time errors and warnings
-• Check system performance
-• Export debug data for support
-• Monitor application health
 
 ---
 
@@ -335,9 +302,6 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 ### Theme System
 *11 PowerPlay faction themes with automatic restart*
 
-### Debug Console
-*Real-time error tracking and diagnostics*
-
 ### Settings Tab
 *Configuration and overlay management*
 
@@ -346,17 +310,12 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 ## 🚀 Recent Changes (v3.0)
 
 ### Major Architecture Redesign
-- ✅ Modular architecture with 7 extracted modules
+- ✅ Modular architecture with extracted modules
 - ✅ Complete backup system restructuring
 - ✅ Revolutionary 11-theme PowerPlay faction system
-- ✅ Smart restart mechanism for theme switching
 - ✅ Neutron highway integration
 - ✅ Overlay system redesign
 - ✅ Load backup system rewrite
-- ✅ 200+ syntax error fixes
-- ✅ Comprehensive error handling improvements
-
-**See [CHANGELOG.md](CHANGELOG.md) for complete v3.0 details!**
 
 ---
 
