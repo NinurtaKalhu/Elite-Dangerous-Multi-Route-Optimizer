@@ -55,7 +55,7 @@ The Ultimate Route Optimization & Tracking Tool for Elite Dangerous - Complete M
 
 ### 🎯 Recommended: Pre-built Executable (Windows)
 
-[CLICK HERE FOR DOWNLOAD EDMRN v3.0](https://release-assets.githubusercontent.com/github-production-release-asset/1090515171/fd654e01-61d2-4002-a322-4f2db559deb0?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-01-08T15%3A39%3A59Z&rscd=attachment%3B+filename%3DEDMRN.v3.0.exe)
+[CLICK HERE FOR DOWNLOAD EDMRN v3.0](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.0/EDMRN.v3.0.exe)
 
 **Quick Start (Windows):**
 1. Download `EDMRN_v3.0_Windows.zip` from [Releases](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/tag/v3.0)
