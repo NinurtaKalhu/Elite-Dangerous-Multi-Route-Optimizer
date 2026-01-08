@@ -221,9 +221,6 @@ EDMRN_v3.0/
 ├── assets/                     # Application assets
 │   ├── explorer_icon.ico
 │   └── explorer_icon.png
-├── Spansh/                     # Spansh router integration
-├── scripts/                    # Utility scripts
-├── tests/                      # Test suite
 ├── CHANGELOG.md               # Detailed changelog (NEW)
 ├── requirements.txt           # Python dependencies
 ├── version_info.txt           # Version information
