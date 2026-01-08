@@ -12,15 +12,12 @@ The Ultimate Route Optimization & Tracking Tool for Elite Dangerous - Complete M
 • Complete refactoring into 15+ independent modules
 • Separated concerns for maintainability
 • Thread-safe design with proper locking mechanisms
-• Enhanced error handling with debug system
 • Better performance and memory management
 
 ### 🎨 Revolutionary Theme System
 • 11 Elite Dangerous PowerPlay faction-themed color schemes
 • JSON-based CustomTkinter native themes
-• Smart restart system for seamless theme switching
 • Color tone generation algorithm
-• Zero gray areas - everything uses theme colors
 • Faction themes: Elite Dangerous, Aisling Duval, Archon Delaine, Arissa Lavigny Duval, Denton Patreus, Edmund Mahon, Felicia Winters, Li Yong Rui, Pranav Antal, Zachary Hudson, Zemina Torval
 
 ### ⚡ Backup System Restructuring
@@ -44,9 +41,8 @@ The Ultimate Route Optimization & Tracking Tool for Elite Dangerous - Complete M
 
 • 🎯 **Smart Route Optimization**: TSP-based shortest path algorithm
 • 📍 **Interactive 3D Visualization**: Real-time 3D mini-map with zoom/rotate
-• 🎮 **In-Game Overlay**: Transparent overlay showing current progress (Ctrl+O)
+• 🎮 **In-Game Overlay**: Transparent overlay showing current progress
 • 📊 **Auto Journal Monitoring**: Real-time tracking of your Elite Dangerous progress
-• 🐛 **Advanced Debug Console**: Professional error tracking and diagnostics
 • 💾 **Auto-Save & Backup**: Configurable auto-save intervals
 • 👥 **Multi-Commander Support**: Switch between commanders seamlessly
 • 🎨 **11 Themed UIs**: Elite Dangerous PowerPlay faction color schemes with smart restart
