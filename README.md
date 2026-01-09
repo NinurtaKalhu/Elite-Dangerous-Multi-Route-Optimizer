@@ -186,7 +186,7 @@ EDMRN_v3.0/
 │   ├── minimap.py             # 3D visualization module
 │   ├── overlay.py             # In-game overlay system
 │   ├── journal.py             # Journal monitoring
-│   ├── tracking.py
+│   ├── tracking.py            # Route tracking system
 │   ├── logger.py              # Logging system
 │   ├── backup.py              # Backup management
 │   ├── autosave.py            # Auto-save functionality
@@ -281,29 +281,30 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 **Ninurta Kalhu (S.C.)** - Solo Developer & Elite Dangerous Explorer
 
+• 💬 Discord: [EDMRN Community](https://discord.gg/DWvCEXH7ae)
 • 📧 Email: [ninurtakalhu@gmail.com](mailto:ninurtakalhu@gmail.com)
 • 🐦 X (Twitter): [@NinurtaKalhu](https://twitter.com/NinurtaKalhu)
-• 💻 GitHub: [@NinurtaKalhu](https://github.com/NinurtaKalhu)
-• 💬 Discord: [EDMRN Community](https://discord.gg/DWvCEXH7ae)
 
 ---
 
 ## 📸 Screenshots
 
 ### Route Optimization Tab
-*Optimizing 490-system exploration route*
-
+![Route Optimization Tab](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS1.png)
 ### Route Tracking with 3D Map
-*Interactive 3D visualization with theme colors*
-
+![Route Tracking with 3D Map](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS2.png)
+### Neutron Highway
+![Neutron Highway](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS3.png)
+### Load Backup
+![Load Backup](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS4.png)
+### Settings
+![Settings](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS5.png)
 ### In-Game Overlay
-*Transparent overlay with current system and progress tracking*
-
-### Theme System
-*11 PowerPlay faction themes with automatic restart*
-
-### Settings Tab
-*Configuration and overlay management*
+![Overlay Tracking](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS6.png) ![Overlay Neutron](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS7.png)
+### About
+![About](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS8.png)
+### User Manuel & Credits
+![User Manuel & Credits](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/screenshots/SS9.png)
 
 ---
 
