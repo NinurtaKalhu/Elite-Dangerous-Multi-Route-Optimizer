@@ -274,7 +274,7 @@ class RouteManagement:
                     self.app._start_journal_monitor()
                     self.copy_next_system_to_clipboard()
                     self.app._ensure_overlay_started("Route Tracking")
-                    self.app._log("\\nOPTIMIZATION COMPLETE")
+                    self.app._log("OPTIMIZATION COMPLETE")
                     self.app._log(f"Total Distance: {result['total_distance']:.2f} LY")
                     self.app._log(f"Estimated Jumps: {result['total_jumps']} jumps")
                     self.app._log(f"Route successfully saved to: '{output_file_path}'")
