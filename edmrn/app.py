@@ -987,7 +987,7 @@ class EDMRN_App:
         self._start_journal_monitor()
         self._copy_next_system_to_clipboard()
         self._ensure_overlay_started("Route Tracking")
-        self._log("\nOPTIMIZATION COMPLETE")
+        self._log("OPTIMIZATION COMPLETE")
         self._log(f"Total Distance: {result['total_distance']:.2f} LY")
         self._log(f"Estimated Jumps: {result['total_jumps']} jumps")
         self._log(f"Route successfully saved to: '{output_file_path}'")
