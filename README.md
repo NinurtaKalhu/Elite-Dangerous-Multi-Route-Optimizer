@@ -17,11 +17,8 @@ Complete modular architecture with professional theme system, advanced route pla
 - [System Requirements](#-system-requirements)
 - [In-Game Overlay](#-in-game-overlay-features)
 - [Settings & Configuration](#-settings--configuration)
-- [Keyboard Shortcuts](#-keyboard-shortcuts)
 - [API Credits & Attribution](#-api-credits--attribution)
-- [Troubleshooting & FAQ](#-troubleshooting--faq)
 - [Project Structure](#-project-structure)
-- [Community & Support](#-community--support)
 - [License](#-license)
 - [Developer](#-developer)
 
@@ -90,9 +87,6 @@ Complete modular architecture with professional theme system, advanced route pla
 - Real-time 3D visualization
 
 ---
-
-## 🚀 Key Features
-
 ## 🚀 Key Features
 
 ### Core Functionality
@@ -112,7 +106,7 @@ Complete modular architecture with professional theme system, advanced route pla
 - 🖥️ **GeForce Now Support** - Cloud gaming optimized with borderless mode detection
 
 ### Technical Excellence
-- 🔧 **Modular Architecture** - 15+ independent modules for maintainability
+- 🔧 **Modular Architecture** - 35+ independent modules for maintainability
 - 🔒 **Thread-Safe Design** - Proper locking mechanisms throughout
 - ⚡ **Optimized Performance** - Smart caching, debouncing, efficient memory usage
 - 🛡️ **Robust Error Handling** - Comprehensive error recovery and logging
@@ -255,23 +249,6 @@ build_edmrn.bat
 
 ---
 
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action | Context |
-|----------|--------|---------|
-| **Ctrl+O** | Toggle overlay visibility | Global (when overlay active) |
-| **Ctrl+C** | Copy next system | Route tracking tab |
-| **Ctrl+S** | Manual save | Any tab |
-| **Ctrl+B** | Open backup manager | Route tracking tab |
-| **F5** | Refresh journal status | Settings tab |
-| **Escape** | Close dropdown/dialog | Autocomplete fields |
-| **↑/↓** | Navigate suggestions | Autocomplete dropdown |
-| **Enter** | Select suggestion | Autocomplete dropdown |
-
----
-
-## 🎮 In-Game Overlay Features
-
 ## 🎮 In-Game Overlay Features
 
 ### Display Components
@@ -358,13 +335,6 @@ build_edmrn.bat
 
 EDMRN relies on these excellent community services:
 
-### EDSM - Elite Dangerous Star Map
-- **Usage**: System name autocomplete (primary source)
-- **API**: System search and coordinate data
-- **Website**: [edsm.net](https://www.edsm.net)
-- **Attribution**: Required under EDSM terms of use
-- **Rate Limiting**: Respectful API usage with caching
-
 ### Spansh - Elite Dangerous Tools
 - **Usage**: 
   - Neutron highway route calculation
@@ -378,6 +348,14 @@ EDMRN relies on these excellent community services:
   - 1-hour caching to reduce server load
   - Minimum 3-character requirement
 
+### EDSM - Elite Dangerous Star Map
+- **Usage**: System name autocomplete (primary source)
+- **API**: System search and coordinate data
+- **Website**: [edsm.net](https://www.edsm.net)
+- **Attribution**: Required under EDSM terms of use
+- **Rate Limiting**: Respectful API usage with caching
+
+
 ### API Usage Optimization
 
 EDMRN implements responsible API usage:
@@ -390,58 +368,6 @@ EDMRN implements responsible API usage:
 **Note**: EDMRN is not affiliated with EDSM or Spansh. We're grateful for their services!
 
 ---
-
-## 🔧 Troubleshooting & FAQ
-
-### Common Issues
-
-**Q: Overlay doesn't appear in-game**
-- ✅ Ensure Elite Dangerous is in Borderless Window mode
-- ✅ Check overlay is started in Settings → Overlay
-- ✅ Try pressing Ctrl+O to toggle visibility
-- ✅ Verify Windows allows overlay permission
-
-**Q: Journal not detecting my location**
-- ✅ Check journal path in Settings → Journal Monitoring
-- ✅ Click "Test Journal" to verify connection
-- ✅ Ensure Elite Dangerous is running and journal logging enabled
-- ✅ Try "Apply Changes" after setting path manually
-
-**Q: Route optimization stuck or slow**
-- ✅ Large routes (500+ systems) may take 1-2 minutes
-- ✅ Check progress bar for TSP calculation status
-- ✅ Close other heavy applications to free CPU
-- ✅ For 1000+ systems, optimization may take 5-10 minutes
-
-**Q: Autocomplete dropdown not showing suggestions**
-- ✅ Type at least 3 characters for suggestions
-- ✅ Wait 300ms after typing for debounced request
-- ✅ Check internet connection (requires EDSM/Spansh API)
-- ✅ Try typing system name more precisely
-
-**Q: CSV file won't load or optimize button disabled**
-- ✅ Verify required columns exist: System Name, X, Y, Z
-- ✅ Body Name is **optional** - not required for optimization
-- ✅ Check for duplicate column names
-- ✅ Re-save CSV in Excel/LibreOffice before importing
-- ✅ Ensure no special characters in column names
-
-**Q: "Column not found: Name" error during optimization**
-- ✅ Fixed in v3.1.0 - Body Name is now optional
-- ✅ Update to latest version if you see this error
-- ✅ Only System Name, X, Y, Z columns are required
-
-**Q: Theme not applying after selection**
-- ✅ App must restart to apply new theme
-- ✅ Click "Yes" when prompted to restart
-- ✅ Theme changes require full application reload
-- ✅ Custom themes saved in `edmrn/themes/` folder
-
-**Q: Backup restore not working**
-- ✅ Ensure backup file is valid CSV format
-- ✅ Check backup contains required columns
-- ✅ Try loading different backup from list
-- ✅ Manual restore: open backup folder and copy file
 
 ### Performance Tips
 
@@ -515,18 +441,11 @@ EDMRN_v3.1/
 │   │   └── zemina_torval.json
 │   └── __init__.py            # Package initialization & version
 │
-├── Spansh/                     # Spansh router integration
-│   └── SpanshRouter/
-│       ├── SpanshRouter.py    # Galaxy plotter UI
-│       ├── AutoCompleter.py   # System autocomplete
-│       └── PlaceHolder.py     # Input placeholder widget
-│
 ├── assets/                     # Application resources
 │   ├── explorer_icon.ico      # Windows icon
 │   └── explorer_icon.png      # Application icon
 │
 ├── screenshots/                # Documentation screenshots
-├── tests/                      # Test suite
 ├── requirements.txt           # Python dependencies
 ├── version_info.txt           # Version metadata for builds
 ├── run.py                     # Application entry point
@@ -567,10 +486,6 @@ EDMRN_v3.1/
 
 ---
 
-## 🤝 Community & Support
-
-## 🤝 Community & Support
-
 ### 📞 Get Help & Connect
 
 | Platform | Purpose | Link |
@@ -593,25 +508,7 @@ If EDMRN enhances your Elite Dangerous experience, consider supporting developme
 - ✅ Provide faster support and updates
 - ✅ Keep the project ad-free and open-source
 
-### 🤝 Contributing
-
-Contributions welcome! Here's how:
-
-1. **Report Bugs**: Open detailed GitHub issues
-2. **Suggest Features**: Share ideas on Discord or GitHub
-3. **Submit Code**: Fork, improve, and create pull requests
-4. **Improve Docs**: Help make documentation better
-5. **Share EDMRN**: Tell fellow commanders!
-
-**Development Guidelines:**
-- Follow PEP 8 style guide
-- Add tests for new features
-- Update CHANGELOG.md
-- Maintain modular architecture
-
 ---
-
-## 🛡️ Security & Privacy
 
 ## 🛡️ Security & Privacy
 
@@ -695,8 +592,6 @@ PyInstaller-built executables sometimes trigger false positives:
 
 ## 👨‍💻 Developer
 
-## 👨‍💻 Developer
-
 **Ninurta Kalhu (S.C.)** - Solo Developer & Elite Dangerous CMDR
 
 Passionate explorer building tools for the Elite Dangerous community.
@@ -708,10 +603,10 @@ Passionate explorer building tools for the Elite Dangerous community.
 - 🐙 **GitHub**: [NinurtaKalhu](https://github.com/NinurtaKalhu)
 
 ### Development Stats:
-- 📅 Project started: 2024
-- 💻 Lines of code: 15,000+
+- 📅 Project started: 2025
+- 💻 Lines of code: 20,000+
 - 🎨 Themes created: 11
-- 📦 Modules: 20+
+- 📦 Modules: 35+
 - ⭐ Made with ❤️ for Elite Dangerous
 
 ---
@@ -755,18 +650,14 @@ Passionate explorer building tools for the Elite Dangerous community.
 - ✅ Visit History System with persistent tracking
 - ✅ Smart Backup with atomic operations
 - ✅ GeForce Now overlay controls
-- ✅ Borderless mode auto-detection
-- ✅ Enhanced autocomplete with 300ms debouncing
-- ✅ API optimizations (92% reduction in calls)
+- ✅ Borderless mode (experimental)
+- ✅ Enhanced autocomplete
+- ✅ API optimizations
 - ✅ Improved dropdown UX with window tracking
 - ✅ EDSM & Spansh attribution
-
-### v3.0.2 (December 2025)
-- ✅ Galaxy Plotter integration (Spansh Exact Router)
+- ✅ Galaxy Plotter integration (Spansh Router)
 - ✅ Precise fuel consumption calculations
 - ✅ Ship build integration (Coriolis/EDSY)
-
-### v3.0.1 (December 2025)
 - ✅ Smart system autocomplete (EDSM/Spansh)
 - ✅ Real-time suggestions with caching
 - ✅ Enhanced neutron routing
@@ -778,35 +669,8 @@ Passionate explorer building tools for the Elite Dangerous community.
 - ✅ Overlay system redesign
 - ✅ Thread-safe design throughout
 
-### v2.x - Legacy
-- Basic route optimization and tracking
-- Initial overlay implementation
-- Simple journal monitoring
-
-**Full changelog**: [CHANGELOG.md](CHANGELOG.md)
-
 ---
 
-## 🎯 Roadmap & Future Plans
-
-### Planned Features (v3.2+)
-- 🔜 Custom keyboard shortcut configuration
-- 🔜 Multi-language support (community translations)
-- 🔜 Enhanced 3D map with trade route visualization
-- 🔜 Integration with Inara.cz for station data
-- 🔜 Voice command support (experimental)
-- 🔜 Mobile companion app (route sync)
-
-### Under Consideration
-- 💭 Fleet carrier route planning
-- 💭 Mining optimization module
-- 💭 Trade route calculator
-- 💭 Guardian/Thargoid site tracker
-- 💭 Exobiology data integration
-
-**Want to influence the roadmap?** Join our [Discord](https://discord.gg/DWvCEXH7ae) and share your ideas!
-
----
 
 ## 🙏 Acknowledgments
 
