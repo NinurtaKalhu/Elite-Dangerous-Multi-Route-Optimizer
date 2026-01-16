@@ -46,14 +46,6 @@ Complete modular architecture with professional theme system, advanced route pla
 - Automatic overlay launch configuration
 - Enhanced window management for streaming
 
-**System Autocomplete Enhancements**
-- 300ms intelligent debouncing reduces API load by ~92%
-- Spansh primary source (70M+ systems) with EDSM fallback
-- 1-hour smart caching system
-- Real-time suggestions with 3-character minimum
-- Fixed dropdown positioning that follows window movement
-- Improved focus management prevents unwanted popups
-
 **Nearest System Finder**
 - Auto-detection of current CMDR location from journal
 - Intelligent distance calculation to CSV systems
