@@ -616,16 +616,18 @@ Passionate explorer building tools for the Elite Dangerous community.
 ![Neutron Highway Router](screenshots/SS3.png)
 *Neutron highway routing with autocomplete*
 
+![Galaxy Plotter](screenshots/SS3a.png)
+*Galaxy Plotter with autocomplete*
+
 ![Backup Management](screenshots/SS4.png)
-*Smart backup system with restore functionality*
 
 ### Settings & Customization
 ![Settings Panel](screenshots/SS5.png)
 *Comprehensive settings and configuration*
 
 ### In-Game Experience
-![Overlay Tracking](screenshots/SS6.png) ![Overlay Neutron](screenshots/SS7.png)
-*Transparent overlay with real-time progress (Ctrl+O toggle)*
+![Overlay Tracking](screenshots/SS6.png)
+*New transparent overlay "3 TABS" showing real-time progress for "VR and "Geforce Now players"*
 
 ### About & Credits
 ![About Window](screenshots/SS8.png)
