@@ -5,8 +5,8 @@
 ### ✨ New Features
 - **🌌 Galaxy Plotter Tab**: Spansh Exact Plotter integration for precise route planning
   - Calculate exact routes with fuel consumption, neutron boosts, and FSD injections
-  - Full integration with Spansh Exact Plotter API
-  - Support for Coriolis.io ship builds (JSON) and EDSY.org (SLEF format)
+  - Full integration with Spansh Galaxy Plotter API
+  - Support for Coriolis.io ship builds (JSON) and EDSY.org (SLEF format URL)
   - Comprehensive options: cargo, reserve fuel, neutron supercharge, FSD injection, secondary star exclusion
   - Real-time progress updates during route calculation
   - Detailed route display with jump-by-jump information
@@ -16,7 +16,7 @@
   - Automatic handling of long route calculations (up to 5 minutes)
 
 - **⌨️ Smart System Name Autocomplete**: Real-time system suggestions
-  - Integrated Spansh API (primary, 70M+ systems) with EDSM v1 fallback
+  - Integrated Spansh API (primary) with EDSM v1 fallback
   - Available in Neutron Highway and Galaxy Plotter tabs
   - Dropdown suggestions appear as you type (minimum 3 characters)
   - Keyboard navigation support (Up/Down arrows, Enter to select, Escape to close)
@@ -69,18 +69,6 @@
 - Enhanced route state management
 - Improved backup/restore reliability
 - Visual refinements: fonts, text, buttons
-
-### 🐛 Bug Fixes
-- Fixed overlay resize issues
-- Fixed dropdown not closing when clicking on a suggestion
-- Fixed dropdown persisting after selection
-- Improved focus handling to prevent dropdown reopening unexpectedly
-- Improved idempotent manager initialization
-- Journal path detection made more robust
-- **Fixed CSV import error**: Body Name column is now truly optional
-- **Fixed optimization button**: Now activates with only System Name, X, Y, Z columns (Body Name optional)
-- **Fixed autocomplete dropdown positioning**: Dropdown now follows main window when moved
-- **Enhanced API optimization**: 300ms debouncing reduces API calls by ~92%
 
 ---
 
