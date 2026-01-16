@@ -331,7 +331,7 @@ EDMRN relies on these excellent community services:
 - **Usage**: 
   - Neutron highway route calculation
   - Galaxy plotter / exact router
-  - System autocomplete (fallback source)
+  - System autocomplete (primary source)
 - **API**: Route planning and system data
 - **Website**: [spansh.co.uk](https://spansh.co.uk)
 - **Attribution**: Required under Spansh terms of use
@@ -341,7 +341,7 @@ EDMRN relies on these excellent community services:
   - Minimum 3-character requirement
 
 ### EDSM - Elite Dangerous Star Map
-- **Usage**: System name autocomplete (primary source)
+- **Usage**: System name autocomplete (fallback source)
 - **API**: System search and coordinate data
 - **Website**: [edsm.net](https://www.edsm.net)
 - **Attribution**: Required under EDSM terms of use
