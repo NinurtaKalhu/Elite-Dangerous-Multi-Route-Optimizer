@@ -6,21 +6,21 @@ from scipy.spatial.distance import cdist
 from python_tsp.heuristics import solve_tsp_lin_kernighan
 from tqdm import tqdm
 import time
-import multiprocessing
 import threading
-from typing import Callable
+from typing import Callable, Dict, List, Tuple, Optional, Any
+from pathlib import Path
+from edmrn.logger import get_logger
+from edmrn.utils import atomic_write_json
+
 def _tsp_solve_wrapper(distance_matrix):
     return solve_tsp_lin_kernighan(distance_matrix, x0=None)
+
 def _tsp_proc_worker(distance_matrix, q):
     try:
         result = _tsp_solve_wrapper(distance_matrix)
         q.put(result)
     except Exception as e:
         q.put(('__ERROR__', str(e)))
-from typing import Dict, List, Tuple, Optional, Any
-from pathlib import Path
-from edmrn.logger import get_logger
-from edmrn.utils import atomic_write_json
 logger = get_logger('Optimizer')
 SYSTEM_NAME_COLUMN = 'System Name'
 X_COORD_COLUMN = 'X'
@@ -341,7 +341,16 @@ class RouteOptimizer:
             if start_system_data is not None:
                 optimized_names.insert(0, start_system_data[self.system_name_column])
             optimized_points_full = df[df[self.system_name_column].isin(optimized_names)]
-            system_bodies = df.groupby(self.system_name_column)['Name'].apply(list).to_dict()
+            
+            body_columns = ['Body Name', 'Name', 'BodyName', 'body_name']
+            body_column = next((col for col in body_columns if col in df.columns), None)
+            
+            if body_column:
+                system_bodies = df.groupby(self.system_name_column)[body_column].apply(list).to_dict()
+            else:
+                system_bodies = {}
+                logger.info("No body name column found - bodies will be empty")
+            
             optimized_points_full = optimized_points_full.drop_duplicates(self.system_name_column).copy()
             optimized_points_full['Body_Names'] = optimized_points_full[self.system_name_column].map(
                 lambda x: system_bodies.get(x, [])

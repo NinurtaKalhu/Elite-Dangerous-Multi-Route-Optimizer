@@ -6,11 +6,12 @@ import subprocess
 import webbrowser
 import traceback
 from pathlib import Path
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 from datetime import datetime
 from edmrn.config import Paths
 from edmrn.tracker import STATUS_VISITED, STATUS_UNVISITED
 from edmrn.logger import get_logger
+from edmrn.gui import SuccessDialog, ErrorDialog, InfoDialog, WarningDialog
 logger = get_logger('FileOperations')
 class FileOperations:
     def __init__(self, app):
@@ -48,7 +49,7 @@ class FileOperations:
                 subprocess.call(['xdg-open', path])
             self.app._log(f"Opened data folder: '{path}'")
         except Exception as e:
-            messagebox.showerror("Error", f"Could not open data folder:\n{Paths.get_app_data_dir()}")
+            ErrorDialog(self.app, "Error", f"Could not open data folder:\n{Paths.get_app_data_dir()}")
             self.app._log(f"ERROR opening data folder: {e}")
     def open_output_csv(self):
         try:
@@ -74,11 +75,11 @@ class FileOperations:
                 latest_old = max(old_files, key=lambda x: x.stat().st_mtime)
                 self._open_file(latest_old)
                 return
-            messagebox.showinfo("Info",
+            InfoDialog(self.app, "Info",
                 "No optimized route file found.\n\n"
                 "Please optimize a route first, then try again.")
         except Exception as e:
-            messagebox.showerror("Error", f"Could not open CSV file:\n{e}")
+            ErrorDialog(self.app, "Error", f"Could not open CSV file:\n{e}")
             self.app._log(f"ERROR opening CSV: {e}")
     def _open_file(self, file_path):
         try:
@@ -93,7 +94,7 @@ class FileOperations:
             try:
                 webbrowser.open(f"file://{file_path}")
             except Exception:
-                messagebox.showinfo("Info",
+                InfoDialog(self.app, "Info",
                     f"File: {file_path.name}\n\n"
                     f"Could not open automatically.\n"
                     f"Please open manually from:\n{file_path}")
@@ -101,7 +102,7 @@ class FileOperations:
         try:
             route_data = self.app.route_manager.get_route()
             if not route_data:
-                messagebox.showwarning("Warning", "No route to save!")
+                WarningDialog(self.app, "Warning", "No route to save!")
                 return
             visited = sum(1 for r in route_data if r['status'] == STATUS_VISITED)
             total = len(route_data)
@@ -130,18 +131,18 @@ class FileOperations:
                 json.dump(status_data, f, indent=2, ensure_ascii=False)
             self.app.current_backup_folder = str(backup_folder)
             self.app._log(f"Quick save created: {route_name}")
-            messagebox.showinfo("Quick Save",
+            InfoDialog(self.app, "Quick Save",
                 f"Route saved!\n\n"
                 f"Name: {route_name}\n"
                 f"Progress: {visited}/{total} systems")
         except Exception as e:
             self.app._log(f"Quick save error: {e}")
-            messagebox.showerror("Error", f"Quick save failed:\n{e}")
+            ErrorDialog(self.app, "Error", f"Quick save failed:\n{e}")
     def load_from_backup(self):
         try:
             backup_dir = Path(Paths.get_backup_folder())
             if not backup_dir.exists():
-                messagebox.showinfo("Info", "No backup folder found.")
+                InfoDialog(self.app, "Info", "No backup folder found.")
                 return
             backup_folders = []
             for item in backup_dir.iterdir():
@@ -150,7 +151,7 @@ class FileOperations:
                     if csv_files:
                         backup_folders.append(str(item))
             if not backup_folders:
-                messagebox.showinfo("Info",
+                InfoDialog(self.app, "Info",
                     "No backup routes found.\n\n"
                     "Backup routes will be created automatically when you optimize a new route."
                 )
@@ -163,111 +164,170 @@ class FileOperations:
             )
         except Exception as e:
             logger.error(f"Backup loading error: {e}")
-            messagebox.showerror("Error", f"Error loading backups:\n{str(e)}")
+            ErrorDialog(self.app, "Error", f"Error loading backups:\n{str(e)}")
     def load_backup_file(self, backup_folder_path):
-        try:
-            folder = Path(backup_folder_path)
-            if not folder.is_dir():
-                raise ValueError("Selected path is not a folder")
-            csv_path = folder / "optimized_route.csv"
-            status_path = folder / "route_status.json"
-            if not csv_path.exists():
-                csv_files = list(folder.glob("*.csv"))
-                if not csv_files:
-                    raise FileNotFoundError("No CSV file found in backup folder")
-                csv_path = csv_files[0]
-            self.app.current_backup_folder = backup_folder_path
-            df = pd.read_csv(csv_path)
-            system_col = None
-            for col in ['System Name', 'system_name', 'System', 'Name']:
-                if col in df.columns:
-                    system_col = col
-                    break
-            if not system_col:
-                raise ValueError("No system name column found in CSV")
-            coord_cols = {}
-            for coord, aliases in [('X', ['X', 'x', 'Coord_X']),
-                                   ('Y', ['Y', 'y', 'Coord_Y']),
-                                   ('Z', ['Z', 'z', 'Coord_Z'])]:
-                for alias in aliases:
-                    if alias in df.columns:
-                        coord_cols[coord] = alias
+        import threading
+        
+        self.app._log("Loading backup... Please wait.")
+        
+        def load_in_thread():
+            try:
+                folder = Path(backup_folder_path)
+                if not folder.is_dir():
+                    raise ValueError("Selected path is not a folder")
+                
+                self.app._log(f"Reading backup from: {folder.name}")
+                
+                csv_path = folder / "current_route.csv"
+                status_path = folder / "route_status.json"
+                if not csv_path.exists():
+                    alt_csv = folder / "optimized_route.csv"
+                    if alt_csv.exists():
+                        csv_path = alt_csv
+                    else:
+                        csv_files = list(folder.glob("*.csv"))
+                        if not csv_files:
+                            raise FileNotFoundError("No CSV file found in backup folder")
+                        csv_path = max(csv_files, key=lambda x: x.stat().st_mtime)
+                
+                self.app.current_backup_folder = backup_folder_path
+                
+                self.app._log("Parsing route data...")
+                df = pd.read_csv(csv_path)
+                system_col = None
+                for col in ['System Name', 'system_name', 'System', 'Name']:
+                    if col in df.columns:
+                        system_col = col
                         break
-            if len(coord_cols) != 3:
-                raise ValueError("Missing coordinate columns in CSV")
-            route_data = []
-            for idx, row in df.iterrows():
-                try:
-                    coords = [
-                        float(row[coord_cols['X']]),
-                        float(row[coord_cols['Y']]),
-                        float(row[coord_cols['Z']])
-                    ]
-                except (KeyError, ValueError, TypeError) as e:
-                    logger.warning(f"Skipping row {idx} due to invalid coordinates: {e}")
-                    continue
-                    
-                bodies = []
-                body_count = 0
-                if 'Body_Names' in df.columns:
-                    body_data = row.get('Body_Names', [])
-                    if isinstance(body_data, str):
-                        if body_data.startswith('[') and body_data.endswith(']'):
+                if not system_col:
+                    raise ValueError("No system name column found in CSV")
+                coord_cols = {}
+                for coord, aliases in [('X', ['X', 'x', 'Coord_X']),
+                                       ('Y', ['Y', 'y', 'Coord_Y']),
+                                       ('Z', ['Z', 'z', 'Coord_Z'])]:
+                    for alias in aliases:
+                        if alias in df.columns:
+                            coord_cols[coord] = alias
+                            break
+                if len(coord_cols) != 3:
+                    raise ValueError("Missing coordinate columns in CSV")
+                
+                self.app._log(f"Processing {len(df)} systems...")
+                
+                route_data = []
+                for idx, row in df.iterrows():
+                    try:
+                        coords = [
+                            float(row[coord_cols['X']]),
+                            float(row[coord_cols['Y']]),
+                            float(row[coord_cols['Z']])
+                        ]
+                    except (KeyError, ValueError, TypeError) as e:
+                        logger.warning(f"Skipping row {idx} due to invalid coordinates: {e}")
+                        continue
+                        
+                    bodies = []
+                    body_count = 0
+                    if 'Body_Names' in df.columns:
+                        body_data = row.get('Body_Names', [])
+                        if isinstance(body_data, str):
+                            if body_data.startswith('[') and body_data.endswith(']'):
+                                try:
+                                    import ast
+                                    bodies = ast.literal_eval(body_data)
+                                except Exception:
+                                    body_data = body_data.strip("[]").replace("'", "").replace('"', '')
+                                    bodies = [b.strip() for b in body_data.split(',')] if body_data else []
+                            else:
+                                bodies = [body_data.strip()] if body_data.strip() else []
+                        elif isinstance(body_data, list):
+                            bodies = body_data
+                    if 'Body_Count' in df.columns:
+                        try:
+                            body_count = int(row.get('Body_Count', 0))
+                        except Exception:
+                            body_count = len(bodies)
+                    if body_count == 0:
+                        body_count = len(bodies)
+                    if not bodies and 'Bodies_To_Scan_List' in df.columns:
+                        bodies_str = row.get('Bodies_To_Scan_List', '[]')
+                        if isinstance(bodies_str, str) and bodies_str.startswith('['):
                             try:
                                 import ast
-                                bodies = ast.literal_eval(body_data)
+                                bodies = ast.literal_eval(bodies_str)
                             except Exception:
-                                body_data = body_data.strip("[]").replace("'", "").replace('"', '')
-                                bodies = [b.strip() for b in body_data.split(',')] if body_data else []
-                        else:
-                            bodies = [body_data.strip()] if body_data.strip() else []
-                    elif isinstance(body_data, list):
-                        bodies = body_data
-                if 'Body_Count' in df.columns:
+                                bodies = []
+                    route_data.append({
+                        'name': str(row[system_col]),
+                        'status': STATUS_UNVISITED,
+                        'coords': coords,
+                        'bodies_to_scan': bodies,
+                        'body_count': body_count
+                    })
+                
+                self.app._log(f"Loaded {len(route_data)} systems")
+                
+                if status_path.exists():
+                    with open(status_path, "r", encoding="utf-8") as f:
+                        status_data = json.load(f)
+                    status_map = {item['name']: item['status'] for item in status_data
+                                 if 'name' in item and 'status' in item}
+                    for item in route_data:
+                        if item['name'] in status_map:
+                            item['status'] = status_map[item['name']]
+                
+                self.app._log("Loading route into tracker...")
+                
+                self.app.root.after(0, lambda: self.app.route_tracker.load_route(route_data))
+                
+                if self.app.neutron_router.load_neutron_route(backup_folder_path):
+                    self.app.root.after(0, self.app._update_neutron_navigation)
+                    self.app.root.after(0, self.app._update_neutron_statistics_from_loaded_route)
+                    self.app._log(f"Neutron route loaded from backup")
+                
+                galaxy_data = self.app.galaxy_plotter.load_galaxy_route(backup_folder_path)
+                if galaxy_data:
+                    def update_galaxy():
+                        self.app.galaxy_route_waypoints = galaxy_data.get("waypoints", [])
+                        self.app.galaxy_current_waypoint_index = galaxy_data.get("current_index", 0)
+                        self.app._update_galaxy_navigation()
+                        self.app._update_galaxy_statistics()
+                        self.app._log("Galaxy Plotter route restored from backup")
+                    self.app.root.after(0, update_galaxy)
+                
+                self.app._log("Building UI components...")
+                
+                def create_ui():
                     try:
-                        body_count = int(row.get('Body_Count', 0))
-                    except Exception:
-                        body_count = len(bodies)
-                if body_count == 0:
-                    body_count = len(bodies)
-                if not bodies and 'Bodies_To_Scan_List' in df.columns:
-                    bodies_str = row.get('Bodies_To_Scan_List', '[]')
-                    if isinstance(bodies_str, str) and bodies_str.startswith('['):
-                        try:
-                            import ast
-                            bodies = ast.literal_eval(bodies_str)
-                        except Exception:
-                            bodies = []
-                route_data.append({
-                    'name': str(row[system_col]),
-                    'status': STATUS_UNVISITED,
-                    'coords': coords,
-                    'bodies_to_scan': bodies,
-                    'body_count': body_count
-                })
-            if status_path.exists():
-                with open(status_path, "r", encoding="utf-8") as f:
-                    status_data = json.load(f)
-                status_map = {item['name']: item['status'] for item in status_data
-                             if 'name' in item and 'status' in item}
-                for item in route_data:
-                    if item['name'] in status_map:
-                        item['status'] = status_map[item['name']]
-            self.app.route_tracker.load_route(route_data)
-            if self.app.neutron_router.load_neutron_route(backup_folder_path):
-                self.app._update_neutron_navigation()
-                self.app._update_neutron_statistics_from_loaded_route()
-                self.app._log(f"Neutron route loaded from backup")
-            self.app._create_route_tracker_tab_content()
-            self.app._log(f"Backup loaded: {folder.name}")
-            messagebox.showinfo("Success",
-                f"Backup loaded successfully!\n\n"
-                f"Route: {folder.name}\n"
-                f"Systems: {len(route_data)}\n"
-                f"Visited: {sum(1 for r in route_data if r['status'] == STATUS_VISITED)}")
-            return {'success': True, 'message': f"Backup loaded: {folder.name}"}
-        except Exception as e:
-            error_msg = str(e)
-            messagebox.showerror("Error", f"Error loading backup:\n{error_msg}")
-            logger.error(f"Backup load error: {e}")
-            return {'success': False, 'error': error_msg}
+                        self.app._create_route_tracker_tab_content()
+                        self.app.root.update_idletasks()
+                    except Exception as e:
+                        logger.error(f"UI creation error: {e}")
+                
+                self.app.root.after(100, create_ui)
+                self.app._log(f"Backup loaded: {folder.name}")
+                
+                def start_overlay():
+                    try:
+                        self.app._ensure_overlay_started("Route Tracking")
+                    except Exception as e:
+                        logger.error(f"Overlay start error: {e}")
+                
+                self.app.root.after(500, start_overlay)
+                
+                success_msg = (
+                    f"Backup loaded successfully!\n\n"
+                    f"Route: {folder.name}\n"
+                    f"Systems: {len(route_data)}\n"
+                    f"Visited: {sum(1 for r in route_data if r['status'] == STATUS_VISITED)}"
+                )
+                self.app.root.after(800, lambda: SuccessDialog(self.app, "Success", success_msg))
+                
+            except Exception as e:
+                error_msg = str(e)
+                self.app.root.after(0, lambda: ErrorDialog(self.app, "Error", f"Error loading backup:\n{error_msg}"))
+                logger.error(f"Backup load error: {e}")
+        
+        thread = threading.Thread(target=load_in_thread, daemon=True)
+        thread.start()
+        return {'success': True, 'message': 'Loading backup in background...'}

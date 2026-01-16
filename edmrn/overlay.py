@@ -13,12 +13,12 @@ class ThreadSafeOverlay:
         self._lock = threading.RLock()
         self._instance = None
         self._ui_thread = None
-    def start(self, data_callback, opacity=0.8):
+    def start(self, data_callback, opacity=0.8, app_instance=None):
         with self._lock:
             if self._running.is_set():
                 return False
             self._running.set()
-            self._instance = EDMRNOverlay(data_callback, opacity, self._command_queue)
+            self._instance = EDMRNOverlay(data_callback, opacity, self._command_queue, app_instance)
             self._ui_thread = threading.Thread(
                 target=self._run_overlay,
                 daemon=True,
@@ -34,9 +34,16 @@ class ThreadSafeOverlay:
             try:
                 self._command_queue.put(('stop', None), timeout=1.0, block=False)
             except queue.Full:
+                logger.warning("Overlay command queue full during stop")
+            
+            try:
+                while not self._command_queue.empty():
+                    self._command_queue.get_nowait()
+            except queue.Empty:
                 pass
+            
             if self._ui_thread and self._ui_thread.is_alive():
-                self._ui_thread.join(timeout=2.0)
+                self._ui_thread.join(timeout=1.0)
             self._instance = None
             self._ui_thread = None
             return True
@@ -55,6 +62,7 @@ class ThreadSafeOverlay:
             self._command_queue.put(('opacity', alpha_value), timeout=0.5, block=False)
             return True
         except queue.Full:
+            logger.warning("Overlay command queue full, opacity command dropped")
             return False
     def set_size(self, size_label):
         if not self._running.is_set():
@@ -63,6 +71,7 @@ class ThreadSafeOverlay:
             self._command_queue.put(('size', size_label), timeout=0.5, block=False)
             return True
         except queue.Full:
+            logger.warning("Overlay command queue full, size command dropped")
             return False
     def toggle_visibility(self):
         if not self._running.is_set():
@@ -71,6 +80,7 @@ class ThreadSafeOverlay:
             self._command_queue.put(('toggle_visibility', None), timeout=0.5, block=False)
             return True
         except queue.Full:
+            logger.warning("Overlay command queue full, toggle visibility command dropped")
             return False
     def update_data(self):
         if not self._running.is_set():
@@ -79,18 +89,53 @@ class ThreadSafeOverlay:
             self._command_queue.put(('update', None), timeout=0.5, block=False)
             return True
         except queue.Full:
+            logger.warning("Overlay command queue full, update data command dropped")
             return False
+    
+    def prev_waypoint(self):
+        if not self._running.is_set():
+            return False
+        try:
+            self._command_queue.put(('prev', None), timeout=0.5, block=False)
+            return True
+        except queue.Full:
+            logger.warning("Overlay command queue full, prev waypoint command dropped")
+            return False
+    
+    def next_waypoint(self):
+        if not self._running.is_set():
+            return False
+        try:
+            self._command_queue.put(('next', None), timeout=0.5, block=False)
+            return True
+        except queue.Full:
+            logger.warning("Overlay command queue full, next waypoint command dropped")
+            return False
+    
+    def switch_tab(self, tab_name):
+        if not self._running.is_set():
+            return False
+        try:
+            self._command_queue.put(('switch_tab', tab_name), timeout=0.5, block=False)
+            return True
+        except queue.Full:
+            logger.warning("Overlay command queue full, switch tab command dropped")
+            return False
+    
     def is_running(self):
         return self._running.is_set()
 class EDMRNOverlay:
-    def __init__(self, data_callback, initial_opacity=0.8, command_queue=None):
+    def __init__(self, data_callback, initial_opacity=0.8, command_queue=None, app_instance=None):
         self.data_callback = data_callback
+        self.app_instance = app_instance
         self.root = None
         self.is_visible = True
         self.initial_opacity = initial_opacity
         self.command_queue = command_queue
         self.start_x = 0
         self.start_y = 0
+        self.current_tab = "Route Tracking"
+        self._tab_switch_in_progress = False
         self.current_data = {
             'current_system': 'EDMRN',
             'current_status': 'READY',
@@ -109,6 +154,9 @@ class EDMRNOverlay:
         self.canvas = None
         self.scrollable_frame = None
         self.body_labels = []
+        self.copy_btn = None
+        self.prev_btn = None
+        self.next_btn = None
     def create_window(self):
         try:
             self.root = tk.Tk()
@@ -118,7 +166,7 @@ class EDMRNOverlay:
                 self.root.geometry(f"{w}x{h}+100+100")
                 self._pending_size = None
             else:
-                self.root.geometry("220x300+100+100")
+                self.root.geometry("220x380+100+100")
             self.root.overrideredirect(True)
             self.root.attributes('-topmost', True)
             self._apply_platform_specific_settings()
@@ -153,9 +201,10 @@ class EDMRNOverlay:
                 cursor="hand2"
             )
             close_btn.place(relx=0.95, rely=0.5, anchor="e")
-            close_btn.bind("<Button-1>", lambda e: self.toggle_visibility())
+            close_btn.bind("<Button-1>", lambda e: self.handle_close())
             content_frame = tk.Frame(self.root, bg=bg_color, padx=10, pady=8)
-            content_frame.pack(fill="both", expand=True)
+            expand_content = getattr(self, '_current_size_label', 'Medium') != 'Small'
+            content_frame.pack(fill="both", expand=expand_content)
             self.system_label = tk.Label(
                 content_frame,
                 text=f"{Icons.LOCATION} Loading...",
@@ -221,10 +270,12 @@ class EDMRNOverlay:
                 anchor="w"
             )
             bodies_title.pack(fill="x", pady=(2, 1))
-            bodies_frame = tk.Frame(content_frame, bg=bg_color, height=80)
-            bodies_frame.pack(fill="both", expand=True)
+            default_bodies_height = 80
+            bodies_frame = tk.Frame(content_frame, bg=bg_color, height=default_bodies_height)
+            bodies_frame.pack(fill="x", expand=False)
             bodies_frame.pack_propagate(False)
-            self.canvas = tk.Canvas(bodies_frame, bg=bg_color, highlightthickness=0, height=80)
+            self.bodies_frame = bodies_frame
+            self.canvas = tk.Canvas(bodies_frame, bg=bg_color, highlightthickness=0, height=default_bodies_height)
             scrollbar = ttk.Scrollbar(bodies_frame, orient="vertical", command=self.canvas.yview)
             self.scrollable_frame = tk.Frame(self.canvas, bg=bg_color)
             self.scrollable_frame.bind(
@@ -236,17 +287,110 @@ class EDMRNOverlay:
             self.canvas.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
             self.body_labels = []
+            
+            control_frame = tk.Frame(self.root, bg=bg_color)
+            control_frame.pack(fill="x", side="bottom", pady=(6, 0))
+            
+            tab_frame = tk.Frame(control_frame, bg=bg_color)
+            tab_frame.pack(fill="x", pady=(2, 4))
+            
+            tab_btn_config = {
+                'font': ('Segoe UI', 8, 'bold'),
+                'width': 3,
+                'height': 1,
+                'relief': 'flat',
+                'cursor': 'hand2'
+            }
+            
+            self.tab_rt_btn = tk.Button(
+                tab_frame,
+                text='RT',
+                bg='#FF8C00',
+                fg='#0D0D0D',
+                activebackground='#FFA500',
+                command=lambda: self.handle_tab_switch('Route Tracking'),
+                **tab_btn_config
+            )
+            self.tab_rt_btn.pack(side='left', padx=2)
+            
+            self.tab_nh_btn = tk.Button(
+                tab_frame,
+                text='NH',
+                bg='#2A2A2A',
+                fg='#888888',
+                activebackground='#3A3A3A',
+                command=lambda: self.handle_tab_switch('Neutron Highway'),
+                **tab_btn_config
+            )
+            self.tab_nh_btn.pack(side='left', padx=2)
+            
+            self.tab_gp_btn = tk.Button(
+                tab_frame,
+                text='GP',
+                bg='#2A2A2A',
+                fg='#888888',
+                activebackground='#3A3A3A',
+                command=lambda: self.handle_tab_switch('Galaxy Plotter'),
+                **tab_btn_config
+            )
+            self.tab_gp_btn.pack(side='left', padx=2)
+            
+            nav_frame = tk.Frame(control_frame, bg=bg_color)
+            nav_frame.pack(fill="x", pady=(0, 4))
+            
+            nav_btn_config = {
+                'font': ('Segoe UI', 10, 'bold'),
+                'width': 2,
+                'height': 1,
+                'relief': 'flat',
+                'bg': '#2A2A2A',
+                'fg': '#E0E0E0',
+                'activebackground': '#3A3A3A',
+                'cursor': 'hand2'
+            }
+            
+            self.prev_btn = tk.Button(
+                nav_frame,
+                text='<',
+                command=self.handle_prev,
+                **nav_btn_config
+            )
+            self.prev_btn.pack(side='left', padx=(0, 4))
+            
+            self.copy_btn = tk.Button(
+                nav_frame,
+                text='EDMRN',
+                font=('Segoe UI', 8, 'bold'),
+                width=8,
+                height=1,
+                relief='flat',
+                bg='#FF8C00',
+                fg='#0D0D0D',
+                activebackground='#FFA500',
+                cursor='hand2',
+                command=self.handle_copy_current
+            )
+            self.copy_btn.pack(side='left', padx=2, expand=True, fill='x')
+            
+            self.next_btn = tk.Button(
+                nav_frame,
+                text='>',
+                command=self.handle_next,
+                **nav_btn_config
+            )
+            self.next_btn.pack(side='left', padx=(4, 0))
+            
             footer_frame = tk.Frame(self.root, bg=bg_color, height=18)
             footer_frame.pack(fill="x", side="bottom")
             footer_frame.pack_propagate(False)
             footer_label = tk.Label(
                 footer_frame,
                 text="Drag header to move",
-                font=("Segoe UI", 9),
+                font=("Segoe UI", 7),
                 bg=bg_color,
                 fg=text_color
             )
-            footer_label.pack(pady=3)
+            footer_label.pack(pady=2)
             self.footer_label = footer_label
             try:
                 if hasattr(self, '_pending_label') and self._pending_label:
@@ -293,6 +437,123 @@ class EDMRNOverlay:
     def end_drag(self, event):
         self.start_x = 0
         self.start_y = 0
+    
+    def handle_prev(self):
+        try:
+            if self.command_queue:
+                try:
+                    self.command_queue.put(('prev', None), block=False)
+                except queue.Full:
+                    pass
+        except Exception as e:
+            logger.error(f"Handle prev error: {e}")
+    
+    def handle_next(self):
+        try:
+            if self.command_queue:
+                try:
+                    self.command_queue.put(('next', None), block=False)
+                except queue.Full:
+                    pass
+        except Exception as e:
+            logger.error(f"Handle next error: {e}")
+    
+    def handle_copy_current(self):
+        try:
+            if self.command_queue:
+                try:
+                    self.command_queue.put(('copy_current', None), block=False)
+                except queue.Full:
+                    pass
+        except Exception as e:
+            logger.error(f"Handle copy error: {e}")
+    
+    def handle_close(self):
+        try:
+            self.toggle_visibility()
+            
+            if self.app_instance and self.app_instance.root:
+                self.app_instance.root.after(10, self.app_instance._toggle_overlay)
+        except Exception as e:
+            logger.error(f"Handle close error: {e}")
+    
+    def handle_tab_switch(self, tab_name):
+        try:
+            if self._tab_switch_in_progress:
+                logger.debug(f"Tab switch already in progress, ignoring: {tab_name}")
+                return
+            
+            self._tab_switch_in_progress = True
+            
+            self._disable_tab_buttons()
+            
+            if self.app_instance and self.app_instance.root:
+                try:
+                    self.app_instance.root.after(0, lambda: self._handle_tab_switch_callback(tab_name))
+                except Exception as e:
+                    logger.error(f"Failed to schedule tab switch: {e}")
+                    self._enable_tab_buttons()
+                    self._tab_switch_in_progress = False
+                    return
+            
+            if self.root:
+                self.root.after(600, self._reset_tab_switch_flag)
+        except Exception as e:
+            logger.error(f"Handle tab switch error: {e}")
+            self._tab_switch_in_progress = False
+            self._enable_tab_buttons()
+    
+    def _reset_tab_switch_flag(self):
+        self._tab_switch_in_progress = False
+        self._enable_tab_buttons()
+    
+    def _disable_tab_buttons(self):
+        try:
+            if hasattr(self, 'tab_rt_btn'):
+                self.tab_rt_btn.config(state='disabled')
+            if hasattr(self, 'tab_nh_btn'):
+                self.tab_nh_btn.config(state='disabled')
+            if hasattr(self, 'tab_gp_btn'):
+                self.tab_gp_btn.config(state='disabled')
+        except Exception as e:
+            logger.error(f"Error disabling tab buttons: {e}")
+    
+    def _enable_tab_buttons(self):
+        try:
+            if hasattr(self, 'tab_rt_btn'):
+                self.tab_rt_btn.config(state='normal')
+            if hasattr(self, 'tab_nh_btn'):
+                self.tab_nh_btn.config(state='normal')
+            if hasattr(self, 'tab_gp_btn'):
+                self.tab_gp_btn.config(state='normal')
+        except Exception as e:
+            logger.error(f"Error enabling tab buttons: {e}")
+    
+    def update_tab_buttons(self, active_tab):
+        self.current_tab = active_tab
+        
+        inactive_bg = '#2A2A2A'
+        inactive_fg = '#888888'
+        active_bg = '#FF8C00'
+        active_fg = '#0D0D0D'
+        
+        if hasattr(self, 'tab_rt_btn'):
+            if active_tab == 'Route Tracking':
+                self.tab_rt_btn.config(bg=active_bg, fg=active_fg)
+            else:
+                self.tab_rt_btn.config(bg=inactive_bg, fg=inactive_fg)
+        
+        if hasattr(self, 'tab_nh_btn'):
+            if active_tab == 'Neutron Highway':
+                self.tab_nh_btn.config(bg=active_bg, fg=active_fg)
+            else:
+                self.tab_nh_btn.config(bg=inactive_bg, fg=inactive_fg)
+        
+        if hasattr(self, 'tab_gp_btn'):
+            if active_tab == 'Galaxy Plotter':
+                self.tab_gp_btn.config(bg=active_bg, fg=active_fg)
+            else:
+                self.tab_gp_btn.config(bg=inactive_bg, fg=inactive_fg)
     def set_opacity(self, alpha_value):
         if self.root:
             try:
@@ -307,6 +568,15 @@ class EDMRNOverlay:
             except Exception:
                 pass
         self.body_labels.clear()
+        
+        size_limits = {
+            'Small': 18,
+            'Medium': 25,
+            'Large': 30,
+        }
+        current_size = getattr(self, '_current_size_label', 'Medium')
+        body_char_limit = size_limits.get(current_size, 25)
+        
         if not bodies or bodies[0] in ['Load route...', 'No bodies to scan']:
             label = tk.Label(
                 self.scrollable_frame,
@@ -320,7 +590,7 @@ class EDMRNOverlay:
             self.body_labels.append(label)
             return
         for i, body in enumerate(bodies[:6]):
-            display_body = body[:25] + "..." if len(body) > 25 else body
+            display_body = body[:body_char_limit] + "..." if len(body) > body_char_limit else body
             label = tk.Label(
                 self.scrollable_frame,
                 text=f"• {display_body}",
@@ -344,9 +614,9 @@ class EDMRNOverlay:
             self.body_labels.append(more_label)
     def set_size(self, size_label):
         presets = {
-            'Small': (200, 240),
-            'Medium': (220, 300),
-            'Large': (260, 360),
+            'Small': (200, 320),
+            'Medium': (220, 380),
+            'Large': (260, 440),
         }
         logger.info(f"Requested overlay size: {size_label}")
         if size_label not in presets:
@@ -363,12 +633,29 @@ class EDMRNOverlay:
                     y = 100
                 try:
                     self.root.geometry(f"{w}x{h}+{x}+{y}")
+                    self.root.update()
+                    self.root.update_idletasks()
                     logger.info(f"Applied overlay geometry: {w}x{h}+{x}+{y}")
                 except Exception as e:
                     logger.error(f"Failed to set geometry: {e}")
                 try:
+                    if size_label == 'Small':
+                        bodies_height = 40
+                    elif size_label == 'Medium':
+                        bodies_height = 80
+                    else:
+                        bodies_height = 100
+                    
+                    if hasattr(self, 'bodies_frame') and self.bodies_frame:
+                        self.bodies_frame.configure(height=bodies_height)
                     if self.canvas:
-                        self.canvas.configure(height=max(60, h - 140))
+                        self.canvas.configure(height=bodies_height)
+                except Exception as e:
+                    logger.error(f"Failed to adjust bodies frame: {e}")
+                try:
+                    canvas_height = max(60, h - 140)
+                    if self.canvas:
+                        self.canvas.configure(height=canvas_height)
                 except Exception:
                     pass
                 try:
@@ -392,11 +679,27 @@ class EDMRNOverlay:
             new_data = self.data_callback()
             if new_data:
                 self.current_data.update(new_data)
+            elif new_data is None:
+                logger.warning("Overlay data callback returned None, using cached data")
             data = self.current_data
             system_name = data['current_system']
-            display_system = system_name[:18] + "..." if len(system_name) > 18 else system_name
+            
+            size_limits = {
+                'Small': 18,
+                'Medium': 25,
+                'Large': 30,
+            }
+            current_size = getattr(self, '_current_size_label', 'Medium')
+            char_limit = size_limits.get(current_size, 18)
+            display_system = system_name[:char_limit] + "..." if len(system_name) > char_limit else system_name
+            
             if self.system_label:
                 self.system_label.config(text=f"{Icons.LOCATION} {display_system}")
+            
+            if self.copy_btn:
+                btn_char_limit = size_limits.get(current_size, 18) - 5
+                btn_system = system_name[:btn_char_limit] + "..." if len(system_name) > btn_char_limit else system_name
+                self.copy_btn.config(text=btn_system)
             status = data['current_status']
             if status == 'NEUTRON':
                 status_color = "#00AEFF"
@@ -413,7 +716,8 @@ class EDMRNOverlay:
             if self.status_label:
                 self.status_label.config(text=status_text, fg=status_color)
             next_system = data['next_system']
-            display_next = next_system[:22] + "..." if len(next_system) > 22 else next_system
+            next_char_limit = size_limits.get(current_size, 22)
+            display_next = next_system[:next_char_limit] + "..." if len(next_system) > next_char_limit else next_system
             if self.next_label:
                 self.next_label.config(text=f"{Icons.ARROW_RIGHT} {display_next}")
             if self.progress_label:
@@ -450,6 +754,71 @@ class EDMRNOverlay:
             except Exception:
                 pass
             self.is_visible = True
+    
+    def _handle_prev_callback(self):
+        if not self.app_instance:
+            return
+        try:
+            current_tab = self.app_instance.tabview.get()
+            if current_tab == "Route Tracking":
+                self.app_instance._copy_prev_system_to_clipboard()
+            elif current_tab == "Neutron Highway":
+                self.app_instance._neutron_prev_waypoint()
+            elif current_tab == "Galaxy Plotter":
+                self.app_instance._galaxy_prev_waypoint()
+        except Exception as e:
+            logger.error(f"Prev callback error: {e}")
+    
+    def _handle_next_callback(self):
+        if not self.app_instance:
+            return
+        try:
+            current_tab = self.app_instance.tabview.get()
+            if current_tab == "Route Tracking":
+                self.app_instance._advance_route_tracking_from_overlay()
+            elif current_tab == "Neutron Highway":
+                self.app_instance._neutron_next_waypoint()
+            elif current_tab == "Galaxy Plotter":
+                self.app_instance._galaxy_next_waypoint()
+            
+            if self.root:
+                self.root.after(100, self.update_display)
+        except Exception as e:
+            logger.error(f"Next callback error: {e}")
+    
+    def _handle_copy_callback(self):
+        if not self.app_instance:
+            return
+        try:
+            current_tab = self.app_instance.tabview.get()
+            if current_tab == "Route Tracking":
+                self.app_instance._copy_next_system_to_clipboard()
+            elif current_tab == "Neutron Highway":
+                self.app_instance._copy_current_neutron_system()
+            elif current_tab == "Galaxy Plotter":
+                self.app_instance._copy_current_galaxy_system()
+        except Exception as e:
+            logger.error(f"Copy callback error: {e}")
+    
+    def _handle_tab_switch_callback(self, tab_name):
+        if not self.app_instance:
+            return
+        try:
+            current = self.app_instance.tabview.get()
+            if current == tab_name:
+                logger.debug(f"Already on tab: {tab_name}")
+                if self.root:
+                    self.root.after(0, lambda: self.update_tab_buttons(tab_name))
+                return
+            
+            self.app_instance.tabview.set(tab_name)
+            
+            if self.root:
+                self.root.after(0, lambda: self.update_tab_buttons(tab_name))
+            
+            logger.info(f"Tab switched to: {tab_name}")
+        except Exception as e:
+            logger.error(f"Tab switch callback error: {e}")
     def run(self, running_event):
         try:
             self.create_window()
@@ -458,6 +827,7 @@ class EDMRNOverlay:
                     while not self.command_queue.empty():
                         cmd, value = self.command_queue.get_nowait()
                         if cmd == 'stop':
+                            running_event.clear()
                             return False
                         elif cmd == 'opacity' and value is not None:
                             self.set_opacity(value)
@@ -467,6 +837,18 @@ class EDMRNOverlay:
                             self.set_size(value)
                         elif cmd == 'update':
                             pass
+                        elif cmd == 'prev':
+                            if self.app_instance:
+                                self.app_instance.root.after(0, self._handle_prev_callback)
+                        elif cmd == 'next':
+                            if self.app_instance:
+                                self.app_instance.root.after(0, self._handle_next_callback)
+                        elif cmd == 'copy_current':
+                            if self.app_instance:
+                                self.app_instance.root.after(0, self._handle_copy_callback)
+                        elif cmd == 'switch_tab' and value is not None:
+                            if self.app_instance:
+                                self.app_instance.root.after(0, lambda: self._handle_tab_switch_callback(value))
                 except queue.Empty:
                     pass
                 return True

@@ -1,165 +1,756 @@
+import os
 import json
+import ctypes
+from pathlib import Path
+from datetime import datetime
 import tkinter as tk
+from tkinter import messagebox
 import customtkinter as ctk
 from PIL import Image, ImageTk
-from datetime import datetime
-from pathlib import Path
-import os
-import ctypes
-_hicon_cache = {}
-def _load_hicon(path):
-    try:
-        p = str(path)
-        if p in _hicon_cache:
-            return _hicon_cache[p]
-        IMAGE_ICON = 1
-        LR_LOADFROMFILE = 0x00000010
-        hicon = ctypes.windll.user32.LoadImageW(0, p, IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
-        _hicon_cache[p] = hicon
-        return hicon
-    except Exception:
-        return None
+
 from edmrn.logger import get_logger
 from edmrn.utils import resource_path
+
+
+_hicon_cache = {}
+
+
+def _load_hicon(path):
+        try:
+                p = str(path)
+                if p in _hicon_cache:
+                        return _hicon_cache[p]
+                IMAGE_ICON = 1
+                LR_LOADFROMFILE = 0x00000010
+                hicon = ctypes.windll.user32.LoadImageW(0, p, IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                _hicon_cache[p] = hicon
+                return hicon
+        except Exception:
+                return None
+
+
 logger = get_logger('GUI')
-class ProcessingDialog(ctk.CTkToplevel):
-    def __init__(self, parent, on_cancel=None):
-        if hasattr(parent, 'root'):
-            parent_window = parent.root
-            self.app = parent
-        else:
-            parent_window = parent
-            self.app = None
-        super().__init__(parent_window)
-        self.title("Processing")
-        self.resizable(False, False)
-        self.transient(parent_window)
-        self.grab_set()
-        self.protocol("WM_DELETE_WINDOW", lambda: None)
-        self._on_cancel = on_cancel
-        self._cancelled = False
-        self._dot_state = 0
-        if self.app and hasattr(self.app, 'theme_manager'):
-            theme_colors = self.app.theme_manager.get_theme_colors()
-        else:
-            theme_colors = {
-                'frame': '#2b2b2b',
-                'primary': '#0078d7',
-                'secondary': '#1e1e1e',
-                'text': '#ffffff'
-            }
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        frame = ctk.CTkFrame(self, fg_color=theme_colors['frame'], border_color=theme_colors['primary'], border_width=1)
-        frame.pack(padx=20, pady=20, fill='both', expand=True)
-        self.status_label = ctk.CTkLabel(frame, text="Processing...", anchor='w', text_color=theme_colors['text'], font=ctk.CTkFont(family="Segoe UI", size=12))
-        self.status_label.pack(fill='x', pady=(0, 10))
-        self.progress_bar = ctk.CTkProgressBar(frame, width=360, progress_color=theme_colors['primary'], fg_color=theme_colors['secondary'])
-        self.progress_bar.pack(pady=(0, 10))
-        self.progress_bar.set(0.0)
-        self._indeterminate = True
-        self._animate_id = None
-        self.cancel_button = ctk.CTkButton(frame, text="Cancel", fg_color="#FF6B6B", hover_color="#CC5555", command=self._do_cancel, height=32)
-        self.cancel_button.pack(pady=(5, 0))
-        try:
-            parent_window.update_idletasks()
-            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (400 // 2)
-            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (150 // 2)
-            self.geometry(f'400x150+{x}+{y}')
-        except Exception:
-            pass
-        self._start_spinner()
-    def _do_cancel(self):
-        self._cancelled = True
-        if callable(self._on_cancel):
-            try:
-                self._on_cancel()
-            except Exception:
-                pass
-        self.status_label.configure(text="Cancelling...")
-        self.cancel_button.configure(state='disabled')
-    def update(self, status_text: str = None, fraction: float = None):
-        if status_text is not None:
-            self.status_label.configure(text=status_text)
-        if fraction is None:
-            if not self._indeterminate:
-                self._indeterminate = True
-                self.progress_bar.set(0.0)
-                self._start_spinner()
-        else:
-            if self._indeterminate:
-                self._indeterminate = False
-                self._stop_spinner()
-            try:
-                self.progress_bar.set(max(0.0, min(1.0, float(fraction))))
-            except Exception:
-                pass
-    def _start_spinner(self):
-        def spin():
-            self._dot_state = (self._dot_state + 1) % 4
-            dots = '.' * self._dot_state
-            try:
-                self.status_label.configure(text=self.status_label.cget('text').split('...')[0] + dots)
-            except Exception:
-                pass
-            self._animate_id = self.after(400, spin)
-        spin()
-    def _stop_spinner(self):
-        if self._animate_id:
-            try:
-                self.after_cancel(self._animate_id)
-            except Exception:
-                pass
-            self._animate_id = None
-    def close(self):
-        try:
-            self._stop_spinner()
-            self.grab_release()
-            self.destroy()
-        except Exception:
-            pass
+
+
 class ManualWindow(ctk.CTkToplevel):
-    def __init__(self, master):
+        def __init__(self, master):
+                if hasattr(master, 'root'):
+                        parent_window = master.root
+                        self.app = master
+                else:
+                        parent_window = master
+                        self.app = None
+                super().__init__(parent_window)
+                self.title("EDMRN - User Manual")
+                
+                try:
+                        ico_path = resource_path('../assets/explorer_icon.ico')
+                        if Path(ico_path).exists():
+                                self.iconbitmap(ico_path)
+                                if os.name == 'nt':
+                                        try:
+                                                WM_SETICON = 0x0080
+                                                ICON_SMALL = 0
+                                                ICON_BIG = 1
+                                                hicon = _load_hicon(ico_path)
+                                                if hicon:
+                                                        hwnd = self.winfo_id()
+                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                                        except Exception:
+                                                pass
+                except Exception:
+                        pass
+                
+                try:
+                        logo_path = resource_path('../assets/explorer_icon.png')
+                        if Path(logo_path).exists():
+                                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                                self._title_icon = ImageTk.PhotoImage(img)
+                                try:
+                                        self.wm_iconphoto(True, self._title_icon)
+                                except Exception:
+                                        self.iconphoto(False, self._title_icon)
+                except Exception:
+                        pass
+                
+                if self.app and hasattr(self.app, 'theme_manager'):
+                        self.theme_colors = self.app.theme_manager.get_theme_colors()
+                else:
+                        self.theme_colors = {
+                                'frame': '#2E2E2E',
+                                'primary': '#FF8C00',
+                                'secondary': '#666666',
+                                'text': '#E0E0E0',
+                                'background': '#212121',
+                                'primary_hover': '#FFB060'
+                        }
+
+                self.geometry("640x850")
+                self.minsize(600, 800)
+                try:
+                        parent_window.update_idletasks()
+                        x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (640 // 2)
+                        y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (850 // 2)
+                        self.geometry(f'+{x}+{y}')
+                except Exception:
+                        pass
+
+                self.grid_rowconfigure(0, weight=1)
+                self.grid_columnconfigure(1, weight=1)
+
+                self.nav_frame = ctk.CTkFrame(self, width=150, fg_color=self.theme_colors['frame'])
+                self.nav_frame.grid(row=0, column=0, sticky="nsw")
+                self.nav_frame.grid_propagate(False)
+
+                content_frame = ctk.CTkFrame(self, fg_color=self.theme_colors['background'])
+                content_frame.grid(row=0, column=1, sticky="nsew", padx=(0, 10), pady=10)
+                content_frame.grid_rowconfigure(0, weight=1)
+                content_frame.grid_columnconfigure(0, weight=1)
+
+                self.manual_textbox = ctk.CTkTextbox(
+                        content_frame,
+                        wrap="word",
+                        fg_color=self.theme_colors['background'],
+                        text_color=self.theme_colors['text'],
+                        font=ctk.CTkFont(family="Consolas", size=12)
+                )
+                self.manual_textbox.grid(row=0, column=0, sticky="nsew")
+
+                self._build_nav_sections()
+                self._build_section_content()
+                if self.sections:
+                    self._show_section(self.sections[0][0])
+                self.after(80, self._adjust_height_to_nav)
+                self.grab_set()
+                try:
+                        self.bind('<Map>', lambda e: self._schedule_reapply_icons())
+                        self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
+                except Exception:
+                        pass
+
+        def _build_nav_sections(self):
+                self.sections = [
+                        ("whats_new", "What's New"),
+                        ("quick_start", "Quick Start"),
+                        ("tab1", "Tab 1: Route Opt"),
+                        ("tab2", "Tab 2: Neutron"),
+                        ("tab3", "Tab 3: Tracking"),
+                        ("tab4", "Tab 4: Galaxy"),
+                        ("settings", "Settings & Overlay"),
+                        ("shortcuts", "Shortcuts"),
+                        ("backup", "Backup"),
+                        ("troubleshooting", "Troubleshooting"),
+                        ("credits", "API Credits"),
+                        ("support", "Support")
+                ]
+                self.nav_buttons = {}
+                for idx, (key, label) in enumerate(self.sections):
+                    btn = ctk.CTkButton(
+                        self.nav_frame,
+                        text=label,
+                        anchor="w",
+                        width=150,
+                        height=24,
+                        fg_color=self.theme_colors['frame'],
+                        hover_color=self.theme_colors['secondary'],
+                        text_color=self.theme_colors['text'],
+                        command=lambda k=key: self._show_section(k),
+                        font=ctk.CTkFont(size=11, weight="bold" if idx == 0 else "normal")
+                    )
+                    btn.grid(row=idx, column=0, sticky="ew", padx=6, pady=(2 if idx else 6, 2))
+                    self.nav_buttons[key] = btn
+                self.active_nav = None
+
+        def _show_section(self, key: str):
+            try:
+                self._render_section(key)
+                self._highlight_nav(key)
+            except Exception:
+                pass
+
+        def _highlight_nav(self, active_key: str):
+                if self.active_nav == active_key:
+                        return
+                primary = self.theme_colors['primary']
+                primary_hover = self.theme_colors.get('primary_hover', primary)
+                frame = self.theme_colors['frame']
+                secondary = self.theme_colors['secondary']
+                text = self.theme_colors['text']
+                for key, btn in self.nav_buttons.items():
+                        if key == active_key:
+                                btn.configure(
+                                        fg_color=primary,
+                                        hover_color=primary_hover,
+                                        text_color=self.theme_colors.get('background', '#1e1e1e')
+                                )
+                        else:
+                                btn.configure(
+                                        fg_color=frame,
+                                        hover_color=secondary,
+                                        text_color=text
+                                )
+                self.active_nav = active_key
+
+        def _build_section_content(self):
+            self.section_content = {
+                "whats_new": (
+                    "WHAT'S NEW IN v3.1",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "🚀 CORE FEATURES",
+                        "  • Persistent Visit History - Duplicate systems automatically filtered",
+                        "  • Smart Backup System - Auto-backup before critical actions with restore",
+                        "  • Nearest Starting System - Auto-detect closest CSV system from journal",
+                        "",
+                        "🎮 PERFORMANCE & COMPATIBILITY",
+                        "  • GeForce Now Optimization - Overlay tuned for cloud gaming",
+                        "  • Borderless Mode Support - Enhanced overlay compatibility",
+                        "",
+                        "🌐 ENHANCED AUTOCOMPLETE",
+                        "  • Spansh Primary Source - 70M+ systems database",
+                        "  • EDSM Fallback - Seamless secondary source",
+                        "  • Smart Debouncing - 300ms delay for optimal performance",
+                        "  • 1-hour Caching - Reduced API calls, faster response",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "quick_start": (
+                    "QUICK START GUIDE",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "📋 STEP 1: PREPARE YOUR ROUTE",
+                        "  • Visit Spansh.co.uk Galaxy Plotter",
+                        "  • Export CSV with: System Name, X, Y, Z coordinates",
+                        "  • Optional: Include Body Name for specific destinations",
+                        "",
+                        "⚙️ STEP 2: CONFIGURE ROUTE",
+                        "  • Tab 1: Browse and load your CSV file",
+                        "  • Set accurate jump range for your ship",
+                        "  • Choose starting system (auto-detect from journal or manual)",
+                        "",
+                        "🚀 STEP 3: OPTIMIZE & TRACK",
+                        "  • Click 'Optimize & Track' button",
+                        "  • Wait for TSP optimization (auto-backup created)",
+                        "  • Route automatically loads in tracking tab",
+                        "",
+                        "🎮 STEP 4: IN-GAME USAGE",
+                        "  • Tab 3: View 3D map and route status",
+                        "  • Press Ctrl+O in-game to toggle overlay",
+                        "  • Journal auto-tracks your progress",
+                        "",
+                        "🎨 STEP 5: CUSTOMIZE",
+                        "  • Settings: Choose theme, overlay options",
+                        "  • Journal path auto-detected",
+                        "  • Configure autosave and overlay behavior",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "tab1": (
+                    "TAB 1: ROUTE OPTIMIZATION",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "📂 CSV FILE REQUIREMENTS",
+                        "  • Supported Sources: Spansh, EDSM, EDDB exports",
+                        "  • Required Columns: System Name, X, Y, Z coordinates",
+                        "  • Optional Column: Body Name for specific destinations",
+                        "  • Format: Standard CSV with header row",
+                        "",
+                        "🎯 JUMP RANGE CONFIGURATION",
+                        "  • Enter your ship's accurate FSD range",
+                        "  • Used for distance matrix calculations",
+                        "  • Critical for neutron route planning",
+                        "",
+                        "🌟 STARTING SYSTEM OPTIONS",
+                        "  • Auto-Select: Nearest CSV system from journal location",
+                        "  • Manual Pick: Dropdown list of all systems",
+                        "  • Find Nearest: Button to auto-detect closest system",
+                        "",
+                        "✅ VALIDATION & OPTIMIZATION",
+                        "  • Live column validation with visual indicators",
+                        "  • Green/Red status for data quality",
+                        "  • TSP optimization engine",
+                        "  • Auto-backup before processing",
+                        "  • Auto-switches to tracking tab on completion",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "tab2": (
+                    "TAB 2: NEUTRON HIGHWAY",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "⚡ NEUTRON ROUTING SYSTEM",
+                        "  • FSD Boost: x4 or x6 multiplier support",
+                        "  • Waypoint Navigation: Step-by-step routing",
+                        "  • Clipboard Copy: Quick system name copying",
+                        "",
+                        "🔍 SMART AUTOCOMPLETE",
+                        "  • Primary: Spansh database (70M+ systems)",
+                        "  • Minimum: 3 characters to start search",
+                        "  • Debounce: 300ms for optimal performance",
+                        "  • Cache: 1-hour duration for repeated searches",
+                        "",
+                        "🎮 CONTROLS & NAVIGATION",
+                        "  • From/To System: Source and destination",
+                        "  • Jump Range: Ship FSD range",
+                        "  • Boost Selection: x4 or x6 neutron boost",
+                        "  • Waypoint Buttons: < > to navigate route",
+                        "",
+                        "📊 STATISTICS & TRACKING",
+                        "  • Total Distance: Full route length",
+                        "  • Jump Counts: Normal vs neutron jumps",
+                        "  • Efficiency: Route optimization percentage",
+                        "  • Progress: Current waypoint tracking",
+                        "  • Auto-Tracking: Journal integration for waypoint advance",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "tab3": (
+                    "TAB 3: ROUTE TRACKING",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "📡 AUTO JOURNAL TRACKING",
+                        "  • Real-time journal file monitoring",
+                        "  • Multi-commander support",
+                        "  • Automatic visit detection",
+                        "  • Background processing",
+                        "",
+                        "✏️ MANUAL STATUS CONTROL",
+                        "  • Mark Visited: Manually confirm system visits",
+                        "  • Mark Skipped: Skip systems intentionally",
+                        "  • Mark Unvisited: Reset system status",
+                        "  • Useful when auto-detection misses visits",
+                        "",
+                        "🗺️ INTERACTIVE 3D MAP",
+                        "  • Zoom: Mouse wheel for scale adjustment",
+                        "  • Rotate: Click and drag to rotate view",
+                        "  • Select: Click system for details",
+                        "  • Color Coding:",
+                        "    - Green: Visited systems",
+                        "    - Orange: Skipped systems",
+                        "    - Gray: Pending/unvisited systems",
+                        "",
+                        "📊 ROUTE STATISTICS",
+                        "  • Total Distance: Complete route length",
+                        "  • Traveled: Distance already covered",
+                        "  • Remaining: Distance left to travel",
+                        "  • System Counts: Total, visited, remaining",
+                        "  • Progress Percentage: Completion tracker",
+                        "",
+                        "⚙️ QUICK ACTIONS",
+                        "  • Copy Next: Copy next system to clipboard",
+                        "  • Data Folder: Open route data directory",
+                        "  • Open Excel: View route in spreadsheet",
+                        "  • Load Backup: Restore previous route",
+                        "  • Quick Save: Manual save current progress",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "tab4": (
+                    "TAB 4: GALAXY PLOTTER",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "🚀 SPANSH EXACT ROUTER",
+                        "  • Integrated routing with Spansh API",
+                        "  • Advanced fuel management",
+                        "  • Neutron star highway support",
+                        "  • Real-time route calculation",
+                        "",
+                        "🛸 SHIP BUILD INTEGRATION",
+                        "  • Coriolis Import: Paste Coriolis.io share URL",
+                        "  • EDSY Import: Paste EDSY.org share URL",
+                        "  • Auto-Extract: FSD range, fuel tank, cargo",
+                        "  • Manual Override: Adjust values as needed",
+                        "",
+                        "⚙️ ROUTE CONFIGURATION",
+                        "  • Cargo: Account for cargo weight",
+                        "  • Reserve Fuel: Safety fuel margin",
+                        "  • Neutron Boost: Enable x4 FSD boost",
+                        "  • Injections: FSD synthesis support",
+                        "  • Secondary Star Skip: Avoid non-primary stars",
+                        "",
+                        "📤 OUTPUT OPTIONS",
+                        "  • Jump List: Detailed waypoint list",
+                        "  • CSV Export: Export route for optimization",
+                        "  • Log Panel: Real-time calculation feedback",
+                        "  • Expand Toggle: Show/hide detailed logs",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "settings": (
+                    "SETTINGS & OVERLAY",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "🎨 THEME CUSTOMIZATION",
+                        "  • 11 PowerPlay-Inspired Themes",
+                        "  • Aisling Duval, Zachary Hudson, Li Yong-Rui, etc.",
+                        "  • Elite Dangerous official colors",
+                        "  • Borderless Mode: Toggle window decorations",
+                        "",
+                        "📁 JOURNAL CONFIGURATION",
+                        "  • Auto-Detection: Automatic journal path discovery",
+                        "  • Multi-Commander: Support for multiple CMDRs",
+                        "  • Manual Path: Override detection if needed",
+                        "  • Real-time Monitoring: Background file watching",
+                        "",
+                        "🖥️ OVERLAY SETTINGS",
+                        "  • Start/Stop: Manual overlay control",
+                        "  • Opacity: Adjust transparency (0-100%)",
+                        "  • Auto-Launch: Start overlay after optimization",
+                        "  • In-Game Toggle: Ctrl+O keyboard shortcut",
+                        "  • Position: Drag overlay to preferred location",
+                        "",
+                        "💾 AUTOSAVE OPTIONS",
+                        "  • Intervals: 1 minute, 5 minutes, 10 minutes",
+                        "  • Atomic Writes: Safe file operations",
+                        "  • Progress Preservation: Never lose tracking data",
+                        "  • Background Operation: No UI interruption",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "shortcuts": (
+                    "KEYBOARD SHORTCUTS",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "⌨️ GLOBAL SHORTCUTS",
+                        "",
+                        "  Ctrl+O",
+                        "    Toggle in-game overlay on/off",
+                        "    Works while Elite Dangerous is in focus",
+                        "",
+                        "  Ctrl+S",
+                        "    Quick save current route progress",
+                        "    Saves tracking data and status",
+                        "",
+                        "  Ctrl+L",
+                        "    Copy next system name to clipboard",
+                        "    Ready to paste into galaxy map",
+                        "",
+                        "  F5",
+                        "    Refresh UI and reload data",
+                        "    Useful after manual file changes",
+                        "",
+                        "  Esc",
+                        "    Close manual window",
+                        "    Also closes most dialog windows",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "backup": (
+                    "BACKUP SYSTEM",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "💾 AUTO-BACKUP FEATURES",
+                        "  • Timestamped Backups: Automatic date/time stamps",
+                        "  • Pre-Optimization: Created before TSP processing",
+                        "  • Progress State: Saves visited/skipped status",
+                        "  • Route Data: Complete CSV and metadata",
+                        "",
+                        "🔄 RESTORE CAPABILITIES",
+                        "  • Full Route Restore: Original and filtered systems",
+                        "  • Progress Recovery: Resume from saved state",
+                        "  • Status Preservation: Visited/skipped flags intact",
+                        "  • Metadata Included: Jump range, settings, etc.",
+                        "",
+                        "📂 BACKUP MANAGEMENT",
+                        "  • Organized Structure: Timestamped folders",
+                        "  • Easy Navigation: Backup selection dialog",
+                        "  • Version Compatible: Works with older backups",
+                        "  • Priority System: User-modified routes prioritized",
+                        "",
+                        "⚠️ PROTECTION SCENARIOS",
+                        "  • Before Optimization: Preserve original route",
+                        "  • Critical Actions: Before major changes",
+                        "  • Data Safety: Prevents accidental loss",
+                        "  • Recovery Options: Multiple restore points",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "troubleshooting": (
+                    "TROUBLESHOOTING",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "❌ NO JOURNAL DATA DETECTED",
+                        "  Problem: App not detecting your jumps",
+                        "  Solutions:",
+                        "    1. Verify journal path in Settings",
+                        "    2. Make at least one jump in-game",
+                        "    3. Restart journal monitor from Settings",
+                        "    4. Check Elite Dangerous is running",
+                        "",
+                        "🔍 AUTOCOMPLETE NOT WORKING",
+                        "  Problem: System search returns no results",
+                        "  Solutions:",
+                        "    1. Check internet connection",
+                        "    2. Spansh primary source may be down",
+                        "    3. EDSM fallback should activate automatically",
+                        "    4. Wait for 300ms debounce timeout",
+                        "    5. Try typing more than 3 characters",
+                        "",
+                        "👁️ OVERLAY NOT VISIBLE",
+                        "  Problem: Overlay doesn't show in-game",
+                        "  Solutions:",
+                        "    1. Enable borderless mode in ED settings",
+                        "    2. Press Ctrl+O to toggle overlay",
+                        "    3. Adjust opacity slider in Settings",
+                        "    4. Check overlay is started in Settings",
+                        "    5. Try repositioning overlay window",
+                        "",
+                        "📋 DROPDOWN/UI MISALIGNMENT",
+                        "  Problem: UI elements appear misaligned",
+                        "  Solutions:",
+                        "    1. Fixed in v3.1 - update if needed",
+                        "    2. Restart application",
+                        "    3. Check display scaling (100-150% recommended)",
+                        "    4. Try different theme in Settings",
+                        "",
+                        "💥 APPLICATION CRASHES",
+                        "  Problem: App closes unexpectedly",
+                        "  Solutions:",
+                        "    1. Check logs folder for error details",
+                        "    2. Verify CSV file format is correct",
+                        "    3. Restore from backup if after optimization",
+                        "    4. Reinstall application if persistent",
+                        "    5. Report on Discord/GitHub with logs",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "credits": (
+                    "API CREDITS & ATTRIBUTION",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "🌐 THIRD-PARTY SERVICES",
+                        "",
+                        "  Spansh (spansh.co.uk)",
+                        "    • Primary system database (70M+ systems)",
+                        "    • Autocomplete primary source",
+                        "    • Neutron router integration",
+                        "    • Galaxy plotter API",
+                        "",
+                        "  EDSM (edsm.net)",
+                        "    • Fallback system database",
+                        "    • Autocomplete secondary source",
+                        "    • System coordinate data",
+                        "    • Community-driven updates",
+                        "",
+                        "  ⚠️ No official affiliation with either service",
+                        "  ⚠️ Thanks to both teams for their amazing work!",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "👥 SPECIAL THANKS",
+                        "",
+                        "  • Ozgur KARATAS (Ta2ozg)",
+                        "    Contributor & Developer",
+                        "",
+                        "  • Aydin AKYUZ",
+                        "    Contributor & Beta Tester",
+                        "    youtube.com/@drizzydnt",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "support": (
+                    "SUPPORT & COMMUNITY",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "💬 DISCORD COMMUNITY",
+                        "  • Server: discord.gg/DWvCEXH7ae",
+                        "  • Get help from other commanders",
+                        "  • Share routes and tips",
+                        "  • Report bugs and suggest features",
+                        "  • Beta testing opportunities",
+                        "",
+                        "📦 GITHUB REPOSITORY",
+                        "  • github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer",
+                        "  • Source code access",
+                        "  • Issue tracker",
+                        "  • Feature requests",
+                        "  • Contribution guidelines",
+                        "  • Release downloads",
+                        "",
+                        "📧 EMAIL SUPPORT",
+                        "  • Contact: ninurtakalhu@gmail.com",
+                        "  • Response time: 24-48 hours",
+                        "  • For private inquiries",
+                        "",
+                        "🐛 REPORTING ISSUES",
+                        "  When reporting bugs, please include:",
+                        "    • Log files from logs folder",
+                        "    • Sample CSV file (if route-related)",
+                        "    • Steps to reproduce the issue",
+                        "    • Screenshots if applicable",
+                        "    • Your Windows version and app version",
+                        "",
+                        "💡 FEATURE REQUESTS",
+                        "  • Post on GitHub Issues",
+                        "  • Discuss on Discord #suggestions",
+                        "  • Explain your use case",
+                        "  • Community voting helps prioritize",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+            }
+
+        def _render_section(self, key: str):
+            self.manual_textbox.configure(state="normal")
+            self.manual_textbox.delete("1.0", "end")
+            self.manual_textbox.insert("end", "ED MULTI ROUTE NAVIGATION (EDMRN) v3.1 - USER MANUAL\n")
+            self.manual_textbox.insert("end", "Optimized routes, journal tracking, Spansh primary autocomplete.\n\n")
+            title, lines = self.section_content.get(key, ("", []))
+            if title:
+                self.manual_textbox.insert("end", title + "\n\n")
+            for line in lines:
+                self.manual_textbox.insert("end", line + "\n")
+            self.manual_textbox.configure(state="disabled")
+
+        def _schedule_reapply_icons(self):
+                if getattr(self, '_reapply_pending', False):
+                        return
+                self._reapply_pending = True
+                try:
+                        self.after(100, lambda: self._do_reapply_icons())
+                except Exception:
+                        self._do_reapply_icons()
+
+        def _do_reapply_icons(self):
+                try:
+                        ico_path = resource_path('../assets/explorer_icon.ico')
+                        if Path(ico_path).exists():
+                                try:
+                                        self.iconbitmap(ico_path)
+                                except Exception:
+                                        pass
+                                if os.name == 'nt':
+                                        try:
+                                                WM_SETICON = 0x0080
+                                                ICON_SMALL = 0
+                                                ICON_BIG = 1
+                                                hicon = _load_hicon(ico_path)
+                                                if hicon:
+                                                        hwnd = self.winfo_id()
+                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                                                        if not getattr(self, '_icon_set_logged', False):
+                                                                logger.info("ManualWindow: WM_SETICON re-applied for ICO")
+                                                                self._icon_set_logged = True
+                                                        else:
+                                                                logger.debug("ManualWindow: WM_SETICON re-applied for ICO (suppressed info)")
+                                        except Exception as e:
+                                                logger.debug(f"ManualWindow: WM_SETICON reapply failed: {e}")
+                except Exception:
+                        pass
+                try:
+                        logo_path = resource_path('../assets/explorer_icon.png')
+                        if Path(logo_path).exists():
+                                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                                self._title_icon = ImageTk.PhotoImage(img)
+                                try:
+                                        self.wm_iconphoto(True, self._title_icon)
+                                except Exception:
+                                        self.iconphoto(False, self._title_icon)
+                                if os.name == 'nt':
+                                        try:
+                                                WM_SETICON = 0x0080
+                                                ICON_SMALL = 0
+                                                ICON_BIG = 1
+                                                hicon = _load_hicon(logo_path)
+                                                if hicon:
+                                                        hwnd = self.winfo_id()
+                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                                                        if not getattr(self, '_icon_set_logged', False):
+                                                                logger.info("ManualWindow: WM_SETICON re-applied for PNG")
+                                                                self._icon_set_logged = True
+                                                        else:
+                                                                logger.debug("ManualWindow: WM_SETICON re-applied for PNG (suppressed info)")
+                                        except Exception as e:
+                                                logger.debug(f"ManualWindow: WM_SETICON PNG reapply failed: {e}")
+                except Exception:
+                        pass
+                finally:
+                        self._reapply_pending = False
+
+        def _reapply_icons(self, event=None):
+                return self._schedule_reapply_icons()
+
+        def _adjust_height_to_nav(self):
+            try:
+                total = 0
+                for idx, _ in enumerate(self.sections):
+                    pad_top = 8 if idx == 0 else 4
+                    pad_bottom = 4
+                    total += 30 + pad_top + pad_bottom
+                desired_height = max(total + 16, 420)
+                self.update_idletasks()
+                current_width = max(self.winfo_width(), 640)
+                x, y = self.winfo_x(), self.winfo_y()
+                self.geometry(f"{current_width}x{desired_height}+{x}+{y}")
+                self.minsize(600, desired_height)
+            except Exception:
+                pass
+
+
+class ProcessingDialog(ctk.CTkToplevel):
+
+    def __init__(self, master, on_cancel=None):
         if hasattr(master, 'root'):
             parent_window = master.root
             self.app = master
+            try:
+                self.theme_colors = self.app.theme_manager.get_theme_colors()
+            except Exception:
+                self.theme_colors = None
         else:
             parent_window = master
             self.app = None
+            self.theme_colors = None
         super().__init__(parent_window)
-        self.title("EDMRN - User Manual")
-        if self.app and hasattr(self.app, 'theme_manager'):
-            self.theme_colors = self.app.theme_manager.get_theme_colors()
-        else:
-            self.theme_colors = {
-                'frame': '#2E2E2E',
-                'primary': '#FF8C00',
-                'secondary': '#666666',
-                'text': '#E0E0E0',
-                'background': '#212121'
-            }
+        self.title("Processing…")
+        self.on_cancel = on_cancel
+
         try:
             ico_path = resource_path('../assets/explorer_icon.ico')
             if Path(ico_path).exists():
                 self.iconbitmap(ico_path)
-                logger.info(f"ManualWindow: iconbitmap set -> {ico_path}")
                 if os.name == 'nt':
                     try:
-                        IMAGE_ICON = 1
-                        LR_LOADFROMFILE = 0x00000010
                         WM_SETICON = 0x0080
                         ICON_SMALL = 0
                         ICON_BIG = 1
-                        hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        hicon = _load_hicon(ico_path)
                         if hicon:
                             hwnd = self.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            logger.info("ManualWindow: WM_SETICON applied for ICO")
-                    except Exception as e:
-                        logger.debug(f"ManualWindow: WM_SETICON failed: {e}")
-        except Exception as e:
-            logger.debug(f"ManualWindow: iconbitmap failed: {e}")
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        
         try:
             logo_path = resource_path('../assets/explorer_icon.png')
             if Path(logo_path).exists():
@@ -169,60 +760,220 @@ class ManualWindow(ctk.CTkToplevel):
                     self.wm_iconphoto(True, self._title_icon)
                 except Exception:
                     self.iconphoto(False, self._title_icon)
-                logger.info(f"ManualWindow: iconphoto set -> {logo_path}")
+        except Exception:
+            pass
+
+        colors = self.theme_colors or {
+            'frame': '#2E2E2E',
+            'primary': '#FF8C00',
+            'secondary': '#666666',
+            'text': '#E0E0E0',
+            'background': '#212121',
+            'primary_hover': '#FFB060'
+        }
+
+        self.configure(fg_color=colors['background'])
+        self.resizable(False, False)
+        self.geometry("360x170")
+        try:
+            self.transient(parent_window)
+            parent_window.update_idletasks()
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - 180
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - 85
+            self.geometry(f"+{x}+{y}")
+        except Exception:
+            pass
+
+        body = ctk.CTkFrame(self, fg_color=colors['frame'])
+        body.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.status_label = ctk.CTkLabel(body, text="Preparing…", font=ctk.CTkFont(size=14, weight="bold"),
+                         text_color=colors['text'])
+        self.status_label.pack(pady=(12, 8))
+
+        self.progress = ctk.CTkProgressBar(body, width=280, height=14, progress_color=colors['primary'],
+                           fg_color=colors['secondary'])
+        self.progress.pack(pady=(6, 10))
+        self.progress.set(0)
+
+        self.cancel_button = ctk.CTkButton(
+            body,
+            text="Cancel",
+            width=120,
+            fg_color=colors['secondary'],
+            hover_color=colors.get('primary_hover', colors['primary']),
+            text_color=colors['text'],
+            command=self._handle_cancel
+        )
+        self.cancel_button.pack(pady=(4, 8))
+
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self._handle_cancel)
+
+    def _handle_cancel(self):
+        try:
+            if callable(self.on_cancel):
+                self.on_cancel()
+        except Exception:
+            pass
+        self.close()
+
+    def update(self, message: str, fraction: float | None):
+        try:
+            if not self.winfo_exists():
+                return
+            self.status_label.configure(text=message)
+            if fraction is None:
+                self.progress.configure(mode="indeterminate")
+                self.progress.start()
+            else:
+                self.progress.configure(mode="determinate")
+                self.progress.stop()
+                clamped = max(0.0, min(1.0, float(fraction)))
+                self.progress.set(clamped)
+            self.update_idletasks()
+        except Exception:
+            pass
+
+    def close(self):
+        try:
+            self.progress.stop()
+        except Exception:
+            pass
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+        try:
+            self.grab_release()
+        except Exception:
+            pass
+        try:
+            self.destroy()
+        except Exception:
+            pass
+
+
+class SuccessDialog(ctk.CTkToplevel):
+
+    def __init__(self, master, title, message):
+        if hasattr(master, 'root'):
+            parent_window = master.root
+            self.app = master
+            try:
+                self.theme_colors = self.app.theme_manager.get_theme_colors()
+            except Exception:
+                self.theme_colors = None
+        else:
+            parent_window = master
+            self.app = None
+            self.theme_colors = None
+        super().__init__(parent_window)
+        self.title(title)
+        
+        try:
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                self.iconbitmap(ico_path)
                 if os.name == 'nt':
                     try:
-                        IMAGE_ICON = 1
-                        LR_LOADFROMFILE = 0x00000010
                         WM_SETICON = 0x0080
                         ICON_SMALL = 0
                         ICON_BIG = 1
-                        hicon = ctypes.windll.user32.LoadImageW(0, str(logo_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        hicon = _load_hicon(ico_path)
                         if hicon:
                             hwnd = self.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            logger.info("ManualWindow: WM_SETICON applied for PNG")
-                    except Exception as e:
-                        logger.debug(f"ManualWindow: WM_SETICON PNG failed: {e}")
-        except Exception as e:
-            logger.debug(f"ManualWindow: iconphoto failed: {e}")
-        self.geometry("700x550")
-        self.resizable(False, False)
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        try:
-            parent_window.update_idletasks()
-            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (700 // 2)
-            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (550 // 2)
-            self.geometry(f'+{x}+{y}')
+                    except Exception:
+                        pass
         except Exception:
             pass
-        header = ctk.CTkFrame(self, fg_color=self.theme_colors['background'])
-        header.pack(fill="x", padx=20, pady=(15, 10))
-        header.columnconfigure(1, weight=1)
+        
         try:
             logo_path = resource_path('../assets/explorer_icon.png')
             if Path(logo_path).exists():
-                original_image = Image.open(logo_path)
-                resized_image = original_image.resize((40, 40), Image.LANCZOS)
-                app_logo = ctk.CTkImage(light_image=resized_image, dark_image=resized_image, size=(40, 40))
-                logo_label = ctk.CTkLabel(header, image=app_logo, text="")
-                logo_label.grid(row=0, column=0, padx=(0, 10), pady=5)
-                logo_label.image = app_logo
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                self._title_icon = ImageTk.PhotoImage(img)
+                try:
+                    self.wm_iconphoto(True, self._title_icon)
+                except Exception:
+                    self.iconphoto(False, self._title_icon)
         except Exception:
             pass
-        ctk.CTkLabel(header, text="ED Multi Route Navigation (EDMRN) - User Manual",
-                     font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"), text_color=self.theme_colors['primary']).grid(row=0, column=1, sticky="w")
-        self.manual_textbox = ctk.CTkTextbox(self, width=650, height=450, fg_color=self.theme_colors['frame'], text_color=self.theme_colors['text'], border_color=self.theme_colors['primary'], border_width=1)
-        self.manual_textbox.pack(padx=20, pady=10, fill="both", expand=True)
-        self._insert_manual_content()
+
+        colors = self.theme_colors or {
+            'frame': '#2E2E2E',
+            'primary': '#FF8C00',
+            'secondary': '#666666',
+            'text': '#E0E0E0',
+            'background': '#212121',
+            'primary_hover': '#FFB060'
+        }
+
+        self.configure(fg_color=colors['background'])
+        self.resizable(False, False)
+        self.geometry("400x200")
+        try:
+            self.transient(parent_window)
+            parent_window.update_idletasks()
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - 200
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - 100
+            self.geometry(f"+{x}+{y}")
+        except Exception:
+            pass
+
+        body = ctk.CTkFrame(self, fg_color=colors['frame'])
+        body.pack(fill="both", expand=True, padx=15, pady=15)
+
+        icon_label = ctk.CTkLabel(body, text="✅", font=ctk.CTkFont(size=48))
+        icon_label.pack(pady=(10, 5))
+
+        msg_label = ctk.CTkLabel(
+            body,
+            text=message,
+            font=ctk.CTkFont(size=12),
+            text_color=colors['text'],
+            wraplength=350,
+            justify="center"
+        )
+        msg_label.pack(pady=(5, 15))
+
+        ok_button = ctk.CTkButton(
+            body,
+            text="OK",
+            width=120,
+            fg_color=colors['primary'],
+            hover_color=colors.get('primary_hover', colors['primary']),
+            text_color="white",
+            command=self.destroy
+        )
+        ok_button.pack(pady=(0, 10))
+        ok_button.lift()
+        
         self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        
+        self.update_idletasks()
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+        try:
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (width // 2)
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (height // 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+        
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(100, lambda: self.attributes('-topmost', False))
+        
         try:
             self.bind('<Map>', lambda e: self._schedule_reapply_icons())
             self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
         except Exception:
             pass
+
     def _schedule_reapply_icons(self):
         if getattr(self, '_reapply_pending', False):
             return
@@ -231,6 +982,7 @@ class ManualWindow(ctk.CTkToplevel):
             self.after(100, lambda: self._do_reapply_icons())
         except Exception:
             self._do_reapply_icons()
+
     def _do_reapply_icons(self):
         try:
             ico_path = resource_path('../assets/explorer_icon.ico')
@@ -249,13 +1001,8 @@ class ManualWindow(ctk.CTkToplevel):
                             hwnd = self.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            if not getattr(self, '_icon_set_logged', False):
-                                logger.info("ManualWindow: WM_SETICON re-applied for ICO")
-                                self._icon_set_logged = True
-                            else:
-                                logger.debug("ManualWindow: WM_SETICON re-applied for ICO (suppressed info)")
-                    except Exception as e:
-                        logger.debug(f"ManualWindow: WM_SETICON reapply failed: {e}")
+                    except Exception:
+                        pass
         except Exception:
             pass
         try:
@@ -267,325 +1014,12 @@ class ManualWindow(ctk.CTkToplevel):
                     self.wm_iconphoto(True, self._title_icon)
                 except Exception:
                     self.iconphoto(False, self._title_icon)
-                if os.name == 'nt':
-                    try:
-                        WM_SETICON = 0x0080
-                        ICON_SMALL = 0
-                        ICON_BIG = 1
-                        hicon = _load_hicon(logo_path)
-                        if hicon:
-                            hwnd = self.winfo_id()
-                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
-                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            if not getattr(self, '_icon_set_logged', False):
-                                logger.info("ManualWindow: WM_SETICON re-applied for PNG")
-                                self._icon_set_logged = True
-                            else:
-                                logger.debug("ManualWindow: WM_SETICON re-applied for PNG (suppressed info)")
-                    except Exception as e:
-                        logger.debug(f"ManualWindow: WM_SETICON PNG reapply failed: {e}")
         except Exception:
             pass
         finally:
             self._reapply_pending = False
-    def _reapply_icons(self, event=None):
-        return self._schedule_reapply_icons()
-    def _insert_manual_content(self):
-        manual_text = """
-        =========================================================
-        ED Multi Route Navigation (EDMRN) v3.0 - User Manual
-        =========================================================
-        EDMRN v3.0 optimizes multi-system exploration/exobiology routes
-        in Elite Dangerous using advanced TSP algorithms with complete
-        modular architecture and 11 Powerplay faction themes.
-        -----------------------------------------------------------------------
-        TAB 1: ROUTE OPTIMIZATION
-        -----------------------------------------------------------------------
-        1. ROUTE DATA FILE (CSV):
-           • Source: Exported system list from:
-             - Spansh.co.uk: Galaxy plotter (recommended)
-             - EDSM, EDDB, EDDiscovery exports
-           • REQUIRED COLUMNS:
-             - 'System Name' (destination system)
-             - 'X', 'Y', 'Z' (galactic coordinates)
-           • OPTIONAL:
-             - 'Body Name' for biological/geological signals
-        2. SHIP JUMP RANGE (LY):
-           • Current ship's maximum FSD jump range
-           • Critical for accurate route optimization
-           • Updated in real-time for Neutron Highway sync
-        3. STARTING SYSTEM (OPTIONAL):
-           • Begin route from specific system
-           • Leave blank for automatic optimization
-        4. CSV COLUMN STATUS:
-           • Real-time validation of CSV structure
-           • ✓ Green = Column found and valid
-           • ✗ Red = Column missing or invalid
-           • All 5 required columns must be present!
-        5. OPTIONAL COLUMNS (NEW v3.0):
-           • Select additional CSV columns for export
-           • Expandable list for custom data preservation
-        6. OPTIMIZE ROUTE AND START TRACKING:
-           • Triggers TSP optimization engine
-           • Auto-creates timestamped backup folder
-           • Automatically starts journal monitoring
-           • Auto-switches to Route Tracking tab
-        -----------------------------------------------------------------------
-        TAB 2: NEUTRON HIGHWAY (New v3.0 Architecture)
-        -----------------------------------------------------------------------
-        🌟 ADVANCED NEUTRON ROUTING:
-           • Calculate optimized neutron star jump routes
-           • Enter source and destination systems
-           • Supports x4 and x6 (Caspian) FSD boost
-           • Real-time waypoint navigation with clipboard integration
-        
-        CONTROLS:
-           • From/To System: Your current location and destination
-           • Jump Range: Your ship's FSD range
-           • FSD Boost: Select boost type for calculations
-           • Navigation: < > buttons for step-by-step waypoint following
-           
-        STATISTICS:
-           • Distance calculated
-           • Jump efficiency metrics
-           • Progress tracking with waypoint numbers
-           • Real-time neutron route output
-           
-        AUTO-TRACKING:
-           • Journal monitor detects neutron jumps automatically
-           • Current waypoint updates as you jump
-           • Distance-to-destination counter in real-time
-        -----------------------------------------------------------------------
-        TAB 3: ROUTE TRACKING
-        -----------------------------------------------------------------------
-        AUTO-TRACKING (Journal Monitoring):
-           • EDMRN monitors Elite Dangerous journal automatically
-           • System status updates in real-time as you jump
-           • Multi-commander support (auto-detected)
-           • Path auto-detected (configurable in Settings)
-           
-        MANUAL TRACKING:
-           • Click systems to manually update status
-           • Status options: Visited (Green), Skipped (Orange), Unvisited
-           • Useful if auto-tracking misses a jump
-           
-        3D INTERACTIVE MAP:
-           • Real-time 3D route visualization
-           • Controls:
-             - Mouse Wheel: Zoom in/out
-             - Click+Drag: Rotate view
-             - Left-Click: Select system for details
-           • Color Coding:
-             - Green: Visited (successfully scanned)
-             - Orange: Skipped (passed over)
-             - Gray: Unvisited (pending)
-             
-        ROUTE STATISTICS PANEL:
-           • Total Route Distance: Complete LY distance
-           • Traveled Distance: Current progress
-           • Remaining Distance: Distance left
-           • Systems Visited/Skipped/Remaining: Progress breakdown
-           • Real-time progress percentage
-           
-        IN-GAME OVERLAY (Ctrl+O):
-           • Transparent overlay in Elite Dangerous window
-           • Features:
-             - Current system + status
-             - Next target system (highlighted)
-             - Biological/geological signals to scan
-             - Progress: X of Y visited
-             - Distance: Traveled / Remaining
-             - Refresh rate: ~500ms updates
-           • Configuration in Settings:
-             - Opacity: 50-100%
-             - Size: Small (800x400), Medium (1000x500), Large (1200x600)
-           • Auto-hides when Elite unfocused
-           
-        ACTION BUTTONS:
-           • COPY NEXT: Copies next unvisited system name to clipboard
-           • DATA FOLDER: Opens Documents/EDMRN_Route_Data/
-           • OPEN EXCEL: Launch optimized route in default viewer
-           • LOAD BACKUP: Restore previous route+progress from backup
-           • QUICK SAVE: One-click backup of current progress
-        -----------------------------------------------------------------------
-        TAB 4: SETTINGS (Enhanced v3.0)
-        -----------------------------------------------------------------------
-        🎨 THEME SETTINGS (New v3.0):
-           • 11 Elite Dangerous Powerplay faction themes
-           • Each theme fully themed - NO gray areas!
-           • Themes include:
-             - Elite Dangerous (Orange) - Default
-             - Aisling Duval (Blue)
-             - Archon Delaine (Lime Green)
-             - Arissa Lavigny-Duval (Purple)
-             - Denton Patreus (Gold)
-             - Edmund Mahon (Cyan)
-             - Felicia Winters (Light Blue)
-             - Li Yong Rui (Red)
-             - Pranav Antal (Gold)
-             - Zachary Hudson (Lime)
-             - Zemina Torval (Indigo)
-           • Smart Restart: Auto-restarts app to apply theme
-           • All UI elements adapt to faction colors
-           • Window geometry preserved across restarts
-           
-        ⚙️ OVERLAY SETTINGS:
-           • START/STOP OVERLAY: Toggle in-game display
-           • OPACITY SLIDER: 50-100% transparency control
-           • SIZE OPTIONS: Small/Medium/Large overlays
-           • Auto-minimize when unfocused
-           
-        💾 AUTO-SAVE SETTINGS:
-           • INTERVAL: 1/5/10 minutes or Never
-           • RUNNING STATUS: Shows auto-save state
-           • START/STOP: Manual control
-           • SAVE NOW: Immediate backup creation
-           • Next Save Timer: Countdown display
-           
-        📝 JOURNAL MONITORING:
-           • AUTO-DETECT: Scans for Elite journal folder
-           • MANUAL PATH: Set custom journal location
-           • CMDR SELECTOR: Switch between commanders
-           • TEST PATH: Verify journal access
-           • Path Status: Shows detected/configured path
-           
-        -----------------------------------------------------------------------
-        BACKUP SYSTEM (Rebuilt v3.0)
-        -----------------------------------------------------------------------
-        AUTOMATIC BACKUPS:
-           • Every optimization creates timestamped folder:
-             Documents/EDMRN_Route_Data/backups/Route_[systems]_[timestamp]/
-           • Contains:
-             - optimized_route.csv (your TSP-optimized route)
-             - route_status.json (visited/skipped status snapshot)
-             
-        LOAD BACKUP:
-           • Restore previous route + progress instantly
-           • No data loss between app sessions
-           • Perfect for multi-phase expeditions
-           • Backup folder automatically detected/managed
-           
-        QUICK SAVE (New v3.0):
-           • One-click progress checkpoint creation
-           • Folder: backups/QuickSave_[X]of[Y]_[timestamp]/
-           • Use before:
-             - Closing application
-             - Switching to different route
-             - Testing alternate optimization
-             - Long expedition checkpoints
-             
-        -----------------------------------------------------------------------
-        DEBUG SYSTEM (Professional v3.0)
-        -----------------------------------------------------------------------
-        OPEN DEBUG CONSOLE:
-           • Press Ctrl+D or F12 anywhere in EDMRN
-           • Real-time error tracking and diagnostics
-           • Error categories: GUI, Thread, I/O, Network
-           • Export debug data for support
-           • Stack traces for troubleshooting
-        -----------------------------------------------------------------------
-        KEYBOARD SHORTCUTS
-        -----------------------------------------------------------------------
-        Global Shortcuts:
-           • Ctrl+D or F12: Open Debug Console
-           • Ctrl+O: Toggle In-Game Overlay (when Elite Dangerous active)
-           
-        3D Map Controls:
-           • Mouse Wheel: Zoom in/out
-           • Click+Drag: Rotate visualization
-           • Left-Click: Select system
-           
-        -----------------------------------------------------------------------
-        TROUBLESHOOTING (v3.0 Updates)
-        -----------------------------------------------------------------------
-        1. CSV NOT LOADING:
-           • Verify: System Name, X/Y/Z columns exist
-           • Ensure no duplicate column names
-           • Re-save CSV in Excel before importing
-           
-        2. JOURNAL NOT DETECTED:
-           • Check Settings → Journal → Test Path
-           • Ensure Elite Dangerous uses Windowed/Borderless
-           • Verify journal files exist in detected folder
-           
-        3. OVERLAY NOT SHOWING:
-           • Press Ctrl+O to toggle (must be in Elite window)
-           • Check Settings → Overlay → Start Overlay is enabled
-           • Verify Elite is in Windowed or Borderless mode
-           
-        4. THEME CHANGE NOT APPLYING:
-           • EDMRN automatically restarts on theme change
-           • Wait for app to restart (5-10 seconds)
-           • Check Settings for new theme name
-           
-        5. BACKUP LOADING ERRORS:
-           • Verify backup folder contains both files:
-             - optimized_route.csv
-             - route_status.json
-           • If missing, recreate with Quick Save
-           
-        6. PERFORMANCE ON LARGE ROUTES:
-           • Routes >1000 systems: Disable 3D map view
-           • Close overlay during active play
-           • Reduce auto-save interval
-           
-        -----------------------------------------------------------------------
-        DATA LOCATIONS (v3.0)
-        -----------------------------------------------------------------------
-        • Main Data: Documents/EDMRN_Route_Data/
-        • Backups: Documents/EDMRN_Route_Data/backups/
-        • Settings: Documents/EDMRN_Route_Data/config.json
-        • Logs: EDMRN_Route_Data/logs/ (daily files)
-        • Themes: edmrn/themes/ (11 JSON theme files)
-        
-        -----------------------------------------------------------------------
-        MULTI-COMMANDER SUPPORT
-        -----------------------------------------------------------------------
-        • Auto-detects all Elite Dangerous commanders
-        • Switch in Settings → Journal → Commander Selector
-        • Each commander has separate route progress
-        • Journal monitoring respects commander selection
-        
-        -----------------------------------------------------------------------
-        v3.0 NEW FEATURES SUMMARY
-        -----------------------------------------------------------------------
-        
-        ✨ Complete modular architecture (extracted modules)
-        ✨ 11 Powerplay faction-themed color schemes
-        ✨ Redesigned Neutron Highway with advanced routing
-        ✨ Completely restructured backup system
-        ✨ Enhanced overlay system with better detection
-        ✨ Numerous performance optimizations and bug fixes
-        
-        -----------------------------------------------------------------------
-        SUPPORT & COMMUNITY
-        -----------------------------------------------------------------------
-        • GitHub: https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer
-        • Discord: https://discord.gg/DWvCEXH7ae
-        • Email: ninurtakalhu@gmail.com
-        • Ko-fi: https://ko-fi.com/ninurtakalhu
-        
-        -----------------------------------------------------------------------
-        DEVELOPED BY
-        -----------------------------------------------------------------------
-        Ninurta Kalhu (S.C.) - Solo Developer
 
-        ### 🙏 Contributors
 
-        - Ozgur KARATAS (Ta2ozg) - Contributor
-        - Aydin AKYUZ - Contributor / Beta Tester https://www.youtube.com/@drizzydnt
-        
-        Thanks to Elite Dangerous community, Frontier Developments,
-        and all beta testers!
-        
-        -----------------------------------------------------------------------
-        FLY SAFE, COMMANDER! o7
-        "In the black, every lightyear counts."
-        -----------------------------------------------------------------------
-        """
-        self.manual_textbox.insert("end", manual_text)
-        self.manual_textbox.configure(state="disabled",
-                                      font=ctk.CTkFont(family="Consolas", size=12), text_color=self.theme_colors['text'])
 class AboutWindow(ctk.CTkToplevel):
     def __init__(self, master, open_link_callback, show_manual_callback):
         if hasattr(master, 'root'):
@@ -695,12 +1129,17 @@ class AboutWindow(ctk.CTkToplevel):
             justify="center"
         ).grid(row=2, column=0, pady=(0, 20))
         info_text = """
-    Version 3.0 - GPL3 Licensed
+    Version 3.1.0 - AGPL-3 Licensed
 January 2026
 Developed by CMDR Ninurta Kalhu
 Elite Dangerous © Frontier Developments plc.
 *This tool is not affiliated with, endorsed by, 
 or connected to Frontier Developments plc.*
+
+Data & Services:
+• Route calculations by Spansh (spansh.co.uk)
+• System data by EDSM (edsm.net)
+
 Thank you to all contributors and the Elite Dangerous exploration community!
 Fly safe, Commander! o7
         """.strip()
@@ -858,6 +1297,38 @@ class BackupSelectionWindow(ctk.CTkToplevel):
         self.load_callback = load_callback
         self.geometry("800x550")
         self.resizable(True, True)
+        
+        try:
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                self.iconbitmap(ico_path)
+                if os.name == 'nt':
+                    try:
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = _load_hicon(ico_path)
+                        if hicon:
+                            hwnd = self.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        
+        try:
+            logo_path = resource_path('../assets/explorer_icon.png')
+            if Path(logo_path).exists():
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                self._title_icon = ImageTk.PhotoImage(img)
+                try:
+                    self.wm_iconphoto(True, self._title_icon)
+                except Exception:
+                    self.iconphoto(False, self._title_icon)
+        except Exception:
+            pass
+        
         if self.app and hasattr(self.app, 'theme_manager'):
             self.theme_colors = self.app.theme_manager.get_theme_colors()
         else:
@@ -1123,10 +1594,10 @@ class BackupSelectionWindow(ctk.CTkToplevel):
             folder = Path(folder_path)
             csv_files = list(folder.glob("*.csv"))
             if not csv_files:
-                tk.messagebox.showwarning(
+                WarningDialog(
+                    self,
                     "Warning",
-                    f"No CSV file found in:\n{folder_path}\n\n"
-                    "Please select a folder containing a route CSV file."
+                    f"No CSV file found in:\n{folder_path}\n\nPlease select a folder containing a route CSV file."
                 )
                 return
             self.load_callback(folder_path)
@@ -1134,10 +1605,10 @@ class BackupSelectionWindow(ctk.CTkToplevel):
     def _load_selected(self):
         selected_path = self.selected_folder.get()
         if not selected_path:
-            tk.messagebox.showwarning("Warning", "Please select a backup folder.")
+            WarningDialog(self, "Warning", "Please select a backup folder.")
             return
         if not Path(selected_path).exists():
-            tk.messagebox.showerror("Error", f"Folder no longer exists:\n{selected_path}")
+            ErrorDialog(self, "Error", f"Folder no longer exists:\n{selected_path}")
             return
         self.load_callback(selected_path)
         self.destroy()
@@ -1145,3 +1616,408 @@ class BackupSelectionWindow(ctk.CTkToplevel):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
         self._populate_backup_list()
+
+class InfoDialog(ctk.CTkToplevel):
+    def __init__(self, master, title, message):
+        if hasattr(master, 'root'):
+            parent_window = master.root
+            self.app = master
+            try:
+                self.theme_colors = self.app.theme_manager.get_theme_colors()
+            except Exception:
+                self.theme_colors = None
+        else:
+            parent_window = master
+            self.app = None
+            self.theme_colors = None
+        super().__init__(parent_window)
+        self.title(title)
+        self._setup_icon()
+
+        colors = self.theme_colors or {
+            'frame': '#2E2E2E', 'primary': '#FF8C00', 'secondary': '#666666',
+            'text': '#E0E0E0', 'background': '#212121', 'primary_hover': '#FFB060'
+        }
+        self.configure(fg_color=colors['background'])
+        self.resizable(False, False)
+        
+        try:
+            self.transient(parent_window)
+        except Exception:
+            pass
+
+        body = ctk.CTkFrame(self, fg_color=colors['frame'])
+        body.pack(fill="both", expand=True, padx=15, pady=15)
+
+        icon_label = ctk.CTkLabel(body, text="ℹ️", font=ctk.CTkFont(size=48))
+        icon_label.pack(pady=(10, 5))
+
+        msg_label = ctk.CTkLabel(
+            body, text=message, font=ctk.CTkFont(size=12), text_color=colors['text'],
+            wraplength=350, justify="center"
+        )
+        msg_label.pack(pady=(5, 15))
+
+        ok_button = ctk.CTkButton(
+            body, text="OK", width=120,
+            fg_color=colors['primary'], hover_color=colors.get('primary_hover', colors['primary']),
+            text_color="white", command=self.destroy
+        )
+        ok_button.pack(pady=(0, 10))
+        ok_button.lift()
+
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        
+        self.update_idletasks()
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+        try:
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (width // 2)
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (height // 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+        
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(100, lambda: self.attributes('-topmost', False))
+        
+        try:
+            self.bind('<Map>', lambda e: self._schedule_reapply_icons())
+            self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
+        except Exception:
+            pass
+
+    def _setup_icon(self):
+        try:
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                try:
+                    self.iconbitmap(ico_path)
+                except Exception:
+                    pass
+                if os.name == 'nt':
+                    try:
+                        WM_SETICON = 0x0080; ICON_SMALL = 0; ICON_BIG = 1
+                        hicon = _load_hicon(ico_path)
+                        if hicon:
+                            hwnd = self.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        try:
+            logo_path = resource_path('../assets/explorer_icon.png')
+            if Path(logo_path).exists():
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                self._title_icon = ImageTk.PhotoImage(img)
+                try:
+                    self.wm_iconphoto(True, self._title_icon)
+                except Exception:
+                    self.iconphoto(False, self._title_icon)
+        except Exception:
+            pass
+
+    def _schedule_reapply_icons(self):
+        if getattr(self, '_reapply_pending', False):
+            return
+        self._reapply_pending = True
+        try:
+            self.after(100, lambda: self._do_reapply_icons())
+        except Exception:
+            self._do_reapply_icons()
+
+    def _do_reapply_icons(self):
+        try:
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                try:
+                    self.iconbitmap(ico_path)
+                except Exception:
+                    pass
+                if os.name == 'nt':
+                    try:
+                        WM_SETICON = 0x0080; ICON_SMALL = 0; ICON_BIG = 1
+                        hicon = _load_hicon(ico_path)
+                        if hicon:
+                            hwnd = self.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        try:
+            logo_path = resource_path('../assets/explorer_icon.png')
+            if Path(logo_path).exists():
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                self._title_icon = ImageTk.PhotoImage(img)
+                try:
+                    self.wm_iconphoto(True, self._title_icon)
+                except Exception:
+                    self.iconphoto(False, self._title_icon)
+        except Exception:
+            pass
+        finally:
+            self._reapply_pending = False
+
+
+class WarningDialog(ctk.CTkToplevel):
+    def __init__(self, master, title, message):
+        if hasattr(master, 'root'):
+            parent_window = master.root
+            self.app = master
+            try:
+                self.theme_colors = self.app.theme_manager.get_theme_colors()
+            except Exception:
+                self.theme_colors = None
+        else:
+            parent_window = master
+            self.app = None
+            self.theme_colors = None
+        super().__init__(parent_window)
+        self.title(title)
+        self._setup_icon()
+
+        colors = self.theme_colors or {
+            'frame': '#2E2E2E', 'primary': '#FF8C00', 'secondary': '#666666',
+            'text': '#E0E0E0', 'background': '#212121', 'primary_hover': '#FFB060'
+        }
+        self.configure(fg_color=colors['background'])
+        self.resizable(False, False)
+        
+        try:
+            self.transient(parent_window)
+        except Exception:
+            pass
+
+        body = ctk.CTkFrame(self, fg_color=colors['frame'])
+        body.pack(fill="both", expand=True, padx=15, pady=15)
+
+        icon_label = ctk.CTkLabel(body, text="⚠️", font=ctk.CTkFont(size=48))
+        icon_label.pack(pady=(10, 5))
+
+        msg_label = ctk.CTkLabel(
+            body, text=message, font=ctk.CTkFont(size=12), text_color=colors['text'],
+            wraplength=350, justify="center"
+        )
+        msg_label.pack(pady=(5, 15))
+
+        ok_button = ctk.CTkButton(
+            body, text="OK", width=120,
+            fg_color="#FFA500", hover_color="#FFB84D",
+            text_color="white", command=self.destroy
+        )
+        ok_button.pack(pady=(0, 10))
+        ok_button.lift()
+
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        
+        self.update_idletasks()
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+        try:
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (width // 2)
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (height // 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+        
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(100, lambda: self.attributes('-topmost', False))
+        
+        try:
+            self.bind('<Map>', lambda e: self._schedule_reapply_icons())
+            self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
+        except Exception:
+            pass
+
+    _setup_icon = InfoDialog._setup_icon
+    _schedule_reapply_icons = InfoDialog._schedule_reapply_icons
+    _do_reapply_icons = InfoDialog._do_reapply_icons
+
+
+class ErrorDialog(ctk.CTkToplevel):
+    def __init__(self, master, title, message):
+        if hasattr(master, 'root'):
+            parent_window = master.root
+            self.app = master
+            try:
+                self.theme_colors = self.app.theme_manager.get_theme_colors()
+            except Exception:
+                self.theme_colors = None
+        else:
+            parent_window = master
+            self.app = None
+            self.theme_colors = None
+        super().__init__(parent_window)
+        self.title(title)
+        self._setup_icon()
+
+        colors = self.theme_colors or {
+            'frame': '#2E2E2E', 'primary': '#FF8C00', 'secondary': '#666666',
+            'text': '#E0E0E0', 'background': '#212121', 'primary_hover': '#FFB060'
+        }
+        self.configure(fg_color=colors['background'])
+        self.resizable(False, False)
+        
+        try:
+            self.transient(parent_window)
+        except Exception:
+            pass
+
+        body = ctk.CTkFrame(self, fg_color=colors['frame'])
+        body.pack(fill="both", expand=True, padx=15, pady=15)
+
+        icon_label = ctk.CTkLabel(body, text="❌", font=ctk.CTkFont(size=48))
+        icon_label.pack(pady=(10, 5))
+
+        msg_label = ctk.CTkLabel(
+            body, text=message, font=ctk.CTkFont(size=12), text_color=colors['text'],
+            wraplength=350, justify="center"
+        )
+        msg_label.pack(pady=(5, 15))
+
+        ok_button = ctk.CTkButton(
+            body, text="OK", width=120,
+            fg_color="#FF6B6B", hover_color="#FF5252",
+            text_color="white", command=self.destroy
+        )
+        ok_button.pack(pady=(0, 10))
+        ok_button.lift()
+
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        
+        self.update_idletasks()
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+        try:
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (width // 2)
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (height // 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+        
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(100, lambda: self.attributes('-topmost', False))
+        
+        try:
+            self.bind('<Map>', lambda e: self._schedule_reapply_icons())
+            self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
+        except Exception:
+            pass
+
+    _setup_icon = InfoDialog._setup_icon
+    _schedule_reapply_icons = InfoDialog._schedule_reapply_icons
+    _do_reapply_icons = InfoDialog._do_reapply_icons
+
+
+class ConfirmDialog(ctk.CTkToplevel):
+    def __init__(self, master, title, message):
+        if hasattr(master, 'root'):
+            parent_window = master.root
+            self.app = master
+            try:
+                self.theme_colors = self.app.theme_manager.get_theme_colors()
+            except Exception:
+                self.theme_colors = None
+        else:
+            parent_window = master
+            self.app = None
+            self.theme_colors = None
+        super().__init__(parent_window)
+        self.title(title)
+        self._setup_icon()
+        self.result = False
+
+        colors = self.theme_colors or {
+            'frame': '#2E2E2E', 'primary': '#FF8C00', 'secondary': '#666666',
+            'text': '#E0E0E0', 'background': '#212121', 'primary_hover': '#FFB060'
+        }
+        self.configure(fg_color=colors['background'])
+        self.resizable(False, False)
+        
+        try:
+            self.transient(parent_window)
+        except Exception:
+            pass
+
+        body = ctk.CTkFrame(self, fg_color=colors['frame'])
+        body.pack(fill="both", expand=True, padx=20, pady=20)
+
+        icon_label = ctk.CTkLabel(body, text="❓", font=ctk.CTkFont(size=48))
+        icon_label.pack(pady=(10, 5))
+
+        msg_label = ctk.CTkLabel(
+            body, text=message, font=ctk.CTkFont(size=12), text_color=colors['text'],
+            wraplength=380, justify="center"
+        )
+        msg_label.pack(pady=(5, 15))
+
+        btn_frame = ctk.CTkFrame(body, fg_color="transparent")
+        btn_frame.pack(pady=(0, 10))
+
+        yes_button = ctk.CTkButton(
+            btn_frame, text="Yes", width=100,
+            fg_color=colors['primary'], hover_color=colors.get('primary_hover', colors['primary']),
+            text_color="white", command=self._on_yes
+        )
+        yes_button.pack(side="left", padx=5)
+
+        no_button = ctk.CTkButton(
+            btn_frame, text="No", width=100,
+            fg_color=colors['secondary'], hover_color="#777777",
+            text_color="white", command=self._on_no
+        )
+        no_button.pack(side="left", padx=5)
+        
+        btn_frame.lift()
+        yes_button.lift()
+        no_button.lift()
+
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self._on_no)
+        
+        self.update_idletasks()
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+        try:
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (width // 2)
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (height // 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+        
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(100, lambda: self.attributes('-topmost', False))
+        
+        try:
+            self.bind('<Map>', lambda e: self._schedule_reapply_icons())
+            self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
+        except Exception:
+            pass
+
+    def _on_yes(self):
+        self.result = True
+        self.destroy()
+
+    def _on_no(self):
+        self.result = False
+        self.destroy()
+
+    _setup_icon = InfoDialog._setup_icon
+    _schedule_reapply_icons = InfoDialog._schedule_reapply_icons
+    _do_reapply_icons = InfoDialog._do_reapply_icons
+
+    def get_result(self):
+        self.wait_window()
+        return self.result
+

@@ -5,6 +5,7 @@ import webbrowser
 from packaging import version as pkg_version
 import customtkinter as ctk
 from edmrn.logger import get_logger
+from edmrn.gui import InfoDialog
 logger = get_logger('Updater')
 class SimpleUpdateChecker:
     def __init__(self, current_version):
@@ -53,10 +54,35 @@ class SimpleUpdateChecker:
             return
         dialog = ctk.CTkToplevel(parent_window)
         dialog.title("EDMRN - New Version Available")
-        dialog.geometry("400x300")
         dialog.resizable(False, False)
         dialog.transient(parent_window)
         dialog.grab_set()
+        
+        try:
+            from edmrn.utils import resource_path
+            from pathlib import Path
+            import ctypes
+            import os
+            
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                dialog.iconbitmap(ico_path)
+                if os.name == 'nt':
+                    try:
+                        IMAGE_ICON = 1
+                        LR_LOADFROMFILE = 0x00000010
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        if hicon:
+                            hwnd = dialog.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         ctk.CTkLabel(
             dialog,
             text="🎉 New Version Available!",
@@ -87,7 +113,8 @@ class SimpleUpdateChecker:
             wraplength=350
         ).pack()
         button_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        button_frame.pack(pady=20, padx=20, fill="x")
+        button_frame.pack(pady=(10, 20), padx=20, fill="x")
+        
         github_btn = ctk.CTkButton(
             button_frame,
             text="🐙 Download from GitHub",
@@ -98,7 +125,8 @@ class SimpleUpdateChecker:
             height=40,
             font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
         )
-        github_btn.pack(side="left", padx=(0, 10), fill="x", expand=True)
+        github_btn.pack(side="left", padx=(0, 10), fill="x", expand=True, pady=5)
+        
         colors = getattr(parent_window, 'theme_manager', None)
         if colors and hasattr(colors, 'get_theme_colors'):
             theme_colors = colors.get_theme_colors()
@@ -119,11 +147,62 @@ class SimpleUpdateChecker:
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             height=40
         )
-        close_btn.pack(side="right", fill="x", expand=True)
+        close_btn.pack(side="right", fill="x", expand=True, pady=5)
+        
+        button_frame.lift()
+        github_btn.lift()
+        close_btn.lift()
+        
         dialog.update_idletasks()
-        x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (400 // 2)
-        y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (300 // 2)
-        dialog.geometry(f"+{x}+{y}")
+        width = dialog.winfo_reqwidth()
+        height = dialog.winfo_reqheight()
+        try:
+            x = parent_window.winfo_x() + (parent_window.winfo_width() // 2) - (width // 2)
+            y = parent_window.winfo_y() + (parent_window.winfo_height() // 2) - (height // 2)
+            dialog.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+        
+        dialog.lift()
+        dialog.attributes('-topmost', True)
+        dialog.after(100, lambda: dialog.attributes('-topmost', False))
+        
+        try:
+            dialog.bind('<Map>', lambda e: _reapply_update_icons(dialog))
+            dialog.bind('<FocusIn>', lambda e: _reapply_update_icons(dialog))
+        except Exception:
+            pass
+
+def _reapply_update_icons(dialog):
+    try:
+        from edmrn.utils import resource_path
+        from pathlib import Path
+        import ctypes
+        import os
+        
+        ico_path = resource_path('../assets/explorer_icon.ico')
+        if Path(ico_path).exists():
+            try:
+                dialog.iconbitmap(ico_path)
+            except Exception:
+                pass
+            if os.name == 'nt':
+                try:
+                    IMAGE_ICON = 1
+                    LR_LOADFROMFILE = 0x00000010
+                    WM_SETICON = 0x0080
+                    ICON_SMALL = 0
+                    ICON_BIG = 1
+                    hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                    if hicon:
+                        hwnd = dialog.winfo_id()
+                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
 class UpdateManager:
     def __init__(self, app_instance):
         self.app = app_instance
@@ -159,7 +238,7 @@ class UpdateManager:
             else:
                 import tkinter as tk
                 from tkinter import messagebox
-                messagebox.showinfo(
+                InfoDialog(self.app, 
                     "Update Check",
                     f"✅ EDMRN is already up to date!\n\n"
                     f"Current Version: v{self.update_checker.current_version}\n"

@@ -1,0 +1,5 @@
+recursive-include edmrn/assets *
+recursive-include edmrn/backgrounds *
+recursive-include edmrn/themes *.json
+include README.md
+include CHANGELOG.md

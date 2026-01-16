@@ -1,14 +1,186 @@
 import threading
+import pandas as pd
 import tkinter as tk
-from tkinter import messagebox
 from pathlib import Path
 import customtkinter as ctk
 from edmrn.config import Paths
 from edmrn.tracker import STATUS_VISITED, STATUS_SKIPPED, STATUS_UNVISITED
-from edmrn.gui import ProcessingDialog
+from edmrn.gui import ProcessingDialog, InfoDialog, ErrorDialog
 from edmrn.minimap import MiniMapFrame, MiniMapFrameFallback
 from edmrn.logger import get_logger
+from edmrn.visit_history import get_history_manager
+from edmrn.visit_history_dialog import VisitedSystemsDialog
 logger = get_logger('RouteManagement')
+
+class StatusUpdateDialog(ctk.CTkToplevel):
+    def __init__(self, parent, system_name):
+        super().__init__(parent)
+        self.result = None
+        self.title("Status Update")
+        self.resizable(False, False)
+        
+        try:
+            from edmrn.utils import resource_path
+            from pathlib import Path
+            import ctypes
+            import os
+            from PIL import Image
+            from tkinter import PhotoImage
+            
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                self.iconbitmap(ico_path)
+                if os.name == 'nt':
+                    try:
+                        IMAGE_ICON = 1
+                        LR_LOADFROMFILE = 0x00000010
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        if hicon:
+                            hwnd = self.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        
+        self.transient(parent)
+        self.grab_set()
+        
+        try:
+            x = parent.winfo_x() + (parent.winfo_width() // 2) - (420 // 2)
+            y = parent.winfo_y() + (parent.winfo_height() // 2) - (140 // 2)
+            self.geometry(f"420x140+{x}+{y}")
+        except Exception:
+            self.geometry("420x140")
+        
+        message = f"Have you visited '{system_name}'?"
+        label = ctk.CTkLabel(
+            self,
+            text=message,
+            font=("Segoe UI", 13, "bold"),
+            wraplength=380
+        )
+        label.pack(pady=(15, 8))
+        
+        button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        button_frame.pack(pady=6, padx=20, fill="x")
+        
+        visited_btn = ctk.CTkButton(
+            button_frame,
+            text="Visited",
+            fg_color="#4CAF50",
+            hover_color="#45a049",
+            font=("Segoe UI", 12, "bold"),
+            height=28,
+            command=lambda: self.set_result('visited')
+        )
+        visited_btn.pack(side="left", expand=True, fill="x", padx=4)
+        
+        clear_btn = ctk.CTkButton(
+            button_frame,
+            text="Clear Status",
+            fg_color="#FF8C00",
+            hover_color="#FFA500",
+            font=("Segoe UI", 12, "bold"),
+            height=28,
+            command=lambda: self.set_result('clear')
+        )
+        clear_btn.pack(side="left", expand=True, fill="x", padx=4)
+        
+        cancel_btn = ctk.CTkButton(
+            button_frame,
+            text="Cancel",
+            fg_color="#666666",
+            hover_color="#555555",
+            font=("Segoe UI", 12, "bold"),
+            height=28,
+            command=lambda: self.set_result('cancel')
+        )
+        cancel_btn.pack(side="left", expand=True, fill="x", padx=4)
+        
+        desc_frame = ctk.CTkFrame(self, fg_color="transparent")
+        desc_frame.pack(pady=(4, 8))
+        
+        desc_label = ctk.CTkLabel(
+            desc_frame,
+            text="Visited = Mark as visited (Green)  |  Clear = Remove status  |  Cancel = No change",
+            font=("Segoe UI", 9),
+            text_color="#888888"
+        )
+        desc_label.pack()
+        
+        self.bind("<Escape>", lambda e: self.set_result('cancel'))
+        
+        button_frame.lift()
+        visited_btn.lift()
+        clear_btn.lift()
+        cancel_btn.lift()
+        
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(100, lambda: self.attributes('-topmost', False))
+        
+        try:
+            self.bind('<Map>', lambda e: self._schedule_reapply_icons())
+            self.bind('<FocusIn>', lambda e: self._schedule_reapply_icons())
+        except Exception:
+            pass
+    
+    def set_result(self, value):
+        self.result = value
+        self.grab_release()
+        self.destroy()
+    
+    def _schedule_reapply_icons(self):
+        if getattr(self, '_reapply_pending', False):
+            return
+        self._reapply_pending = True
+        try:
+            self.after(100, lambda: self._do_reapply_icons())
+        except Exception:
+            self._do_reapply_icons()
+    
+    def _do_reapply_icons(self):
+        try:
+            from edmrn.utils import resource_path
+            from pathlib import Path
+            import ctypes
+            import os
+            
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                try:
+                    self.iconbitmap(ico_path)
+                except Exception:
+                    pass
+                if os.name == 'nt':
+                    try:
+                        IMAGE_ICON = 1
+                        LR_LOADFROMFILE = 0x00000010
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        if hicon:
+                            hwnd = self.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        finally:
+            self._reapply_pending = False
+    
+    def get_result(self):
+        self.wait_window()
+        return self.result
+
+
 class RouteManagement:
     def __init__(self, app):
         self.app = app
@@ -32,17 +204,17 @@ class RouteManagement:
             try:
                 csv_path = self.app.csv_file_path.get()
                 if not csv_path or not Path(csv_path).exists():
-                    self.app.root.after(0, lambda: (dialog.close(), messagebox.showerror("Error", "Please select a valid CSV file.")))
+                    self.app.root.after(0, lambda: (dialog.close(), ErrorDialog(self.app, "Error", "Please select a valid CSV file.")))
                     return
                 try:
                     jump_range = float(self.app.jump_range.get())
                     if jump_range <= 0:
-                        self.app.root.after(0, lambda: (dialog.close(), messagebox.showerror("Error", "Ship jump range must be a positive number.")))
+                        self.app.root.after(0, lambda: (dialog.close(), ErrorDialog(self.app, "Error", "Ship jump range must be a positive number.")))
                         return
                     self.app.config.ship_jump_range = str(jump_range)
                     self.app.config.save()
                 except ValueError:
-                    self.app.root.after(0, lambda: (dialog.close(), messagebox.showerror("Error", "Enter a valid number for ship jump range.")))
+                    self.app.root.after(0, lambda: (dialog.close(), ErrorDialog(self.app, "Error", "Enter a valid number for ship jump range.")))
                     return
                 starting_system_name = self.app.starting_system.get().strip()
                 existing_status = {}
@@ -56,9 +228,9 @@ class RouteManagement:
                     except Exception:
                         pass
                     self.app._optimization_in_progress = False
-                    self.app.run_button.configure(state='normal', text="Optimize Route and Start Tracking")
+                    self.app.run_button.configure(state='normal', text="Optimize & Track")
                     if not result['success']:
-                        messagebox.showerror("Error", result.get('error', 'Optimization failed'))
+                        ErrorDialog(self.app, "Error", result.get('error', 'Optimization failed'))
                         return
                     optimized_df = result['optimized_df']
                     output_file_name = f"Optimized_Route_{result['num_systems']}_J{result['total_jumps']}_M{jump_range:.1f}LY.csv"
@@ -71,21 +243,44 @@ class RouteManagement:
                         self.app._log(f"Route saved to backup: {backup_folder.name}")
                     else:
                         self.app._log(f"Route optimization complete")
-                    self.app.route_tracker.load_route(result['route_data'])
+                    
+                    route_data = result['route_data']
+                    route_data = self._check_visited_systems(route_data)
+                    
+                    self.app.route_tracker.load_route(route_data)
                     if 'backup_folder' in result:
+                        try:
+                            rows = []
+                            for item in route_data:
+                                rows.append({
+                                    'System Name': item['name'],
+                                    'X': item['coords'][0],
+                                    'Y': item['coords'][1],
+                                    'Z': item['coords'][2],
+                                    'Status': item.get('status', STATUS_UNVISITED),
+                                    'Bodies': str(item.get('bodies_to_scan', [])),
+                                    'Body_Count': item.get('body_count', 0)
+                                })
+                            if rows:
+                                csv_path = Path(result['backup_folder']) / 'current_route.csv'
+                                df = pd.DataFrame(rows)
+                                df.to_csv(csv_path, index=False)
+                        except Exception as e:
+                            logger.error(f"Failed to write filtered route CSV: {e}")
                         self.app.route_tracker.save_route_status(result['backup_folder'])
                     self.app.total_distance_ly = result['total_distance']
                     self.create_route_tracker_tab_content()
                     self.app.tabview.set("Route Tracking")
                     self.app._start_journal_monitor()
                     self.copy_next_system_to_clipboard()
+                    self.app._ensure_overlay_started("Route Tracking")
                     self.app._log("\\nOPTIMIZATION COMPLETE")
                     self.app._log(f"Total Distance: {result['total_distance']:.2f} LY")
                     self.app._log(f"Estimated Jumps: {result['total_jumps']} jumps")
                     self.app._log(f"Route successfully saved to: '{output_file_path}'")
                     self.app._log("Switched to Route Tracking tab (with 3D Map).")
                     self.app._log("Auto-Tracking STARTED (Monitoring Elite Dangerous Journal).")
-                    messagebox.showinfo("Success", f"Route optimization complete and Auto-Tracking is ready.\\nFile: {output_file_name}")
+                    InfoDialog(self.app, "Success", f"Route optimization complete and Auto-Tracking is ready.\nFile: {output_file_name}")
                 self.app.root.after(0, finish)
             except RuntimeError as e:
                 try:
@@ -93,7 +288,7 @@ class RouteManagement:
                 except Exception:
                     pass
                 self.app._optimization_in_progress = False
-                self.app.root.after(0, lambda: (self.app.run_button.configure(state='normal', text="Optimize Route and Start Tracking"), messagebox.showinfo("Info", "Optimization cancelled.")))
+                self.app.root.after(0, lambda: (self.app.run_button.configure(state='normal', text="Optimize & Track"), InfoDialog(self.app, "Info", "Optimization cancelled.")))
             except Exception as e:
                 try:
                     dialog.close()
@@ -101,8 +296,45 @@ class RouteManagement:
                     pass
                 error_msg = f"Optimization failed: {str(e)[:100]}"
                 self.app._optimization_in_progress = False
-                self.app.root.after(0, lambda: (self.app._log(f"{error_msg}"), self.app.run_button.configure(state='normal', text="Optimize Route and Start Tracking")))
+                self.app.root.after(0, lambda: (self.app._log(f"{error_msg}"), self.app.run_button.configure(state='normal', text="Optimize & Track")))
         threading.Thread(target=optimization_wrapper, daemon=True).start()
+    
+    def _check_visited_systems(self, route_data):
+        try:
+            history_manager = get_history_manager()
+            system_names = [item.get('name') for item in route_data if item.get('name')]
+            
+            visited_systems = history_manager.find_visited_systems(system_names)
+            
+            if not visited_systems:
+                return route_data
+            
+            dialog = VisitedSystemsDialog(self.app.root, visited_systems)
+            result, systems_to_remove = dialog.get_result()
+            
+            if result == 'cancel':
+                return route_data
+            
+            if result == 'keep_all':
+                self.app._log(f"INFO: Keeping all {len(visited_systems)} previously visited systems in route")
+                return route_data
+            
+            if result == 'remove_selected' and systems_to_remove:
+                filtered_route = [
+                    item for item in route_data 
+                    if item.get('name') not in systems_to_remove
+                ]
+                removed_count = len(route_data) - len(filtered_route)
+                self.app._log(f"INFO: Removed {removed_count} previously visited systems from route")
+                self.app._log(f"New route: {len(filtered_route)} systems (was {len(route_data)})")
+                return filtered_route
+            
+            return route_data
+            
+        except Exception as e:
+            logger.error(f"Error checking visited systems: {e}")
+            return route_data
+    
     def create_route_tracker_tab_content(self):
         colors = self.app.theme_manager.get_theme_colors()
         if hasattr(self.app, 'system_labels'):
@@ -263,34 +495,42 @@ class RouteManagement:
             self.update_label_color(system_name, status)
         has_coords = route_data and 'coords' in route_data[0]
         if has_coords:
-            self.app.map_frame.plot_route(route_data)
+            def plot_in_background():
+                try:
+                    self.app.map_frame.plot_route(route_data)
+                except Exception as e:
+                    logger.error(f"Map plot error: {e}")
+            import threading
+            threading.Thread(target=plot_in_background, daemon=True).start()
         self.update_route_statistics()
         self.update_progress_info()
     def handle_system_click_manual(self, system_name):
         if self.app.map_frame:
             self.app.map_frame.highlight_system(system_name)
-        response = messagebox.askyesnocancel(
-            "Status Update",
-            f"Have you visited the system '{system_name}'?\\n\\n'Yes' = Visited (Green)\\n'No' = Skipped (Red)\\n'Cancel' = Do not change status",
-            icon="question"
-        )
-        if response is None:
+        
+        dialog = StatusUpdateDialog(self.app.root, system_name)
+        result = dialog.get_result()
+        
+        if result == 'cancel' or result is None:
             return
+        
         new_status = None
-        if response:
+        if result == 'visited':
             new_status = STATUS_VISITED
-        else:
-            new_status = STATUS_SKIPPED
-        status_changed = self.app.route_manager.update_system_status(system_name, new_status)
-        if status_changed:
-            self.update_label_color(system_name, new_status)
-            if self.app.map_frame:
-                self.app.map_frame.update_system_status(system_name, new_status)
-            self.update_progress_info()
-            self.update_route_statistics()
-        if hasattr(self.app, 'current_backup_folder') and self.app.current_backup_folder:
-            self.app.route_tracker.save_route_status(self.app.current_backup_folder)
-            self.app._log(f"'{system_name}' status updated to: {new_status.upper()}")
+        elif result == 'clear':
+            new_status = STATUS_UNVISITED
+        
+        if new_status is not None:
+            status_changed = self.app.route_manager.update_system_status(system_name, new_status)
+            if status_changed:
+                self.update_label_color(system_name, new_status)
+                if self.app.map_frame:
+                    self.app.map_frame.update_system_status(system_name, new_status)
+                self.update_progress_info()
+                self.update_route_statistics()
+            if hasattr(self.app, 'current_backup_folder') and self.app.current_backup_folder:
+                self.app.route_tracker.save_route_status(self.app.current_backup_folder)
+                self.app._log(f"'{system_name}' status updated to: {new_status.upper()}")
     def handle_system_click(self, system_name):
         if self.app.map_frame:
             self.app.map_frame.highlight_system(system_name)
@@ -353,3 +593,32 @@ class RouteManagement:
                 self.app._log("ERROR: Failed to copy system name to clipboard.")
         else:
             self.app._log("INFO: Route complete. Nothing to copy.")
+
+    def copy_prev_system_to_clipboard(self):
+        route_data = self.app.route_manager.get_route()
+        if not route_data:
+            self.app._log("INFO: No route loaded. Nothing to copy.")
+            return
+
+        next_index = next((i for i, item in enumerate(route_data)
+                           if item.get('status') == STATUS_UNVISITED), len(route_data))
+
+        if next_index == 0:
+            self.app._log("INFO: No previous system to copy.")
+            return
+
+        prev_system_name = route_data[next_index - 1].get('name')
+        if not prev_system_name:
+            self.app._log("INFO: Previous system has no name. Nothing copied.")
+            return
+
+        try:
+            temp_root = tk.Tk()
+            temp_root.withdraw()
+            temp_root.clipboard_clear()
+            temp_root.clipboard_append(prev_system_name)
+            temp_root.update()
+            temp_root.destroy()
+            self.app._log(f"'{prev_system_name}' (Previous System) copied to clipboard.")
+        except Exception:
+            self.app._log("ERROR: Failed to copy previous system to clipboard.")

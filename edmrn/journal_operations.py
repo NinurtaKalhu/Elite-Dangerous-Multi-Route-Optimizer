@@ -3,9 +3,10 @@ import threading
 import glob
 import os
 from pathlib import Path
-from tkinter import messagebox, filedialog
+from tkinter import filedialog
 from edmrn.journal import JournalMonitor
 from edmrn.logger import get_logger
+from edmrn.gui import ErrorDialog, InfoDialog, WarningDialog
 logger = get_logger('JournalOperations')
 class JournalOperations:
     def __init__(self, app):
@@ -21,11 +22,15 @@ class JournalOperations:
         current_tab = self.app.tabview.get()
         if current_tab == "Neutron Highway":
             self.app.neutron_manager.handle_neutron_system_jump(system_name)
+        elif current_tab == "Galaxy Plotter":
+            if self.app.galaxy_route_waypoints:
+                self.app._handle_galaxy_system_jump(system_name)
         else:
             self.app.root.after(0, lambda: self.app._update_system_status_from_monitor(system_name, 'visited'))
     def get_latest_cmdr_data(self):
         cmdr_name_default = "CMDR NoName"
         cmdr_cash = 0
+        current_system = "Unknown"
         selected_cmdr = self.app.config.selected_commander
         journal_monitor = JournalMonitor(None, selected_commander=selected_cmdr)
         latest_file = journal_monitor._get_latest_journal_file()
@@ -43,20 +48,26 @@ class JournalOperations:
                     try:
                         data = json.loads(line)
                         event = data.get('event')
-                        if event == 'Commander': cmdr_name_default = data.get('Name', cmdr_name_default)
-                        elif event == 'LoadGame': cmdr_cash = data.get('Credits', cmdr_cash)
+                        if event == 'Commander':
+                            cmdr_name_default = data.get('Name', cmdr_name_default)
+                        elif event == 'LoadGame':
+                            cmdr_cash = data.get('Credits', cmdr_cash)
+                        elif event in ['FSDJump', 'Location']:
+                            current_system = data.get('StarSystem', current_system)
                     except json.JSONDecodeError:
                         continue
         except Exception as e:
             self.app._log(f"ERROR reading CMDR data from Journal: {e}")
         final_cmdr_name = cmdr_name_default
         final_cmdr_cash = self._format_cash(cmdr_cash)
+        final_location = current_system or "Unknown"
         try:
             self.app.root.after(0, lambda: self.app.cmdr_name.set(final_cmdr_name))
             self.app.root.after(0, lambda: self.app.cmdr_cash.set(final_cmdr_cash))
+            self.app.root.after(0, lambda: self.app.cmdr_location.set(final_location))
         except RuntimeError:
             return
-        self.app._log(f"CMDR Status Loaded: {final_cmdr_name}, {final_cmdr_cash}")
+        self.app._log(f"CMDR Status Loaded: {final_cmdr_name}, {final_cmdr_cash}, Location: {final_location}")
     def _format_cash(self, amount):
         try:
             cash_int = int(amount)
@@ -86,18 +97,18 @@ class JournalOperations:
         if not test_path:
             test_path = self._get_auto_journal_path()
         if not test_path:
-            messagebox.showerror("Error", "No journal path found")
+            ErrorDialog(self.app, "Error", "No journal path found")
             return
         if not Path(test_path).exists():
-            messagebox.showerror("Error", f"Path does not exist:\n{test_path}")
+            ErrorDialog(self.app, "Error", f"Path does not exist:\n{test_path}")
             return
         pattern = Path(test_path) / 'Journal.*.log'
         journal_files = glob.glob(str(pattern))
         if journal_files:
             latest = max(journal_files, key=os.path.getmtime)
-            messagebox.showinfo("Success", f"Journal path is valid!\n\nFound {len(journal_files)} files\nLatest: {Path(latest).name}")
+            InfoDialog(self.app, "Success", f"Journal path is valid!\n\nFound {len(journal_files)} files\nLatest: {Path(latest).name}")
         else:
-            messagebox.showwarning("Warning", "Path exists but no journal files found")
+            WarningDialog(self.app, "Warning", "Path exists but no journal files found")
     def apply_journal_settings(self):
         manual_path = self.app.journal_path_var.get().strip() or None
         self.app.config.journal_path = manual_path if manual_path else ''
@@ -113,7 +124,7 @@ class JournalOperations:
         self.app.journal_monitor.start()
         path_used = manual_path if manual_path else "Auto-detected path"
         self.app._log(f"Journal Monitor restarted with: {path_used}")
-        messagebox.showinfo("Success", "Journal monitor restarted with new settings!")
+        InfoDialog(self.app, "Success", "Journal monitor restarted with new settings!")
         threading.Thread(target=self.get_latest_cmdr_data, daemon=True).start()
     def switch_commander(self, selected):
         if selected:
@@ -130,7 +141,7 @@ class JournalOperations:
             )
             self.app.journal_monitor.start()
             threading.Thread(target=self.get_latest_cmdr_data, daemon=True).start()
-            messagebox.showinfo("Success", f"Journal monitor restarted for commander: {selected}")
+            InfoDialog(self.app, "Success", f"Journal monitor restarted for commander: {selected}")
     def refresh_commanders_list(self):
         commanders = self.detect_all_commanders()
         if hasattr(self.app, 'cmdr_dropdown'):

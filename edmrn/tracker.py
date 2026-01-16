@@ -6,6 +6,7 @@ import customtkinter as ctk
 from edmrn.logger import get_logger
 from edmrn.config import AppConfig
 from edmrn.icons import Icons
+from edmrn.visit_history import get_history_manager
 logger = get_logger('Tracker')
 STATUS_VISITED = 'visited'
 STATUS_SKIPPED = 'skipped'
@@ -36,6 +37,12 @@ class ThreadSafeRouteManager:
                 if item.get('name') == system_name:
                     if item.get('status') != status:
                         item['status'] = status
+                        if status == STATUS_VISITED:
+                            try:
+                                history_manager = get_history_manager()
+                                history_manager.mark_visited(system_name)
+                            except Exception as e:
+                                logger.error(f"Failed to update visit history: {e}")
                         return True
                     return False
             return False

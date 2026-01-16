@@ -1,9 +1,10 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import colorchooser, messagebox, filedialog
+from tkinter import colorchooser, filedialog
 import json
 import os
 from .ed_theme import EliteDangerousTheme
+from edmrn.gui import ConfirmDialog, ErrorDialog, InfoDialog
 class ThemeEditor:
     def __init__(self, parent, theme_manager):
         self.parent = parent
@@ -114,9 +115,9 @@ class ThemeEditor:
                 self.update_theme_color(widget_type, property_name, hex_color.upper())
                 color_display.configure(fg_color=hex_color)
             except ValueError:
-                messagebox.showerror("Invalid Color", "Please enter a valid hex color (e.g., #FF8C00)")
+                ErrorDialog(self.app, "Invalid Color", "Please enter a valid hex color (e.g., #FF8C00)")
         else:
-            messagebox.showerror("Invalid Format", "Color must be in hex format (e.g., #FF8C00)")
+            ErrorDialog(self.app, "Invalid Format", "Color must be in hex format (e.g., #FF8C00)")
     def update_theme_color(self, widget_type, property_name, hex_color):
         if widget_type not in self.current_theme:
             self.current_theme[widget_type] = {}
@@ -126,11 +127,12 @@ class ThemeEditor:
         try:
             with open(theme_path, 'w') as f:
                 json.dump(self.current_theme, f, indent=2)
-            messagebox.showinfo("Success", "Theme saved successfully!\nRestart the application to see all changes.")
+            InfoDialog(self.parent, "Success", "Theme saved successfully!\nRestart the application to see all changes.")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save theme: {str(e)}")
+            ErrorDialog(self.parent, "Error", f"Failed to save theme: {str(e)}")
     def reset_theme(self):
-        if messagebox.askyesno("Reset Theme", "Are you sure you want to reset to default theme?"):
+        dialog = ConfirmDialog(self.parent, "Reset Theme", "Are you sure you want to reset to default theme?")
+        if dialog.get_result():
             self.current_theme = self.get_default_theme()
             self.window.destroy()
             ThemeEditor(self.parent, None)

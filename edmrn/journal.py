@@ -226,6 +226,30 @@ class JournalMonitor(threading.Thread):
         except Exception as e:
             logger.error(f"Error getting current system from journal: {e}")
             return None
+    
+    def get_current_coordinates(self):
+        try:
+            latest_file = self._get_latest_journal_file()
+            if not latest_file:
+                return None
+            
+            coords = None
+            with open(latest_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    try:
+                        data = json.loads(line)
+                        event = data.get('event')
+                        if event in ['FSDJump', 'Location']:
+                            star_pos = data.get('StarPos')
+                            if star_pos and isinstance(star_pos, list) and len(star_pos) == 3:
+                                coords = tuple(star_pos)
+                    except json.JSONDecodeError:
+                        continue
+            return coords
+        except Exception as e:
+            logger.error(f"Error getting current coordinates from journal: {e}")
+            return None
+    
     def stop(self):
         self._stop_event.set()
         logger.info("Journal monitor stopped")

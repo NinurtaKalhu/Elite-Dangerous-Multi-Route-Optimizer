@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist-temp/
+build-temp/
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Virtual Environments
+.venv/
+.venv_clean/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.amazonq/
+
+# PyInstaller
+build/
+*.spec.bak
+
+# Logs
+*.log
+error.log
+output.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+archive_old/
+temp_*.csv
+*_repro.csv
+
+# Dist - keep only final release builds
+dist/*.exe
+!dist/EDMRN_v*.exe

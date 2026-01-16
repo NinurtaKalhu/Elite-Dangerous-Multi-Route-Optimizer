@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from tkinter import messagebox
 from edmrn.logger import get_logger
+from edmrn.gui import ErrorDialog
 logger = get_logger('ThemeManager')
 class ThemeManager:
     def __init__(self, app):
@@ -115,5 +116,5 @@ class ThemeManager:
             return file_theme_name
         except Exception as e:
             logger.error(f"Theme change error: {e}")
-            messagebox.showerror("Error", f"Failed to change theme: {e}")
+            ErrorDialog(self.app, "Error", f"Failed to change theme: {e}")
             return "elite_dangerous"

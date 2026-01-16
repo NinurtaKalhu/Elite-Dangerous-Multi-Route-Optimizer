@@ -5,7 +5,12 @@ import json
 from typing import Dict, List, Optional, Callable
 from edmrn.logger import get_logger
 from edmrn.icons import Icons
+
 logger = get_logger('Neutron')
+
+STATUS_VISITED = 'visited'
+STATUS_UNVISITED = 'unvisited'
+
 class NeutronRouter:
     def __init__(self):
         self.route_api_url = "https://spansh.co.uk/api/route"
@@ -35,7 +40,7 @@ class NeutronRouter:
                     "to": to_system,
                     "supercharge_multiplier": supercharge_multiplier
                 },
-                headers={'User-Agent': "EDMRN_NeutronRouter 1.0"},
+                headers={'User-Agent': "EDMRN 3.0"},
                 timeout=30
             )
             if response.status_code != 202:
@@ -103,7 +108,8 @@ class NeutronRouter:
                 "system": system_name,
                 "type": "Neutron" if neutron_star else "Normal",
                 "distance": distance_jumped,
-                "jumps": jumps_count
+                "jumps": jumps_count,
+                "status": STATUS_UNVISITED
             })
             total_distance += distance_jumped
             if neutron_star:
@@ -134,6 +140,19 @@ class NeutronRouter:
         if self.current_waypoint_index > 0:
             self.current_waypoint_index -= 1
             return True
+        return False
+    
+    def mark_current_as_visited(self) -> bool:
+        if not self.last_route or self.current_waypoint_index >= len(self.last_route):
+            return False
+        self.last_route[self.current_waypoint_index]['status'] = STATUS_VISITED
+        return self.next_waypoint()
+    
+    def update_waypoint_status(self, system_name: str, status: str) -> bool:
+        for waypoint in self.last_route:
+            if waypoint.get('system') == system_name:
+                waypoint['status'] = status
+                return True
         return False
     def get_next_waypoint(self) -> str:
         if not self.last_route:

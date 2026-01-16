@@ -8,12 +8,14 @@ class AppConfig:
     color_theme: str = 'green'
     overlay_opacity: int = 80
     overlay_size: str = 'Medium'
+    auto_start_overlay_when_ready: bool = True
     journal_path: str = ''
     selected_commander: str = 'Auto'
     autosave_interval: str = '5 minutes'
     ship_jump_range: str = '70.0'
     current_theme: str = 'elite_dangerous'
     window_geometry: str = '1100x800+100+100'
+    borderless_mode: bool = True
     @classmethod
     def get_app_data_path(cls):
         try:
