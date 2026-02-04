@@ -486,7 +486,7 @@ Some antivirus software may flag EDMRN.exe (common with PyInstaller-built apps):
 
 1. Add EDMRN folder to antivirus exceptions
 2. Run from source code instead of executable
-3. Check [VirusTotal Report](https://www.virustotal.com/) for verification
+3. Check [VirusTotal Report]([https://www.virustotal.com/](https://www.virustotal.com/gui/file/0574687e50946876e88e695f7e67a447d6969a372014645b8e4b0205c90fc152)) for verification
 4. Download only from official GitHub releases
  
 ### Getting More Help
