@@ -155,7 +155,7 @@ Completely modular architecture with professional theme system, advanced route p
 
 **Latest Release: v3.2.0**
 
-[📥 DOWNLOAD EDMRN v3.2.0]([https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2.0/EDMRN_v3.2.0.exe](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2/EDMRN.v3.2.exe))
+[📥 DOWNLOAD EDMRN v3.2.0]([https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2.0/EDMRN_v3.2.0.exe](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2/EDMRN.v3.2.exe)
 
 **Quick Start (Windows):**
 
@@ -486,7 +486,7 @@ Some antivirus software may flag EDMRN.exe (common with PyInstaller-built apps):
 
 1. Add EDMRN folder to antivirus exceptions
 2. Run from source code instead of executable
-3. Check [VirusTotal Report]([https://www.virustotal.com/](https://www.virustotal.com/gui/file/0574687e50946876e88e695f7e67a447d6969a372014645b8e4b0205c90fc152)) for verification
+3. Check [https://www.virustotal.com/](https://www.virustotal.com/gui/file/0574687e50946876e88e695f7e67a447d6969a372014645b8e4b0205c90fc152) for verification
 4. Download only from official GitHub releases
  
 ### Getting More Help
@@ -726,7 +726,7 @@ PyInstaller-built executables sometimes trigger false positives:
 
 1. ✅ Download only from official [GitHub Releases](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
 2. ✅ Check file hash against release notes
-3. ✅ Scan with [VirusTotal](https://www.virustotal.com/)
+3. ✅ Scan with [VirusTotal](https://www.virustotal.com/gui/file/0574687e50946876e88e695f7e67a447d6969a372014645b8e4b0205c90fc152)
 4. ✅ Run from source if concerned (see installation)
 
 **Safe Actions:**
