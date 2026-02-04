@@ -155,7 +155,7 @@ Completely modular architecture with professional theme system, advanced route p
 
 **Latest Release: v3.2.0**
 
-[📥 DOWNLOAD EDMRN v3.2.0]([https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2.0/EDMRN_v3.2.0.exe](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2/EDMRN.v3.2.exe)
+[📥 DOWNLOAD EDMRN v3.2.0 CLICK HERE](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2/EDMRN.v3.2.exe)
 
 **Quick Start (Windows):**
 
