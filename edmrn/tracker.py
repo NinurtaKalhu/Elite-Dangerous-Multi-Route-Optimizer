@@ -11,8 +11,8 @@ logger = get_logger('Tracker')
 STATUS_VISITED = 'visited'
 STATUS_SKIPPED = 'skipped'
 STATUS_UNVISITED = 'unvisited'
-COLOR_VISITED = '#4CAF50'
-COLOR_SKIPPED = '#FFA500'
+COLOR_VISITED = "#32B837"
+COLOR_SKIPPED = "#FF5D5D"
 COLOR_DEFAULT_TEXT = ('#E0E0E0', '#E0E0E0')
 class ThreadSafeRouteManager:
     def __init__(self):
@@ -194,6 +194,7 @@ class RouteTracker:
                     'current_system': 'No Route',
                     'current_status': 'READY',
                     'bodies_to_scan': ['Load route...'],
+                    'exobio_species': [],
                     'next_system': 'N/A',
                     'progress': '0/0 (0%)',
                     'total_distance': '0.00 LY',
@@ -251,10 +252,37 @@ class RouteTracker:
                     else:
                         simplified.append(str(body))
                 bodies = simplified
+            exobio_species = []
+            if hasattr(app_instance, 'system_info_section'):
+                section = app_instance.system_info_section
+                if hasattr(section, '_last_edsm_exobio_samples'):
+                    exobio_samples = list(getattr(section, '_last_edsm_exobio_samples', []))
+                    if hasattr(section, '_onfoot_bio_samples'):
+                        exobio_samples += section._onfoot_bio_samples
+                    from edmrn.codex_translation import codex_translation
+                    from collections import Counter
+                    def normalize_key(s):
+                        key = s.strip()
+                        if not key.endswith(';'):
+                            key += ';'
+                        if key in codex_translation:
+                            return codex_translation[key]
+                        elif key.startswith('$') and key[1:] in codex_translation:
+                            return codex_translation[key[1:]]
+                        elif not key.startswith('$') and ('$' + key) in codex_translation:
+                            return codex_translation['$' + key]
+                        else:
+                            return s
+                    readable_samples = [normalize_key(s) for s in exobio_samples]
+                    counts = Counter(readable_samples)
+                    species_list = [(species, counts[species]) for species in counts]
+                    species_list.sort(key=lambda x: (-(x[1] >= 3), x[0].lower()))
+                    exobio_species = species_list
             return {
                 'current_system': current_system['name'] if current_system else 'Unknown',
                 'current_status': current_status,
                 'bodies_to_scan': bodies if bodies else ['No bodies to scan'],
+                'exobio_species': exobio_species,
                 'next_system': next_system,
                 'progress': progress_text,
                 'total_distance': f"{self.total_distance_ly:.2f} LY",

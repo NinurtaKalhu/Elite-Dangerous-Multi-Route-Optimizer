@@ -1,4 +1,15 @@
 import sys
+import logging
+
+def global_exception_hook(exctype, value, traceback):
+    with open("edmrn_crash.log", "a", encoding="utf-8") as f:
+        import traceback as tb
+        f.write("\n--- EDMRN Crash ---\n")
+        f.write("".join(tb.format_exception(exctype, value, traceback)))
+    print("An unexpected error occurred! Details have been saved to edmrn_crash.log.")
+sys.excepthook = global_exception_hook
+
+logging.disable(logging.NOTSET)
 import os
 import threading
 import time
@@ -12,10 +23,15 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from PIL import Image, ImageTk
+from customtkinter import CTkImage
+from customtkinter import CTkImage
 import webbrowser
+import requests
+from bs4 import BeautifulSoup
 from edmrn.icons import Icons
 from edmrn.updater import setup_auto_updates
 from edmrn.logger import setup_logging, get_logger
+from edmrn.config import AppConfig
 from edmrn.utils import resource_path
 from edmrn.ed_theme import apply_elite_dangerous_theme
 from edmrn.theme_manager import ThemeManager
@@ -56,26 +72,222 @@ from edmrn.neutron import NeutronRouter
 logger = get_logger('App')
 
 class EDMRN_App:
-    def __init__(self):
+    def _journal_callback(self, system_name, event_data=None):
+        import threading
+        try:
+            event = None
+            if isinstance(event_data, dict):
+                event = event_data.get('event')
+            if event in ('Scan', 'SAASignalsFound', 'CodexEntry'):
+                def _log_update():
+                    try:
+                        if hasattr(self, 'system_info_section') and self.system_info_section:
+                            sys_name = system_name
+                            if not sys_name and isinstance(event_data, dict):
+                                sys_name = event_data.get('StarSystem') or event_data.get('SystemName')
+                            if sys_name:
+                                self.system_info_section.update_log({'name': sys_name})
+                    except Exception:
+                        pass
+                if threading.current_thread() is threading.main_thread():
+                    _log_update()
+                else:
+                    if hasattr(self, 'root') and self.root:
+                        self.root.after(0, _log_update)
+                return
+            if threading.current_thread() is threading.main_thread():
+                self.handle_onfoot_bio_event(system_name, event_data)
+            else:
+                if hasattr(self, 'root') and self.root:
+                    self.root.after(0, lambda: self.handle_onfoot_bio_event(system_name, event_data))
+        except Exception:
+            pass
+    def _apply_root_window_settings(self, root):
+        root.title(f"ED Multi Route Navigation (EDMRN)")
+        root.geometry("1196x730")
+        root.minsize(1200, 700)
+        colors = self.theme_manager.get_theme_colors() if hasattr(self, 'theme_manager') else {'background': '#232323'}
+        root.configure(fg_color=colors['background'])
+        try:
+            ico_path = resource_path('../assets/explorer_icon.ico')
+            if Path(ico_path).exists():
+                try:
+                    root.iconbitmap(ico_path)
+                except Exception as e:
+                    logger.debug(f"Root: iconbitmap failed: {e}")
+                if os.name == 'nt':
+                    try:
+                        IMAGE_ICON = 1
+                        LR_LOADFROMFILE = 0x00000010
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        if hicon:
+                            hwnd = root.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception as e:
+                        logger.debug(f"Root: WM_SETICON failed: {e}")
+        except Exception as e:
+            logger.debug(f"Root: iconbitmap failed: {e}")
+        try:
+            logo_path = resource_path('../assets/explorer_icon.png')
+            if Path(logo_path).exists():
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                self._title_icon = ImageTk.PhotoImage(img)
+                try:
+                    root.wm_iconphoto(True, self._title_icon)
+                except Exception:
+                    root.iconphoto(False, self._title_icon)
+                if os.name == 'nt':
+                    try:
+                        IMAGE_ICON = 1
+                        LR_LOADFROMFILE = 0x00000010
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = _load_hicon_app(logo_path)
+                        if hicon:
+                            hwnd = root.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                    except Exception as e:
+                        logger.debug(f"Root: WM_SETICON PNG failed: {e}")
+        except Exception as e:
+            logger.debug(f"Root: iconphoto failed: {e}")
+        try:
+            root.bind('<Map>', lambda e: self._schedule_reapply_root_icon())
+            root.bind('<FocusIn>', lambda e: self._schedule_reapply_root_icon())
+        except Exception:
+            pass
+        root.protocol("WM_DELETE_WINDOW", self._on_closing)
+    def _create_header(self):
+        colors = self.theme_manager.get_theme_colors()
+        header_frame = ctk.CTkFrame(
+            self.content_root,
+            fg_color=colors['frame'],
+            border_color=colors['border'],
+            border_width=1,
+            height=45
+        )
+        header_frame.grid(row=0, column=0, sticky="ew", padx=15, pady=(15, 10))
+        header_frame.columnconfigure(1, weight=1)
+        header_frame.columnconfigure(2, weight=0)
+        header_frame.grid_propagate(False)
+
+        logo_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        logo_frame.grid(row=0, column=0, sticky="w", padx=8, pady=5)
+        try:
+            logo_path = resource_path('../assets/explorer_icon.png')
+            if Path(logo_path).exists():
+                from PIL import Image
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                self._title_icon = CTkImage(light_image=img)
+                ctk.CTkLabel(logo_frame, image=self._title_icon, text="", fg_color="transparent").pack(side="left")
+        except Exception as e:
+            logger.debug(f"Logo load failed: {e}")
+
+        cmdr_info_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        cmdr_info_frame.grid(row=0, column=1, sticky="w", padx=10, pady=5)
+        ctk.CTkLabel(cmdr_info_frame, text="CMDR:",
+                     font=ctk.CTkFont(size=12, weight="bold"),
+                     text_color=colors['primary']).grid(row=0, column=0, sticky="w", pady=2)
+        ctk.CTkLabel(cmdr_info_frame, textvariable=self.cmdr_name,
+                     font=ctk.CTkFont(size=12),
+                     text_color=colors['text']).grid(row=0, column=1, sticky="w", padx=(3, 12), pady=2)
+        ctk.CTkLabel(cmdr_info_frame, text="CR:",
+                     font=ctk.CTkFont(size=12, weight="bold"),
+                     text_color=colors['primary']).grid(row=0, column=2, sticky="w", pady=2)
+        ctk.CTkLabel(cmdr_info_frame, textvariable=self.cmdr_cash,
+                     font=ctk.CTkFont(size=11),
+                     text_color=colors['text']).grid(row=0, column=3, sticky="w", padx=(3, 12), pady=2)
+        ctk.CTkLabel(cmdr_info_frame, text="Location:",
+                     font=ctk.CTkFont(size=12, weight="bold"),
+                     text_color=colors['primary']).grid(row=0, column=4, sticky="w", pady=2)
+        ctk.CTkLabel(cmdr_info_frame, textvariable=self.cmdr_location,
+                     font=ctk.CTkFont(size=11),
+                     text_color=colors['text']).grid(row=0, column=5, sticky="w", padx=(3, 0), pady=2)
+        
+        update_btn = ctk.CTkButton(
+            header_frame,
+            text="🔄 Check Update",
+            command=self._check_for_updates,
+            width=120,
+            height=28,
+            font=ctk.CTkFont(size=11)
+        )
+        self.theme_manager.apply_button_theme(update_btn, "primary")
+        update_btn.grid(row=0, column=2, sticky="e", padx=(0, 10), pady=5)
+
+    def handle_onfoot_bio_event(self, system_name, event_data=None):
+        """
+        Unified callback for both FSDJump (system_name, event_data=None) 
+        and Exobiology events (system_name, event_data=dict)
+        """
+        if event_data is None:
+            self._handle_system_jump(system_name, event_data=None)
+            return
+        
+        genus = None
+        system = None
+        body = None
+        completed = False
+        
+        if event_data.get('event') == 'Exobiology':
+            genus = event_data.get('Genus')
+            system = event_data.get('StarSystem') or event_data.get('SystemName')
+            body = event_data.get('BodyName') or event_data.get('Body')
+        elif event_data.get('event') == 'ScanOrganic':
+            genus = event_data.get('Genus') or event_data.get('GenusName')
+            system = system_name or event_data.get('StarSystem')
+            body = event_data.get('BodyName') or event_data.get('Body')
+            scan_type = event_data.get('ScanType', '')
+            completed = (scan_type == 'Analyse')
+        
+        if genus and hasattr(self, 'system_info_section'):
+            self.system_info_section.add_onfoot_bio_sample(genus, body=body, system=system, completed=completed)
+
+    def __init__(self, root=None):
+        import time
+        t0 = time.perf_counter()
+        self._overlay_exobio_species = []
+        self._auto_system_info_enabled = True
         setup_logging()
+        t1 = time.perf_counter(); print(f"[Startup] Logging setup: {t1-t0:.3f}s")
         self.config = AppConfig.load()
+        t2 = time.perf_counter(); print(f"[Startup] Config loaded: {t2-t1:.3f}s")
         self.current_theme = getattr(self.config, 'current_theme', 'elite_dangerous')
         self.platform_detector = get_platform_detector()
+        t3 = time.perf_counter(); print(f"[Startup] Platform detector: {t3-t2:.3f}s")
         self.theme_manager = ThemeManager(self)
+        t4 = time.perf_counter(); print(f"[Startup] ThemeManager: {t4-t3:.3f}s")
         self.ui_components = UIComponents(self)
+        t5 = time.perf_counter(); print(f"[Startup] UIComponents: {t5-t4:.3f}s")
         self.settings_manager = SettingsManager(self)
+        t6 = time.perf_counter(); print(f"[Startup] SettingsManager: {t6-t5:.3f}s")
         self.neutron_manager = NeutronManager(self)
+        t7 = time.perf_counter(); print(f"[Startup] NeutronManager: {t7-t6:.3f}s")
         self.journal_operations = JournalOperations(self)
+        t8 = time.perf_counter(); print(f"[Startup] JournalOperations: {t8-t7:.3f}s")
         self.file_operations = FileOperations(self)
+        t9 = time.perf_counter(); print(f"[Startup] FileOperations: {t9-t8:.3f}s")
         self.route_management = RouteManagement(self)
+        t10 = time.perf_counter(); print(f"[Startup] RouteManagement: {t10-t9:.3f}s")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         self._borderless = False
         self._is_maximized = False
         self._saved_geometry = None
         self._drag_offset = (0, 0)
-        self._create_root_window()
-        self.csv_file_path = ctk.StringVar()
+        t11 = time.perf_counter(); print(f"[Startup] Pre-root window: {t11-t10:.3f}s")
+        if root is not None:
+            self.root = root
+            self._apply_root_window_settings(self.root)
+        else:
+            self._create_root_window()
+        t12 = time.perf_counter(); print(f"[Startup] Root window created: {t12-t11:.3f}s")
+        self.csv_file_path = ctk.StringVar(value=resource_path("default.csv"))
         self.load_backup_btn = None
         self.jump_range = ctk.StringVar(value=self.config.ship_jump_range)
         self.starting_system = ctk.StringVar()
@@ -109,11 +321,22 @@ class EDMRN_App:
         self.optional_window = None
         self._optimization_in_progress = False
         self.output_text = None
+        self._lazy_loaded_tabs = {}
+        self._lazy_loading_tabs = set()
+        self._pending_system_info_fetch = None
+        self._preload_started = False
+        t13 = time.perf_counter(); print(f"[Startup] Pre-widgets: {t13-t12:.3f}s")
         self._create_widgets()
+        t14 = time.perf_counter(); print(f"[Startup] Widgets created: {t14-t13:.3f}s")
         self._setup_managers()
+        t15 = time.perf_counter(); print(f"[Startup] Managers setup: {t15-t14:.3f}s")
         self._autodetect_csv(initial_run=True)
+        t16 = time.perf_counter(); print(f"[Startup] CSV autodetect: {t16-t15:.3f}s")
         self.root.after(500, self._complete_startup_in_background)
-        self._start_journal_monitor()
+        self.journal_monitor = JournalMonitor(self._journal_callback)
+        t17 = time.perf_counter(); print(f"[Startup] JournalMonitor: {t17-t16:.3f}s")
+        print(f"[Startup] TOTAL __init__: {t17-t0:.3f}s")
+        self.journal_monitor.start()
         threading.Thread(target=self._get_latest_cmdr_data, daemon=True).start()
         self._setup_keyboard_shortcuts()
     
@@ -132,11 +355,95 @@ class EDMRN_App:
             self.overlay_manager.start(self._get_overlay_data, opacity=opacity, app_instance=self)
         self._log(f"UI theme refreshed: {self.config.appearance_mode} mode, {self.config.color_theme} color")
     
+
+    def fetch_edsm_system_data(self, system_name):
+        """Fetch full system details from EDSM API (traffic, factions, permit, gmp included)."""
+        import traceback
+        try:
+            url_basic = (
+                f'https://www.edsm.net/api-v1/system?systemName={system_name}'
+                f'&showInformation=1&showCoordinates=1&showPrimaryStar=1&showTraffic=1&showPermit=1&showGalacticMapping=1'
+            )
+            response_basic = requests.get(url_basic, timeout=10)
+            if response_basic.status_code != 200:
+                return {"error": f"EDSM API error: {response_basic.status_code}"}
+            data = response_basic.json()
+            if isinstance(data, list):
+                data = {"bodies": data}
+            data['gmp'] = data.get('galacticMapping', [])
+
+            url_bodies = f'https://www.edsm.net/api-system-v1/bodies?systemName={system_name}'
+            response_bodies = requests.get(url_bodies, timeout=10)
+            if response_bodies.status_code == 200:
+                bodies_data = response_bodies.json()
+                if isinstance(bodies_data, list):
+                    data['bodies'] = bodies_data
+                elif 'bodies' in bodies_data:
+                    data['bodies'] = bodies_data['bodies']
+                else:
+                    data['bodies'] = []
+            else:
+                data['bodies'] = []
+
+            url_stations = f'https://www.edsm.net/api-system-v1/stations?systemName={system_name}'
+            response_stations = requests.get(url_stations, timeout=10)
+            if response_stations.status_code == 200:
+                stations_data = response_stations.json()
+                if isinstance(stations_data, list):
+                    data['stations'] = stations_data
+                elif 'stations' in stations_data:
+                    data['stations'] = stations_data['stations']
+                else:
+                    data['stations'] = []
+            else:
+                data['stations'] = []
+
+            url_factions = f'https://www.edsm.net/api-system-v1/factions?systemName={system_name}'
+            response_factions = requests.get(url_factions, timeout=10)
+            if response_factions.status_code == 200:
+                factions_data = response_factions.json()
+                if 'factions' in factions_data:
+                    data['factions'] = factions_data['factions']
+
+            try:
+                system_url = f'https://www.edsm.net/en/system/id/{data.get("id")}/name/{system_name.replace(" ", "+")}' if data.get("id") else f'https://www.edsm.net/en/system?systemName={system_name.replace(" ", "+")}'
+                response_page = requests.get(system_url, timeout=10)
+                if response_page.status_code == 200:
+                    soup = BeautifulSoup(response_page.content, 'html.parser')
+                    gmp_card = soup.find('a', href=lambda x: x and 'forums.frontier.co.uk' in x and 'Galactic-Mapping-Project' in x)
+                    if gmp_card:
+                        gmp_content = gmp_card.parent.parent.get_text().strip()
+                        lines = [line.strip() for line in gmp_content.split('\n') if line.strip()]
+                        data['gmp'] = '\n'.join(lines[1:])
+                    else:
+                        data['gmp'] = ""
+                else:
+                    data['gmp'] = ""
+            except Exception as e:
+                logger.warning(f"Failed to scrape GMP data for {system_name}: {e}")
+                data['gmp'] = ""
+
+            if data.get("id"):
+                data['url'] = f'https://www.edsm.net/en/system/id/{data.get("id")}/name/{system_name.replace(" ", "+")}'
+            else:
+                data['url'] = f'https://www.edsm.net/en/system?systemName={system_name.replace(" ", "+")}'
+
+            return data
+        except Exception as e:
+            tb = traceback.format_exc()
+            try:
+                with open("edmrn_crash.log", "a", encoding="utf-8") as f:
+                    f.write(f"[fetch_edsm_system_data] Exception: {str(e)}\n{tb}\n")
+                    f.flush()
+            except Exception:
+                pass
+            return {"error": str(e)}
+    
     def _create_root_window(self):
         self.root = ctk.CTk()
         self.root.title(f"ED Multi Route Navigation (EDMRN)")
-        self.root.geometry(self.config.window_geometry)
-        self.root.minsize(1000, 700)
+        self.root.geometry("1196x730")
+        self.root.minsize(1200, 700)
         colors = self.theme_manager.get_theme_colors()
         self.root.configure(fg_color=colors['background'])
         if self._borderless:
@@ -148,8 +455,10 @@ class EDMRN_App:
         try:
             ico_path = resource_path('../assets/explorer_icon.ico')
             if Path(ico_path).exists():
-                self.root.iconbitmap(ico_path)
-                logger.info(f"Root: iconbitmap set -> {ico_path}")
+                try:
+                    self.root.iconbitmap(ico_path)
+                except Exception as e:
+                    logger.debug(f"Root: iconbitmap failed: {e}")
                 if os.name == 'nt':
                     try:
                         IMAGE_ICON = 1
@@ -162,7 +471,6 @@ class EDMRN_App:
                             hwnd = self.root.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            logger.info("Root: WM_SETICON applied for ICO")
                     except Exception as e:
                         logger.debug(f"Root: WM_SETICON failed: {e}")
         except Exception as e:
@@ -183,12 +491,16 @@ class EDMRN_App:
                         WM_SETICON = 0x0080
                         ICON_SMALL = 0
                         ICON_BIG = 1
-                        hicon = ctypes.windll.user32.LoadImageW(0, str(logo_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        hicon = _load_hicon_app(logo_path)
                         if hicon:
                             hwnd = self.root.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            logger.info("Root: WM_SETICON applied for PNG")
+                            if not getattr(self, '_icon_set_logged', False):
+                                logger.info("Root: WM_SETICON re-applied for PNG")
+                                self._icon_set_logged = True
+                            else:
+                                logger.debug("Root: WM_SETICON re-applied for PNG (suppressed info)")
                     except Exception as e:
                         logger.debug(f"Root: WM_SETICON PNG failed: {e}")
         except Exception as e:
@@ -227,11 +539,6 @@ class EDMRN_App:
                             hwnd = self.root.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                            if not getattr(self, '_icon_set_logged', False):
-                                logger.info("Root: WM_SETICON re-applied for ICO")
-                                self._icon_set_logged = True
-                            else:
-                                logger.debug("Root: WM_SETICON re-applied for ICO (suppressed info)")
                     except Exception as e:
                         logger.debug(f"Root: WM_SETICON reapply failed: {e}")
         except Exception:
@@ -272,6 +579,7 @@ class EDMRN_App:
     
     def _create_widgets(self):
         colors = self.theme_manager.get_theme_colors()
+        
         parent = self.chrome_body if getattr(self, '_borderless', False) and hasattr(self, 'chrome_body') else self.root
         self.main_container = ctk.CTkFrame(
             parent,
@@ -313,19 +621,31 @@ class EDMRN_App:
         self.tab_tracker = self.tabview.add("Route Tracking")
         self.tab_neutron = self.tabview.add("Neutron Highway")
         self.tab_galaxy_plotter = self.tabview.add("Galaxy Plotter")
+        self.tab_system_info = self.tabview.add("System Info")
+        self.tab_log = self.tabview.add("Log")
         self.tab_settings = self.tabview.add("Settings")
-        for tab in [self.tab_optimizer, self.tab_tracker, self.tab_neutron, self.tab_galaxy_plotter, self.tab_settings]:
+        for tab in [self.tab_optimizer, self.tab_tracker, self.tab_neutron, self.tab_galaxy_plotter, self.tab_system_info, self.tab_log, self.tab_settings]:
             tab.configure(fg_color=colors['background'])
+        
         self.tabview.set("Route Optimization")
         
         def on_tab_change():
             current_tab = self.tabview.get()
+            
+            # Lazy load tabs on first access
+            if current_tab == "System Info" and "System Info" not in self._lazy_loaded_tabs:
+                self._lazy_load_tab("System Info")
+            elif current_tab == "Galaxy Plotter" and "Galaxy Plotter" not in self._lazy_loaded_tabs:
+                self._lazy_load_tab("Galaxy Plotter")
+            elif current_tab == "Settings" and "Settings" not in self._lazy_loaded_tabs:
+                self._lazy_load_tab("Settings")
+            
             if current_tab == "Neutron Highway" and self.neutron_router.last_route:
                 if not self.journal_monitor:
                     self._start_journal_monitor()
                     self._log("Journal monitor started for neutron tracking")
             self._update_overlay_tab_state(current_tab)
-            if self.overlay_enabled:
+        if self.overlay_enabled:
                 self.overlay_manager.update_data()
         self.tabview.configure(command=on_tab_change)
         self._create_header()
@@ -334,11 +654,20 @@ class EDMRN_App:
             self.root.bind('<FocusOut>', lambda e: self._update_chrome_border_focus(False))
         except Exception:
             pass
+        
         self.ui_components.create_optimizer_tab()
         self.ui_components.create_neutron_tab()
-        self.ui_components.create_galaxy_plotter_tab()
-        self.settings_manager.create_settings_tab()
         self.ui_components.create_bottom_buttons()
+        
+        self.autosave_status = ctk.CTkLabel(self.root, text="Stopped", text_color="#888888")
+        self.autosave_status.pack_forget()
+
+        # Preload heavy tabs quietly after startup
+        try:
+            self.root.after(1500, self._preload_lazy_tabs)
+        except Exception:
+            pass
+
 
     def _setup_borderless_chrome_ui(self):
         colors = self.theme_manager.get_theme_colors()
@@ -508,47 +837,20 @@ class EDMRN_App:
             InfoDialog(self, "Restart Required", "Please restart the app to apply borderless mode change.")
         except Exception:
             pass
-    def _create_header(self):
-        colors = self.theme_manager.get_theme_colors()
-        header_frame = ctk.CTkFrame(
-            self.content_root,
-            fg_color=colors['frame'],
-            border_color=colors['border'],
-            border_width=1,
-            height=45
-        )
-        header_frame.grid(row=0, column=0, sticky="ew", padx=15, pady=(15, 10))
-        header_frame.columnconfigure(1, weight=1)
-        header_frame.columnconfigure(2, weight=0)
-        header_frame.grid_propagate(False)
-        
-        logo_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        logo_frame.grid(row=0, column=0, sticky="w", padx=8, pady=5)
-        try:
-            logo_path = resource_path('../assets/explorer_icon.png')
-            if Path(logo_path).exists():
-                logo_img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
-                ctk_logo = ctk.CTkImage(light_image=logo_img, dark_image=logo_img, size=(32, 32))
-                logo_label = ctk.CTkLabel(logo_frame, image=ctk_logo, text="")
-                logo_label.image = ctk_logo
-                logo_label.pack(side="left")
-        except Exception as e:
-            logger.debug(f"Logo load failed: {e}")
-        
-        cmdr_info_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        cmdr_info_frame.grid(row=0, column=1, sticky="w", padx=10, pady=5)
-        ctk.CTkLabel(cmdr_info_frame, text="CMDR:",
-                     font=ctk.CTkFont(size=12, weight="bold"),
-                     text_color=colors['primary']).grid(row=0, column=0, sticky="w", pady=2)
-        ctk.CTkLabel(cmdr_info_frame, textvariable=self.cmdr_name,
-                     font=ctk.CTkFont(size=12),
-                     text_color=colors['text']).grid(row=0, column=1, sticky="w", padx=(3, 12), pady=2)
-        ctk.CTkLabel(cmdr_info_frame, text="CR:",
-                     font=ctk.CTkFont(size=12, weight="bold"),
-                     text_color=colors['primary']).grid(row=0, column=2, sticky="w", pady=2)
-        ctk.CTkLabel(cmdr_info_frame, textvariable=self.cmdr_cash,
-                     font=ctk.CTkFont(size=11),
-                     text_color=colors['text']).grid(row=0, column=3, sticky="w", padx=(3, 12), pady=2)
+    def _get_overlay_data(self):
+        current_tab = self.tabview.get()
+        if current_tab == "Neutron Highway":
+            data = self.neutron_router.get_overlay_data()
+        elif current_tab == "Galaxy Plotter":
+            data = self.galaxy_plotter.get_overlay_data(
+                self.galaxy_route_waypoints,
+                self.galaxy_current_waypoint_index,
+                self.galaxy_plotter_route_data
+            )
+        else:
+            data = self.route_tracker.get_overlay_data(self)
+        data['exobio_species'] = getattr(self, '_overlay_exobio_species', [])
+        return data
         ctk.CTkLabel(cmdr_info_frame, text="Location:",
                      font=ctk.CTkFont(size=12, weight="bold"),
                      text_color=colors['primary']).grid(row=0, column=4, sticky="w", pady=2)
@@ -808,6 +1110,145 @@ class EDMRN_App:
         self.neutron_output.insert("1.0", "No neutron route calculated yet.\n\nSteps:\n1. Enter your current system\n2. Enter destination system\n3. Set your ship's jump range\n4. Choose FSD boost type\n5. Click Calculate")
         self.neutron_output.configure(state="disabled")
     
+    def _lazy_load_tab(self, tab_name):
+        """Load tab content on first access (lazy loading)"""
+        if tab_name in self._lazy_loaded_tabs or tab_name in self._lazy_loading_tabs:
+            return
+        self._lazy_loading_tabs.add(tab_name)
+        try:
+            if tab_name == "System Info":
+                self._create_system_info_tab()
+                self._lazy_loaded_tabs["System Info"] = True
+                if self._pending_system_info_fetch:
+                    pending = self._pending_system_info_fetch
+                    self._pending_system_info_fetch = None
+                    try:
+                        self.root.after(0, lambda: self._system_info_fetch_callback(pending))
+                    except Exception:
+                        pass
+            
+            elif tab_name == "Galaxy Plotter":
+                self.ui_components.create_galaxy_plotter_tab()
+                self._lazy_loaded_tabs["Galaxy Plotter"] = True
+            
+            elif tab_name == "Settings":
+                self.settings_manager.create_settings_tab()
+                self._lazy_loaded_tabs["Settings"] = True
+        
+        except Exception as e:
+            from edmrn.logger import get_logger
+            logger = get_logger('App')
+            logger.error(f"Failed to lazy-load {tab_name}: {e}")
+        finally:
+            if tab_name in self._lazy_loading_tabs:
+                self._lazy_loading_tabs.remove(tab_name)
+
+    def _preload_lazy_tabs(self):
+        """Quietly preload heavy tabs after startup"""
+        if not hasattr(self, 'root') or not self.root:
+            return
+
+        tabs_to_preload = ["System Info", "Galaxy Plotter", "Settings"]
+
+        def load_next(index=0):
+            if index >= len(tabs_to_preload):
+                return
+            tab_name = tabs_to_preload[index]
+            try:
+                self._lazy_load_tab(tab_name)
+            except Exception:
+                pass
+            self.root.after(700, lambda: load_next(index + 1))
+
+        load_next()
+    
+    def _create_system_info_tab(self):
+        from edmrn.system_info_section import SystemInfoSection
+        for widget in self.tab_system_info.winfo_children():
+            widget.destroy()
+        self.system_info_section = SystemInfoSection(
+            self.tab_system_info,
+            self.theme_manager,
+            self._system_info_fetch_callback,
+            self.tab_log,
+            app=self
+        )
+        entry = self.system_info_section.system_info_entry
+        def on_user_typing(event):
+            self._auto_system_info_enabled = False
+        entry.bind('<Key>', on_user_typing)
+
+    def _system_info_fetch_callback(self, system_name=None):
+        """Callback to fetch data and update UI for SystemInfoSection."""
+        if not hasattr(self, 'system_info_section') or self.system_info_section is None:
+            if system_name:
+                self._pending_system_info_fetch = system_name
+            try:
+                self.root.after(0, lambda: self._lazy_load_tab("System Info"))
+            except Exception:
+                pass
+            return
+        entry = self.system_info_section.system_info_entry
+        status_label = self.system_info_section.system_info_status
+        if system_name is None:
+            system_name = entry.get().strip()
+        if not system_name and hasattr(self, 'last_known_system') and self.last_known_system:
+            system_name = self.last_known_system
+        from edmrn.logger import get_logger
+        logger = get_logger('App')
+        logger.info(f"[_system_info_fetch_callback] Called for system_name: {system_name}")
+        if not system_name:
+            status_label.configure(text="Please enter a system name", text_color="#FF6B6B")
+            logger.warning("[_system_info_fetch_callback] No system name entered")
+            return
+        status_label.configure(text=f"Fetching data for {system_name}...", text_color="#4CAF50")
+        self.root.update_idletasks()
+        import traceback
+        def fetch_data_thread_wrapper():
+            try:
+                logger.info(f"[_system_info_fetch_callback] Fetching EDSM data for {system_name}")
+                system_data = self.fetch_edsm_system_data(system_name)
+                bodies = system_data.get('bodies', []) if isinstance(system_data, dict) else []
+                stations = system_data.get('stations', []) if isinstance(system_data, dict) else []
+                gmp = system_data.get('gmp', None) if isinstance(system_data, dict) else None
+                log_data = system_data.copy() if isinstance(system_data, dict) else {}
+                trivia_data = system_data.copy() if isinstance(system_data, dict) else {}
+                def update_ui():
+                    if not isinstance(system_data, dict):
+                        status_label.configure(text=f"Error: Unexpected data format from EDSM (type: {type(system_data).__name__})", text_color="#FF6B6B")
+                        logger.warning(f"[_system_info_fetch_callback] Error in system_data: Unexpected type {type(system_data).__name__}, expected dict.")
+                        return
+                    if "error" in system_data:
+                        status_label.configure(text=f"Error: {system_data['error']}", text_color="#FF6B6B")
+                        logger.warning(f"[_system_info_fetch_callback] Error in system_data: {system_data['error']}")
+                        return
+                    try:
+                        self.system_info_section.update_system_info(system_data)
+                        self.system_info_section.update_planetary_access(bodies)
+                        self.system_info_section.update_stations(stations)
+                        self.system_info_section.update_gmp(gmp)
+                        self.system_info_section.update_trivia(trivia_data)
+                        status_label.configure(text=f"Data fetched for {system_name}", text_color="#4CAF50")
+                    except Exception as ex:
+                        logger.warning(f"[_system_info_fetch_callback] Error in update_ui: {ex}")
+                        status_label.configure(text=f"Error updating UI: {ex}", text_color="#FF6B6B")
+                    logger.info(f"[_system_info_fetch_callback] UI updated for {system_name}")
+                self.root.after(0, update_ui)
+            except Exception as e:
+                tb = traceback.format_exc()
+                logger.error(f"[_system_info_fetch_callback] Exception in thread: {str(e)}\n{tb}")
+                try:
+                    with open("edmrn_crash.log", "a", encoding="utf-8") as f:
+                        f.write(f"[_system_info_fetch_callback] Exception in thread: {str(e)}\n{tb}\n")
+                        f.flush()
+                except Exception:
+                    pass
+                def show_error():
+                    status_label.configure(text=f"Error fetching data: {str(e)}", text_color="#FF6B6B")
+                self.root.after(0, show_error)
+        import threading
+        threading.Thread(target=fetch_data_thread_wrapper, daemon=True).start()
+
     def _setup_managers(self):
         backup_dirs = [Paths.get_app_data_dir()]
         if not hasattr(self, 'backup_manager') or self.backup_manager is None:
@@ -895,17 +1336,24 @@ class EDMRN_App:
     def _get_overlay_data(self):
         current_tab = self.tabview.get()
         if current_tab == "Neutron Highway":
-            return self.neutron_router.get_overlay_data()
+            data = self.neutron_router.get_overlay_data()
         elif current_tab == "Galaxy Plotter":
-            return self.galaxy_plotter.get_overlay_data(
+            data = self.galaxy_plotter.get_overlay_data(
                 self.galaxy_route_waypoints,
                 self.galaxy_current_waypoint_index,
                 self.galaxy_plotter_route_data
             )
-        elif current_tab == "Route Tracking":
-            return self.route_tracker.get_overlay_data(self)
         else:
-            return self.route_tracker.get_overlay_data(self)
+            data = self.route_tracker.get_overlay_data(self)
+        exobio_species = getattr(self, '_overlay_exobio_species', [])
+        exobio_species_capped = [(species, min(count, 3)) for species, count in exobio_species]
+        data['exobio_species'] = exobio_species_capped
+        if not hasattr(self, '_last_logged_exobio_species') or self._last_logged_exobio_species != exobio_species_capped:
+            from edmrn.logger import get_logger
+            logger = get_logger('App')
+            logger.info(f"[Overlay] exobio_species in overlay data: {exobio_species_capped}")
+            self._last_logged_exobio_species = exobio_species_capped
+        return data
     
     def _update_overlay_tab_state(self, tab_name):
         if not self.overlay_enabled or not self.overlay_manager._instance:
@@ -1035,28 +1483,125 @@ class EDMRN_App:
         if self.journal_monitor:
             self.journal_monitor.stop()
         manual_path = self.journal_path_var.get().strip() or None
-        self.journal_monitor = JournalMonitor(callback=self._handle_system_jump, manual_journal_path=manual_path, selected_commander=self.selected_commander.get())
+        self.journal_monitor = JournalMonitor(callback=self._journal_callback, manual_journal_path=manual_path, selected_commander=self.selected_commander.get())
         self.journal_monitor.start()
         self._log(f"Journal monitor started with path: {manual_path or 'auto-detected'}")
 
-    def _handle_system_jump(self, system_name):
-        
+    def _handle_system_jump(self, system_name, event_data=None):
+        from edmrn.logger import get_logger
+        logger = get_logger('App')
+
+        if not system_name and event_data is not None:
+            if event_data.get('event') in ('Exobiology', 'ScanOrganic'):
+                self.handle_onfoot_bio_event(None, event_data)
+                return
+
+        if not system_name:
+            system_name = getattr(self, 'last_known_system', None)
+            if not system_name and hasattr(self, 'cmdr_location'):
+                try:
+                    system_name = self.cmdr_location.get()
+                except Exception:
+                    system_name = None
+
+        if not system_name:
+            logger.warning("[_handle_system_jump] No system_name could be determined, aborting jump handling.")
+            return
+
+        if not hasattr(self, '_last_handled_system'):
+            self._last_handled_system = None
+        is_new_system = (system_name != self._last_handled_system)
+
+        if not is_new_system:
+            logger.info(f"[_handle_system_jump] System already processed: {system_name}, skipping")
+            if event_data is not None:
+                self.handle_onfoot_bio_event(system_name, event_data)
+            return
+
+        self.last_known_system = system_name
+        logger.info(f"[_handle_system_jump] Processing NEW system: {system_name}")
         current_tab = self.tabview.get()
-        
-        if system_name:
+
+        overlay_manager = None
+        try:
+            overlay_manager = get_overlay_manager()
+        except Exception:
+            pass
+        if overlay_manager and getattr(overlay_manager, '_instance', None):
             try:
-                self.root.after(0, lambda: self.cmdr_location.set(system_name))
+                overlay_manager._instance.current_data['exobio_species'] = []
+                overlay_manager._instance.current_data['bodies_to_scan'] = []
+                overlay_manager._instance.update_display()
             except Exception:
                 pass
+        self._overlay_exobio_species = []
+        if hasattr(self, 'system_info_section') and self.system_info_section:
+            try:
+                if hasattr(self.system_info_section, '_enqueue_bio_update'):
+                    self.system_info_section._enqueue_bio_update([], system=system_name)
+                else:
+                    self.system_info_section.update_bio_summary([], system=system_name)
+            except Exception:
+                pass
+            try:
+                if hasattr(self.system_info_section, '_last_body'):
+                    self.system_info_section._last_body = None
+                if hasattr(self.system_info_section, '_onfoot_bio_samples'):
+                    self.system_info_section._onfoot_bio_samples = []
+                if hasattr(self.system_info_section, '_incomplete_exobio'):
+                    self.system_info_section._incomplete_exobio = []
+            except Exception:
+                pass
+
+        try:
+            self.root.after(0, lambda: self.cmdr_location.set(system_name))
+            entry = getattr(self.system_info_section, 'system_info_entry', None)
+            if entry:
+                real_entry = getattr(entry, 'entry', entry)
+                if hasattr(real_entry, 'delete') and hasattr(real_entry, 'insert'):
+                    real_entry.delete(0, tk.END)
+                    real_entry.insert(0, system_name)
+        except Exception:
+            pass
+
         if current_tab == "Neutron Highway":
-            if self.neutron_router.last_route:
+            if getattr(self.neutron_router, 'last_route', None):
                 self.neutron_manager.handle_neutron_system_jump(system_name)
         elif current_tab == "Galaxy Plotter":
-            if self.galaxy_route_waypoints:
+            if getattr(self, 'galaxy_route_waypoints', None):
                 self._handle_galaxy_system_jump(system_name)
-        else:
+
+        if not hasattr(self, 'system_info_section') or self.system_info_section is None:
+            self._lazy_load_tab("System Info")
+        if hasattr(self, 'system_info_section') and self.system_info_section:
+            if not hasattr(self, 'system_info_section') or self.system_info_section is None:
+                self._pending_system_info_fetch = system_name
+                try:
+                    self.root.after(0, lambda: self._lazy_load_tab("System Info"))
+                except Exception:
+                    pass
+            else:
+                logger.info("[_handle_system_jump] Triggering _system_info_fetch_callback() for System Info tab")
+                self._system_info_fetch_callback(system_name)
+        
+        if hasattr(self, 'system_info_section') and self.system_info_section:
+            try:
+                if hasattr(self, 'root') and self.root:
+                    self.root.after(0, lambda: self.system_info_section.update_log({'name': system_name}))
+                else:
+                    self.system_info_section.update_log({'name': system_name})
+                logger.info(f"[_handle_system_jump] Log updated for system: {system_name}")
+            except Exception as ex:
+                logger.warning(f"[_handle_system_jump] Failed to update log: {ex}")
+        
+        self._last_handled_system = system_name
+
+        if event_data is not None:
+            self.handle_onfoot_bio_event(system_name, event_data)
+
+        if current_tab not in ("System Info", "Neutron Highway", "Galaxy Plotter"):
             self.root.after(0, lambda: self._update_system_status_from_monitor(system_name, 'visited'))
-    
+
     def _update_system_status_from_monitor(self, system_name, new_status):
         self.route_management.update_system_status_from_monitor(system_name, new_status)
 
@@ -1139,7 +1684,17 @@ class EDMRN_App:
         try:
             self.root.after(0, lambda: self.cmdr_name.set(final_cmdr_name))
             self.root.after(0, lambda: self.cmdr_cash.set(final_cmdr_cash))
-            self.root.after(0, lambda: self.cmdr_location.set(final_location))
+            def set_location_and_update():
+                self.cmdr_location.set(final_location)
+                if self._auto_system_info_enabled:
+                    try:
+                        entry = self.system_info_section.system_info_entry
+                        entry.delete(0, 'end')
+                        entry.insert(0, final_location)
+                        self._system_info_fetch_callback()
+                    except Exception:
+                        pass
+            self.root.after(0, set_location_and_update)
         except RuntimeError:
             return
         self._log(f"CMDR Status Loaded: {final_cmdr_name}, {final_cmdr_cash}, Location: {final_location}")
@@ -1338,23 +1893,42 @@ class EDMRN_App:
             logo_path = resource_path('../assets/explorer_icon.png')
             if Path(logo_path).exists():
                 img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
-                optional_icon = ImageTk.PhotoImage(img)
-                try:
-                    self.optional_window.wm_iconphoto(True, optional_icon)
-                except Exception:
-                    self.optional_window.iconphoto(False, optional_icon)
+                optional_icon = CTkImage(light_image=img, dark_image=img, size=(32, 32))
                 self.optional_window._title_icon = optional_icon
         except Exception:
             pass
         
         main_container = ctk.CTkFrame(self.optional_window, fg_color=colors['frame'], border_color=colors['primary'], border_width=1)
-        main_container.pack(fill="both", expand=True, padx=15, pady=15)
-        ctk.CTkLabel(main_container, text="Select Optional Columns",
-                    font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
-                    text_color=colors['primary']).pack(pady=(0, 10))
+        main_container.pack(fill="both", expand=True, padx=0, pady=0)
+        header_bar = ctk.CTkFrame(main_container, fg_color=colors['primary'], height=54, corner_radius=0)
+        header_bar.pack(fill="x", padx=0, pady=(0, 0))
+        header_bar.grid_propagate(False)
+        try:
+            logo_path = resource_path('../assets/explorer_icon.png')
+            if Path(logo_path).exists():
+                img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
+                icon_img = CTkImage(light_image=img, dark_image=img, size=(32, 32))
+                icon_label = ctk.CTkLabel(header_bar, image=icon_img, text="", fg_color="transparent")
+                icon_label.image = icon_img
+                icon_label.grid(row=0, column=0, padx=(18, 10), pady=10)
+        except Exception:
+            pass
+        ctk.CTkLabel(header_bar, text="Optional Column Selection",
+            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            text_color=colors['background'], fg_color="transparent").grid(row=0, column=1, sticky="w", pady=10)
+        ctk.CTkLabel(header_bar, text="Select which optional columns to include in your workflow.",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            text_color=colors['background'], fg_color="transparent").grid(row=1, column=1, sticky="w", pady=(0, 10), padx=(0, 0))
+        header_bar.grid_columnconfigure(1, weight=1)
         scroll_frame = ctk.CTkScrollableFrame(main_container, fg_color=colors['secondary'], border_color=colors['primary'], border_width=1)
         scroll_frame.pack(fill="both", expand=True, pady=5)
-        for col in sorted(optional_columns):
+        rows = 15
+        col_list = sorted(optional_columns)
+        max_text_len = max((len(c) for c in col_list), default=10)
+        col_width = max(220, min(260, max_text_len * 8 + 32))  # Daha dar ve esnek
+        n_cols = (len(col_list) + rows - 1) // rows
+        n_rows = min(rows, len(col_list))
+        for idx, col in enumerate(col_list):
             if col not in self.column_vars:
                 self.column_vars[col] = tk.BooleanVar(value=False)
             chk = ctk.CTkCheckBox(scroll_frame, text=col, variable=self.column_vars[col],
@@ -1362,28 +1936,50 @@ class EDMRN_App:
                                  checkmark_color=colors['primary'],
                                  border_color=colors['primary'],
                                  hover_color=colors['primary_hover'],
-                                 font=ctk.CTkFont(family="Segoe UI", size=12))
-            chk.pack(anchor="w", padx=10, pady=2)
+                                 font=ctk.CTkFont(family="Segoe UI", size=12),
+                                 width=col_width)
+            row = idx % rows
+            col_idx = idx // rows
+            chk.grid(row=row, column=col_idx, padx=2, pady=4, sticky="w")
             self.column_checkboxes[col] = chk
+        for i in range(n_cols):
+            scroll_frame.grid_columnconfigure(i, weight=1, minsize=col_width)
+        window_width = 60 + n_cols * col_width
+        base_height = 170  # header + buttons + padding
+        row_height = 32    # estimated height per checkbox row
+        max_height = 700
+        min_height = 600
+        dynamic_height = base_height + n_rows * row_height
+        window_height = max(min_height, min(max_height, dynamic_height))
+        self.optional_window.geometry(f"{window_width}x{window_height}")
         button_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        button_frame.pack(fill="x", pady=(10, 0))
+        button_frame.pack(fill="x", pady=(10, 10), padx=10)
         select_all_btn = ctk.CTkButton(button_frame, text="Select All",
-                                      command=self._select_all_optional, width=100,
-                                      fg_color=colors['primary'], hover_color=colors['primary_hover'],
-                                      text_color=colors['text'], font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"))
-        select_all_btn.pack(side="left", padx=(0, 10))
+            command=self._select_all_optional, width=120,
+            fg_color=colors['primary'], hover_color=colors['primary_hover'],
+            text_color=colors['background'], font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"))
         deselect_all_btn = ctk.CTkButton(button_frame, text="Deselect All",
-                                        command=self._deselect_all_optional, width=100,
-                                        fg_color=colors['secondary'], hover_color=colors['secondary_hover'],
-                                        border_color=colors['primary'], border_width=1,
-                                        text_color=colors['primary'], font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"))
-        deselect_all_btn.pack(side="left", padx=(0, 10))
-        colors = self.theme_manager.get_theme_colors()
+            command=self._deselect_all_optional, width=120,
+            fg_color=colors['secondary'], hover_color=colors['secondary_hover'],
+            border_color=colors['primary'], border_width=1,
+            text_color=colors['primary'], font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"))
         close_btn = ctk.CTkButton(button_frame, text="Close",
-                                 command=lambda: self.optional_window.destroy(),
-                                 width=100, fg_color=colors['secondary'], hover_color=colors['secondary_hover'],
-                                 text_color=colors['text'], font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"))
-        close_btn.pack(side="right")
+            command=lambda: self.optional_window.destroy(),
+            width=120,
+            fg_color="#D32F2F",  # Red
+            hover_color="#B71C1C",  # Darker red
+            text_color="white",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            corner_radius=8,
+            image=None,
+            anchor="center"
+        )
+        select_all_btn.grid(row=0, column=0, padx=(0, 12), sticky="ew")
+        deselect_all_btn.grid(row=0, column=1, padx=(0, 12), sticky="ew")
+        close_btn.grid(row=0, column=2, padx=(12, 0), sticky="ew")
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+        button_frame.grid_columnconfigure(2, weight=1)
         
         try:
             self.optional_window.bind('<Map>', lambda e: self._schedule_optional_reapply_icons())
@@ -1426,11 +2022,7 @@ class EDMRN_App:
             logo_path = resource_path('../assets/explorer_icon.png')
             if Path(logo_path).exists():
                 img = Image.open(logo_path).resize((32, 32), Image.LANCZOS)
-                optional_icon = ImageTk.PhotoImage(img)
-                try:
-                    self.optional_window.wm_iconphoto(True, optional_icon)
-                except Exception:
-                    self.optional_window.iconphoto(False, optional_icon)
+                optional_icon = CTkImage(light_image=img, dark_image=img, size=(32, 32))
                 self.optional_window._title_icon = optional_icon
         except Exception:
             pass
@@ -1542,8 +2134,10 @@ class EDMRN_App:
             selected_commander=self.selected_commander.get()
         )
         self.journal_monitor.start()
-        self._log(f"Journal monitor restarted")
-        InfoDialog(self, "Success", "Journal monitor restarted")
+        path_used = manual_path if manual_path else "Auto-detected path"
+        self._log(f"Journal Monitor restarted with: {path_used}")
+        InfoDialog(self, "Success", "Journal monitor restarted with new settings!")
+        threading.Thread(target=self._get_latest_cmdr_data, daemon=True).start()
 
     def _switch_commander(self, selected):
         if selected:
@@ -1895,21 +2489,46 @@ class EDMRN_App:
     def _handle_galaxy_system_jump(self, system_name: str):
         if not self.galaxy_route_waypoints:
             return
-        
+        def normalize(name):
+            return name.replace(' ', '').replace('-', '').replace('_', '').lower() if name else ''
+        target = normalize(system_name)
         for i, waypoint in enumerate(self.galaxy_route_waypoints):
-            if waypoint.get('system', '').lower() == system_name.lower():
-                self.galaxy_plotter.update_waypoint_status(self.galaxy_route_waypoints, system_name, 'visited')
+            wp_name = normalize(waypoint.get('system', ''))
+            if wp_name == target:
+                self.galaxy_plotter.update_waypoint_status(self.galaxy_route_waypoints, waypoint.get('system', ''), 'visited')
                 self.galaxy_current_waypoint_index = i
                 self._update_galaxy_navigation()
                 self._update_galaxy_statistics()
                 self._log(f"Galaxy Plotter: Auto-detected jump to '{system_name}' (marked visited)")
-                
                 if hasattr(self, 'current_backup_folder') and self.current_backup_folder:
                     self.galaxy_plotter.save_galaxy_route(
                         self.current_backup_folder,
                         self.galaxy_route_waypoints,
                         self.galaxy_current_waypoint_index
                     )
+                next_idx = None
+                for j in range(i+1, len(self.galaxy_route_waypoints)):
+                    if self.galaxy_route_waypoints[j].get('status') != 'visited':
+                        next_idx = j
+                        break
+                if next_idx is not None:
+                    next_system = self.galaxy_route_waypoints[next_idx].get('system', 'Unknown')
+                    try:
+                        import pyperclip
+                        pyperclip.copy(next_system)
+                        self._log(f"Auto-copied next galaxy waypoint: {next_system}")
+                    except ImportError:
+                        try:
+                            import tkinter as tk
+                            temp_root = tk.Tk()
+                            temp_root.withdraw()
+                            temp_root.clipboard_clear()
+                            temp_root.clipboard_append(next_system)
+                            temp_root.update()
+                            temp_root.destroy()
+                            self._log(f"Auto-copied next galaxy waypoint: {next_system}")
+                        except Exception as e:
+                            self._log(f"Clipboard copy error (galaxy next): {e}")
                 return
     def _get_current_system_from_journal(self):
         return self.neutron_manager.get_current_system_from_journal()
@@ -2049,31 +2668,54 @@ class EDMRN_App:
     def _calculate_galaxy_route(self):
         source = self.galaxy_source_autocomplete.get().strip()
         dest = self.galaxy_dest_autocomplete.get().strip()
+        jump_range_str = self.galaxy_jump_range_var.get().strip()
+
+        if not source:
+            if hasattr(self, 'journal_monitor') and self.journal_monitor:
+                current_system = self.journal_monitor.get_current_system()
+                if current_system:
+                    source = current_system
+                    self.galaxy_source_autocomplete.set(current_system)
+        if not dest:
+            if hasattr(self, 'journal_monitor') and self.journal_monitor:
+                last_system = getattr(self, 'last_known_system', None)
+                if last_system:
+                    dest = last_system
+                    self.galaxy_dest_autocomplete.set(last_system)
+        if not jump_range_str:
+            default_jump_range = self.jump_range.get().strip() if hasattr(self, 'jump_range') else "50.0"
+            jump_range_str = default_jump_range
+            self.galaxy_jump_range_var.set(jump_range_str)
+
         ship_build = self.galaxy_ship_build.get("1.0", "end").strip()
-        
+        if not ship_build:
+            ship_build = ""
+        try:
+            jump_range = float(jump_range_str)
+        except Exception:
+            jump_range = 50.0
+        boost_val = self.galaxy_boost_var.get() if hasattr(self, 'galaxy_boost_var') else "x6 (Caspian)"
+        use_supercharge = True if "x6" in boost_val else False
+
         if not source or not dest:
             WarningDialog(self, "Missing Input", "Please enter both source and destination systems.")
             return
-        
         try:
             cargo = int(self.galaxy_cargo_var.get() or 0)
             reserve_fuel = float(self.galaxy_reserve_fuel_var.get() or 0.0)
         except ValueError:
             WarningDialog(self, "Invalid Input", "Cargo and Reserve Fuel must be numeric values.")
             return
-        
         self.galaxy_output.configure(state="normal")
         self.galaxy_output.delete("1.0", "end")
         self.galaxy_output.insert("1.0", "Submitting route to Spansh API...\n\n")
         self.galaxy_output.insert("end", "⏳ Calculating route...\n\n")
         self.galaxy_output.configure(state="disabled")
-        
         def progress_callback(message: str):
             self.galaxy_output.configure(state="normal")
             self.galaxy_output.insert("end", f"{message}\n")
             self.galaxy_output.see("end")
             self.galaxy_output.configure(state="disabled")
-        
         def calculate_thread():
             try:
                 result = self.galaxy_plotter.plot_route(
@@ -2083,21 +2725,19 @@ class EDMRN_App:
                     cargo=cargo,
                     reserve_fuel=reserve_fuel,
                     already_supercharged=self.galaxy_already_supercharged.get(),
-                    use_supercharge=self.galaxy_use_supercharge.get(),
+                    use_supercharge=use_supercharge,
                     use_injections=self.galaxy_use_injections.get(),
                     exclude_secondary=self.galaxy_exclude_secondary.get(),
                     refuel_every_scoopable=self.galaxy_refuel_every.get(),
                     routing_algorithm=self.galaxy_algorithm_var.get(),
-                    progress_callback=lambda msg: self.root.after(0, lambda: progress_callback(msg))
+                    progress_callback=lambda msg: self.root.after(0, lambda: progress_callback(msg)),
+                    range_ly=jump_range
                 )
-                
                 self.root.after(0, lambda: self._display_galaxy_route_result(result))
-                
             except Exception as e:
                 error_msg = f"Error: {e}"
                 logger.error(error_msg)
                 self.root.after(0, lambda: self._display_galaxy_route_error(error_msg))
-        
         threading.Thread(target=calculate_thread, daemon=True).start()
         self._log(f"Galaxy Plotter: Calculating route via Spansh API for {source} → {dest}")
 
@@ -2250,6 +2890,25 @@ class EDMRN_App:
         current_name = current.get('system', 'Unknown')
         self.galaxy_current_btn.configure(text=current_name)
 
+        if idx < total - 1:
+            next_system = self.galaxy_route_waypoints[idx + 1].get('system', 'Unknown')
+            try:
+                import pyperclip
+                pyperclip.copy(next_system)
+                self._log(f"Auto-copied next galaxy waypoint: {next_system}")
+            except ImportError:
+                try:
+                    import tkinter as tk
+                    temp_root = tk.Tk()
+                    temp_root.withdraw()
+                    temp_root.clipboard_clear()
+                    temp_root.clipboard_append(next_system)
+                    temp_root.update()
+                    temp_root.destroy()
+                    self._log(f"Auto-copied next galaxy waypoint: {next_system}")
+                except Exception as e:
+                    self._log(f"Clipboard copy error (galaxy next): {e}")
+
         has_prev = idx > 0
         has_next = idx < total - 1
         self.galaxy_prev_btn.configure(state=("normal" if has_prev else "disabled"))
@@ -2299,7 +2958,11 @@ class EDMRN_App:
             return
         
         for widget in self.galaxy_scroll_frame.winfo_children():
-            widget.destroy()
+            try:
+                if widget.winfo_exists():
+                    widget.destroy()
+            except Exception:
+                pass
         
         if not self.galaxy_route_waypoints:
             no_route_label = ctk.CTkLabel(
@@ -2359,6 +3022,13 @@ class EDMRN_App:
             route_data = self.route_tracker.load_route_status()
             if route_data:
                 self._create_route_tracker_tab_content()
+
+            if not self._preload_started:
+                self._preload_started = True
+                try:
+                    self.root.after(0, self._preload_lazy_tabs)
+                except Exception:
+                    pass
             
             logger.info("Background startup completed successfully")
         except Exception as e:

@@ -44,23 +44,26 @@ class ManualWindow(ctk.CTkToplevel):
                 self.title("EDMRN - User Manual")
                 
                 try:
-                        ico_path = resource_path('../assets/explorer_icon.ico')
-                        if Path(ico_path).exists():
-                                self.iconbitmap(ico_path)
-                                if os.name == 'nt':
-                                        try:
-                                                WM_SETICON = 0x0080
-                                                ICON_SMALL = 0
-                                                ICON_BIG = 1
-                                                hicon = _load_hicon(ico_path)
-                                                if hicon:
-                                                        hwnd = self.winfo_id()
-                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
-                                                        ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                                        except Exception:
-                                                pass
-                except Exception:
-                        pass
+                    ico_path = resource_path('../assets/explorer_icon.ico')
+                    if Path(ico_path).exists():
+                        try:
+                            self.iconbitmap(ico_path)
+                        except Exception as e:
+                            logger.error(f"ManualWindow: iconbitmap failed: {e}")
+                        if os.name == 'nt':
+                            try:
+                                WM_SETICON = 0x0080
+                                ICON_SMALL = 0
+                                ICON_BIG = 1
+                                hicon = _load_hicon(ico_path)
+                                if hicon:
+                                    hwnd = self.winfo_id()
+                                    ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                                    ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                            except Exception as e:
+                                logger.error(f"ManualWindow: WM_SETICON failed: {e}")
+                except Exception as e:
+                    logger.error(f"ManualWindow: Exception in icon set: {e}")
                 
                 try:
                         logo_path = resource_path('../assets/explorer_icon.png')
@@ -133,10 +136,12 @@ class ManualWindow(ctk.CTkToplevel):
                 self.sections = [
                         ("whats_new", "What's New"),
                         ("quick_start", "Quick Start"),
-                        ("tab1", "Tab 1: Route Opt"),
-                        ("tab2", "Tab 2: Neutron"),
-                        ("tab3", "Tab 3: Tracking"),
-                        ("tab4", "Tab 4: Galaxy"),
+                        ("system_info", "System Info"),
+                        ("log", "Log Viewer"),
+                        ("route_opt", "Route Opt"),
+                        ("neutron", "Neutron"),
+                        ("tracking", "Tracking"),
+                        ("galaxy", "Galaxy"),
                         ("settings", "Settings & Overlay"),
                         ("shortcuts", "Shortcuts"),
                         ("backup", "Backup"),
@@ -146,28 +151,28 @@ class ManualWindow(ctk.CTkToplevel):
                 ]
                 self.nav_buttons = {}
                 for idx, (key, label) in enumerate(self.sections):
-                    btn = ctk.CTkButton(
-                        self.nav_frame,
-                        text=label,
-                        anchor="w",
-                        width=150,
-                        height=24,
-                        fg_color=self.theme_colors['frame'],
-                        hover_color=self.theme_colors['secondary'],
-                        text_color=self.theme_colors['text'],
-                        command=lambda k=key: self._show_section(k),
-                        font=ctk.CTkFont(size=11, weight="bold" if idx == 0 else "normal")
-                    )
-                    btn.grid(row=idx, column=0, sticky="ew", padx=6, pady=(2 if idx else 6, 2))
-                    self.nav_buttons[key] = btn
+                        btn = ctk.CTkButton(
+                                self.nav_frame,
+                                text=label,
+                                anchor="w",
+                                width=150,
+                                height=24,
+                                fg_color=self.theme_colors['frame'],
+                                hover_color=self.theme_colors['secondary'],
+                                text_color=self.theme_colors['text'],
+                                command=lambda k=key: self._show_section(k),
+                                font=ctk.CTkFont(size=11, weight="bold" if idx == 0 else "normal")
+                        )
+                        btn.grid(row=idx, column=0, sticky="ew", padx=6, pady=(2 if idx else 6, 2))
+                        self.nav_buttons[key] = btn
                 self.active_nav = None
 
         def _show_section(self, key: str):
-            try:
-                self._render_section(key)
-                self._highlight_nav(key)
-            except Exception:
-                pass
+                try:
+                        self._render_section(key)
+                        self._highlight_nav(key)
+                except Exception:
+                        pass
 
         def _highlight_nav(self, active_key: str):
                 if self.active_nav == active_key:
@@ -195,24 +200,75 @@ class ManualWindow(ctk.CTkToplevel):
         def _build_section_content(self):
             self.section_content = {
                 "whats_new": (
-                    "WHAT'S NEW IN v3.1",
+                    "WHAT'S NEW IN v3.2.0",
                     [
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                         "",
-                        "🚀 CORE FEATURES",
-                        "  • Persistent Visit History - Duplicate systems automatically filtered",
-                        "  • Smart Backup System - Auto-backup before critical actions with restore",
-                        "  • Nearest Starting System - Auto-detect closest CSV system from journal",
+                        "🧭 SYSTEM INFO TAB",
+                        "  • Overview: allegiance, population, security, permits",
+                        "  • Statistics: planets, moons, landables, atmospheres",
+                        "  • Bodies & stations tables with filtering",
+                        "  • Galactic Notes (GMP) + exobio summary",
                         "",
-                        "🎮 PERFORMANCE & COMPATIBILITY",
-                        "  • GeForce Now Optimization - Overlay tuned for cloud gaming",
-                        "  • Borderless Mode Support - Enhanced overlay compatibility",
+                        "📜 LOG TAB",
+                        "  • Advanced journal viewer with filters",
+                        "  • Column selector + quick search",
+                        "  • Double-click details and notes",
                         "",
-                        "🌐 ENHANCED AUTOCOMPLETE",
-                        "  • Spansh Primary Source - 70M+ systems database",
-                        "  • EDSM Fallback - Seamless secondary source",
-                        "  • Smart Debouncing - 300ms delay for optimal performance",
-                        "  • 1-hour Caching - Reduced API calls, faster response",
+                        "⚡ STABILITY & PERFORMANCE",
+                        "  • Background processing for heavy UI updates",
+                        "  • Better EDSM fallbacks for missing data",
+                        "  • Exobio rendering fixes and empty-state handling",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "system_info": (
+                    "SYSTEM INFO TAB",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "🧭 OVERVIEW",
+                        "  • Allegiance, population, security, permits",
+                        "  • Controlling faction and primary star type",
+                        "  • Reliable fallbacks when EDSM fields are missing",
+                        "",
+                        "📊 STATISTICS",
+                        "  • Planet/moon counts",
+                        "  • Landable and atmosphere body counts",
+                        "  • Station count + permit required",
+                        "",
+                        "🧬 EXOBIO SUMMARY",
+                        "  • Species progress with sample indicators",
+                        "  • Completed/partial status",
+                        "  • Overlay sync support",
+                        "",
+                        "📋 TABLES",
+                        "  • Bodies table with filters",
+                        "  • Stations table with quick search",
+                        "  • Galactic Notes (GMP) view",
+                        "",
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                    ],
+                ),
+                "log": (
+                    "LOG VIEWER",
+                    [
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                        "",
+                        "📜 JOURNAL VIEW",
+                        "  • Live journal monitoring",
+                        "  • Time range + text search filters",
+                        "  • Column selector and sticky columns",
+                        "",
+                        "🔍 DETAILS & NOTES",
+                        "  • Double-click to open detail view",
+                        "  • Two-column layout for readability",
+                        "  • Notes and quick copy actions",
+                        "",
+                        "⚙️ PERFORMANCE",
+                        "  • Incremental loading (no UI freezes)",
+                        "  • Safe caching of large logs",
                         "",
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                     ],
@@ -250,8 +306,8 @@ class ManualWindow(ctk.CTkToplevel):
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                     ],
                 ),
-                "tab1": (
-                    "TAB 1: ROUTE OPTIMIZATION",
+                "route_opt": (
+                    "ROUTE OPTIMIZATION",
                     [
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                         "",
@@ -281,8 +337,8 @@ class ManualWindow(ctk.CTkToplevel):
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                     ],
                 ),
-                "tab2": (
-                    "TAB 2: NEUTRON HIGHWAY",
+                "neutron": (
+                    "NEUTRON HIGHWAY",
                     [
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                         "",
@@ -313,8 +369,8 @@ class ManualWindow(ctk.CTkToplevel):
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                     ],
                 ),
-                "tab3": (
-                    "TAB 3: ROUTE TRACKING",
+                "tracking": (
+                    "ROUTE TRACKING",
                     [
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                         "",
@@ -356,8 +412,8 @@ class ManualWindow(ctk.CTkToplevel):
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                     ],
                 ),
-                "tab4": (
-                    "TAB 4: GALAXY PLOTTER",
+                "galaxy": (
+                    "GALAXY PLOTTER",
                     [
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                         "",
@@ -518,7 +574,7 @@ class ManualWindow(ctk.CTkToplevel):
                         "📋 DROPDOWN/UI MISALIGNMENT",
                         "  Problem: UI elements appear misaligned",
                         "  Solutions:",
-                        "    1. Fixed in v3.1 - update if needed",
+                        "    1. Fixed in v3.2.0 - update if needed",
                         "    2. Restart application",
                         "    3. Check display scaling (100-150% recommended)",
                         "    4. Try different theme in Settings",
@@ -616,16 +672,16 @@ class ManualWindow(ctk.CTkToplevel):
             }
 
         def _render_section(self, key: str):
-            self.manual_textbox.configure(state="normal")
-            self.manual_textbox.delete("1.0", "end")
-            self.manual_textbox.insert("end", "ED MULTI ROUTE NAVIGATION (EDMRN) v3.1 - USER MANUAL\n")
-            self.manual_textbox.insert("end", "Optimized routes, journal tracking, Spansh primary autocomplete.\n\n")
-            title, lines = self.section_content.get(key, ("", []))
-            if title:
-                self.manual_textbox.insert("end", title + "\n\n")
-            for line in lines:
-                self.manual_textbox.insert("end", line + "\n")
-            self.manual_textbox.configure(state="disabled")
+                self.manual_textbox.configure(state="normal")
+                self.manual_textbox.delete("1.0", "end")
+                self.manual_textbox.insert("end", "ED MULTI ROUTE NAVIGATION (EDMRN) v3.2.0 - USER MANUAL\n")
+                self.manual_textbox.insert("end", "Optimized routes, journal tracking, Spansh primary autocomplete.\n\n")
+                title, lines = self.section_content.get(key, ("", []))
+                if title:
+                        self.manual_textbox.insert("end", title + "\n\n")
+                for line in lines:
+                        self.manual_textbox.insert("end", line + "\n")
+                self.manual_textbox.configure(state="disabled")
 
         def _schedule_reapply_icons(self):
                 if getattr(self, '_reapply_pending', False):
@@ -1129,7 +1185,7 @@ class AboutWindow(ctk.CTkToplevel):
             justify="center"
         ).grid(row=2, column=0, pady=(0, 20))
         info_text = """
-    Version 3.1.0 - AGPL-3 Licensed
+    Version 3.2.0 - AGPL-3 Licensed
 January 2026
 Developed by CMDR Ninurta Kalhu
 Elite Dangerous © Frontier Developments plc.

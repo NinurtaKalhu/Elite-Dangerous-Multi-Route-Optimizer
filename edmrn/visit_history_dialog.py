@@ -19,10 +19,14 @@ class VisitedSystemsDialog(ctk.CTkToplevel):
             import ctypes
             import os
             from PIL import Image
-            
+            from edmrn.logger import get_logger
+            logger = get_logger('VisitHistoryDialog')
             ico_path = resource_path('../assets/explorer_icon.ico')
             if Path(ico_path).exists():
-                self.iconbitmap(ico_path)
+                try:
+                    self.iconbitmap(ico_path)
+                except Exception as e:
+                    logger.error(f"VisitedSystemsDialog: iconbitmap failed: {e}")
                 if os.name == 'nt':
                     try:
                         IMAGE_ICON = 1
@@ -35,10 +39,10 @@ class VisitedSystemsDialog(ctk.CTkToplevel):
                             hwnd = self.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+                    except Exception as e:
+                        logger.error(f"VisitedSystemsDialog: WM_SETICON failed: {e}")
+        except Exception as e:
+            logger.error(f"VisitedSystemsDialog: Exception in icon set: {e}")
         
         self.transient(parent)
         self.grab_set()
@@ -200,18 +204,19 @@ class VisitedSystemsDialog(ctk.CTkToplevel):
             self._do_reapply_icons()
     
     def _do_reapply_icons(self):
+        from edmrn.logger import get_logger
+        logger = get_logger('VisitHistoryDialog')
         try:
             from edmrn.utils import resource_path
             from pathlib import Path
             import ctypes
             import os
-            
             ico_path = resource_path('../assets/explorer_icon.ico')
             if Path(ico_path).exists():
                 try:
                     self.iconbitmap(ico_path)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"VisitedSystemsDialog: (reapply) iconbitmap failed: {e}")
                 if os.name == 'nt':
                     try:
                         IMAGE_ICON = 1
@@ -224,9 +229,9 @@ class VisitedSystemsDialog(ctk.CTkToplevel):
                             hwnd = self.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+                    except Exception as e:
+                        logger.error(f"VisitedSystemsDialog: (reapply) WM_SETICON failed: {e}")
+        except Exception as e:
+            logger.error(f"VisitedSystemsDialog: (reapply) Exception in icon set: {e}")
         finally:
             self._reapply_pending = False

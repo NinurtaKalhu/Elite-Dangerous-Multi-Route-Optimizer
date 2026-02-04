@@ -63,10 +63,14 @@ class SimpleUpdateChecker:
             from pathlib import Path
             import ctypes
             import os
-            
+            from edmrn.logger import get_logger
+            logger = get_logger('UpdaterDialog')
             ico_path = resource_path('../assets/explorer_icon.ico')
             if Path(ico_path).exists():
-                dialog.iconbitmap(ico_path)
+                try:
+                    dialog.iconbitmap(ico_path)
+                except Exception as e:
+                    logger.error(f"UpdateDialog: iconbitmap failed: {e}")
                 if os.name == 'nt':
                     try:
                         IMAGE_ICON = 1
@@ -79,10 +83,10 @@ class SimpleUpdateChecker:
                             hwnd = dialog.winfo_id()
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
                             ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+                    except Exception as e:
+                        logger.error(f"UpdateDialog: WM_SETICON failed: {e}")
+        except Exception as e:
+            logger.error(f"UpdateDialog: Exception in icon set: {e}")
         ctk.CTkLabel(
             dialog,
             text="🎉 New Version Available!",

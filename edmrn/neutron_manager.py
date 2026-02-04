@@ -207,14 +207,25 @@ class NeutronManager:
         }
         self.update_neutron_statistics(fake_result)
     def handle_neutron_system_jump(self, system_name):
-        if not self.app.neutron_router.last_route:
-            return
-        for i, waypoint in enumerate(self.app.neutron_router.last_route):
-            if waypoint['system'].lower() == system_name.lower():
-                self.app.neutron_router.update_waypoint_status(system_name, 'visited')
-                self.app.neutron_router.current_waypoint_index = i
+            if not self.app.neutron_router.last_route:
+                return
+            def normalize(name):
+                return name.lower().replace(' ', '').replace('-', '').replace('_', '')
+            norm_system = normalize(system_name)
+            start_index = self.app.neutron_router.current_waypoint_index
+            match_index = None
+            for i, waypoint in enumerate(self.app.neutron_router.last_route):
+                wp_name = waypoint['system']
+                if norm_system == normalize(wp_name):
+                    match_index = i
+                    break
+            if match_index is not None and match_index >= start_index:
+                for j in range(start_index, match_index + 1):
+                    wp_name = self.app.neutron_router.last_route[j]['system']
+                    self.app.neutron_router.update_waypoint_status(wp_name, 'visited')
+                self.app.neutron_router.current_waypoint_index = match_index
                 self.update_neutron_navigation()
-                self.app._log(f"Auto-detected neutron jump to '{system_name}' (marked visited)")
+                self.app._log(f"Auto-detected neutron jump to '{system_name}' (matched '{self.app.neutron_router.last_route[match_index]['system']}', marked visited, {match_index-start_index+1} systems updated)")
                 if hasattr(self.app, 'current_backup_folder') and self.app.current_backup_folder:
                     self.app.neutron_router.save_neutron_route(self.app.current_backup_folder)
                 return
@@ -249,7 +260,10 @@ class NeutronManager:
             return
         
         for widget in self.app.neutron_scroll_frame.winfo_children():
-            widget.destroy()
+            try:
+                widget.destroy()
+            except Exception:
+                pass
         
         if not self.app.neutron_router.last_route:
             no_route_label = ctk.CTkLabel(
@@ -267,15 +281,12 @@ class NeutronManager:
             status = waypoint.get('status', 'unvisited')
             wp_type = waypoint.get('type', 'Normal')
             jumps = waypoint.get('jumps', 1)
-            
+            neutron_emoji = "⚡"
+            sun_emoji = "☀️"
             if wp_type == "Neutron":
-                display_text = f"{i+1}. ⚡ {system_name}"
+                display_text = f"{i+1}.{neutron_emoji} {system_name} | {jumps} jump"
             else:
-                if jumps > 1:
-                    display_text = f"{i+1}. {system_name} ({jumps} jumps)"
-                else:
-                    display_text = f"{i+1}. {system_name}"
-            
+                display_text = f"{i+1}.{sun_emoji} {system_name} | {jumps} jump"
             label = ctk.CTkLabel(
                 self.app.neutron_scroll_frame,
                 text=display_text,

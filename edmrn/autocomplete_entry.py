@@ -7,120 +7,129 @@ logger = get_logger('AutocompleteEntry')
 
 
 class AutocompleteEntry(ctk.CTkFrame):
-    
-    def __init__(self, parent, placeholder_text: str = "", 
-                 on_suggestion_callback: Optional[Callable] = None,
-                 suggestion_provider: Optional[Callable] = None,
-                 entry_var: Optional[ctk.StringVar] = None,
-                 local_suggestions: Optional[List[str]] = None,
-                 **kwargs):
-        super().__init__(parent, **kwargs)
-        
+    def __init__(self, master, placeholder_text=None, suggestion_provider=None, on_suggestion_callback=None, fg_color=None, **kwargs):
+        self.dropdown_frame = None
+        self.listbox = None
+        frame_kwargs = {}
+        if fg_color is not None:
+            frame_kwargs['fg_color'] = fg_color
+        super().__init__(master, **frame_kwargs)
+
         self.suggestion_provider = suggestion_provider
         self.on_suggestion_callback = on_suggestion_callback
-        self.local_suggestions = local_suggestions or []
-        self.suggestions_list = []
-        self.selected_index = -1
-        self.min_chars = 3
+        self.placeholder_text = placeholder_text or ""
         self.max_suggestions = 10
-        
-        if entry_var is None:
-            self.entry_var = ctk.StringVar()
-        else:
-            self.entry_var = entry_var
-        
-        self.entry = ctk.CTkEntry(
-            self,
-            textvariable=self.entry_var,
-            placeholder_text=placeholder_text,
-            height=32
-        )
-        self.entry.pack(fill="x", padx=0, pady=0)
-        
+        self.min_chars = 3
+        self.debounce_delay = 200
+        self.debounce_timer = None
+        self.local_suggestions = []
+        self.suggestions_list = []
+        self.is_dropdown_open = False
+        self.selected_index = -1
+        self.user_has_typed = False
+
+        self.entry_var = tk.StringVar()
+        self.entry = ctk.CTkEntry(self, textvariable=self.entry_var, placeholder_text=self.placeholder_text)
+        self.entry.pack(fill="x", padx=2, pady=2)
         self.entry.bind("<KeyRelease>", self._on_key_release)
         self.entry.bind("<FocusIn>", self._on_focus_in)
         self.entry.bind("<FocusOut>", self._on_focus_out)
         self.entry.bind("<Down>", self._on_down_arrow)
         self.entry.bind("<Up>", self._on_up_arrow)
         self.entry.bind("<Return>", self._on_return)
-        self.entry.bind("<Escape>", lambda e: self._hide_dropdown())
-        
+
+    def _create_dropdown(self):
+        if not self.winfo_exists():
+            return
+        try:
+            parent = self.winfo_toplevel()
+            if not str(parent):
+                return
+        except Exception:
+            return
+
+        if self.is_dropdown_open:
+            self._hide_dropdown()
         self.dropdown_frame = None
         self.listbox = None
         self.is_dropdown_open = False
-        
-        self.debounce_timer = None
-        self.debounce_delay = 300
-        
-        self.user_has_typed = False
-        
-    def _create_dropdown(self):
-        if self.dropdown_frame is None:
+        self.selected_index = -1
+
+        try:
+            if not self.entry.winfo_exists():
+                return
             self.entry.update_idletasks()
             root_x = self.entry.winfo_rootx()
             root_y = self.entry.winfo_rooty() + self.entry.winfo_height()
-            
+        except Exception:
+            return
+
+        try:
             self.dropdown_frame = tk.Toplevel(self.winfo_toplevel())
             self.dropdown_frame.wm_overrideredirect(True)
             self.dropdown_frame.wm_attributes("-topmost", True)
-            
-            toplevel = self.winfo_toplevel()
-            toplevel.bind("<Configure>", self._on_window_move, add="+")
-            
-            try:
-                colors = self.master.master.master.theme_manager.get_theme_colors()
-                frame_color = colors.get('frame', '#2b2b2b')
-                text_color = colors.get('text', '#ffffff')
-                primary_color = colors.get('primary', '#0078d7')
-            except:
-                frame_color = '#2b2b2b'
-                text_color = '#ffffff'
-                primary_color = '#0078d7'
-            
-            frame = tk.Frame(self.dropdown_frame, bg=frame_color, relief=tk.RAISED, bd=1)
-            frame.pack(fill="both", expand=True)
-            
-            scrollbar = tk.Scrollbar(frame, bg=frame_color)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            
-            self.listbox = tk.Listbox(
-                frame,
-                bg=frame_color,
-                fg=text_color,
-                selectmode=tk.SINGLE,
-                font=("Segoe UI", 11),
-                width=40,
-                height=8,
-                yscrollcommand=scrollbar.set,
-                relief=tk.FLAT,
-                bd=0,
-                activestyle='none',
-                selectbackground=primary_color
-            )
-            self.listbox.pack(side=tk.LEFT, fill="both", expand=True)
-            scrollbar.config(command=self.listbox.yview)
-            
-            self.listbox.bind("<ButtonRelease-1>", self._on_listbox_select)
-            self.listbox.bind("<Return>", self._on_listbox_select)
-            
-            footer_frame = tk.Frame(self.dropdown_frame, bg=frame_color)
-            footer_frame.pack(fill="x", side=tk.BOTTOM)
-            footer_label = tk.Label(
-                footer_frame,
-                text="System data by Spansh (primary) / EDSM (fallback)",
-                bg=frame_color,
-                fg=text_color,
-                font=("Segoe UI", 7),
-                pady=3
-            )
-            footer_label.pack(side=tk.BOTTOM)
-            
-            self.is_dropdown_open = True
+        except Exception:
+            return
+
+        toplevel = self.winfo_toplevel()
+        toplevel.bind("<Configure>", self._on_window_move, add="+")
+
+        try:
+            colors = self.master.master.master.theme_manager.get_theme_colors()
+            frame_color = colors.get('frame', '#2b2b2b')
+            text_color = colors.get('text', '#ffffff')
+            primary_color = colors.get('primary', '#0078d7')
+        except:
+            frame_color = '#2b2b2b'
+            text_color = '#ffffff'
+            primary_color = '#0078d7'
+
+        if not self.winfo_exists():
+            return
+        frame = tk.Frame(self.dropdown_frame, bg=frame_color, relief=tk.RAISED, bd=1)
+        frame.pack(fill="both", expand=True)
+
+        scrollbar = tk.Scrollbar(frame, bg=frame_color)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.listbox = tk.Listbox(
+            frame,
+            bg=frame_color,
+            fg=text_color,
+            selectmode=tk.SINGLE,
+            font=("Segoe UI", 11),
+            width=40,
+            height=8,
+            yscrollcommand=scrollbar.set,
+            relief=tk.FLAT,
+            bd=0,
+            activestyle='none',
+            selectbackground=primary_color
+        )
+        self.listbox.pack(side=tk.LEFT, fill="both", expand=True)
+        scrollbar.config(command=self.listbox.yview)
+
+        self.listbox.bind("<ButtonRelease-1>", self._on_listbox_select)
+        self.listbox.bind("<Return>", self._on_listbox_select)
+
+        footer_frame = tk.Frame(self.dropdown_frame, bg=frame_color)
+        footer_frame.pack(fill="x", side=tk.BOTTOM)
+        footer_label = tk.Label(
+            footer_frame,
+            text="System data by Spansh (primary) / EDSM (fallback)",
+            bg=frame_color,
+            fg=text_color,
+            font=("Segoe UI", 7),
+            pady=3
+        )
+        footer_label.pack(side=tk.BOTTOM)
+        self.is_dropdown_open = True
     
     def _on_window_move(self, event=None):
         if not self.is_dropdown_open or not self.dropdown_frame:
             return
-        
+        if not self.winfo_exists() or not self.entry.winfo_exists():
+            return
         try:
             self.entry.update_idletasks()
             root_x = self.entry.winfo_rootx()
@@ -131,14 +140,18 @@ class AutocompleteEntry(ctk.CTkFrame):
             pass
     
     def _hide_dropdown(self):
+        if not self.winfo_exists():
+            return
         try:
             toplevel = self.winfo_toplevel()
             toplevel.unbind("<Configure>", self._on_window_move)
         except Exception:
             pass
-        
         if self.dropdown_frame is not None:
-            self.dropdown_frame.destroy()
+            try:
+                self.dropdown_frame.destroy()
+            except Exception:
+                pass
             self.dropdown_frame = None
             self.listbox = None
             self.is_dropdown_open = False
@@ -293,24 +306,33 @@ class AutocompleteEntry(ctk.CTkFrame):
     def set(self, value: str):
         self.entry_var.set(value)
     
-    def set_local_suggestions(self, suggestions: List[str]):
-        self.local_suggestions = suggestions
-        logger.info(f"Updated local suggestions: {len(suggestions)} items")
-    
-    def delete(self, start, end):
-        self.entry.delete(start, end)
-    
-    def insert(self, index, string):
-        self.entry.insert(index, string)
-    
-    def configure(self, **kwargs):
-        entry_kwargs = {k: v for k, v in kwargs.items() 
-                       if k not in ['suggestion_provider', 'on_suggestion_callback']}
-        
-        if 'suggestion_provider' in kwargs:
-            self.suggestion_provider = kwargs['suggestion_provider']
-        if 'on_suggestion_callback' in kwargs:
-            self.on_suggestion_callback = kwargs['on_suggestion_callback']
-        
-        if entry_kwargs:
-            self.entry.configure(**entry_kwargs)
+    def _update_suggestions(self, suggestions: List[str]):
+        try:
+            if not self.winfo_exists():
+                return
+        except Exception:
+            return
+        self.suggestions_list = suggestions[:self.max_suggestions]
+        if not self.suggestions_list:
+            self._hide_dropdown()
+            return
+        if not self.is_dropdown_open:
+            self._create_dropdown()
+        if not self.is_dropdown_open or self.listbox is None:
+            return
+        try:
+            self.listbox.delete(0, tk.END)
+            for suggestion in self.suggestions_list:
+                self.listbox.insert(tk.END, suggestion)
+        except Exception:
+            return
+        self.selected_index = -1
+        if self.dropdown_frame:
+            try:
+                self.entry.update_idletasks()
+                root_x = self.entry.winfo_rootx()
+                root_y = self.entry.winfo_rooty() + self.entry.winfo_height()
+                entry_width = self.entry.winfo_width()
+                self.dropdown_frame.geometry(f"{entry_width}x200+{root_x}+{root_y}")
+            except Exception:
+                pass

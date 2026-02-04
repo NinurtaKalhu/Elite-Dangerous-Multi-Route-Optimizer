@@ -15,7 +15,8 @@ class JournalOperations:
         if self.app.journal_monitor:
             self.app.journal_monitor.stop()
         manual_path = self.app.journal_path_var.get().strip() or None
-        self.app.journal_monitor = JournalMonitor(callback=self.app._handle_system_jump, manual_journal_path=manual_path, selected_commander=self.app.selected_commander.get())
+        callback = getattr(self.app, '_journal_callback', self.app._handle_system_jump)
+        self.app.journal_monitor = JournalMonitor(callback=callback, manual_journal_path=manual_path, selected_commander=self.app.selected_commander.get())
         self.app.journal_monitor.start()
         self.app._log(f"Journal monitor started with path: {manual_path or 'auto-detected'}")
     def handle_system_jump(self, system_name):
@@ -116,8 +117,9 @@ class JournalOperations:
         if self.app.journal_monitor:
             self.app.journal_monitor.stop()
             self.app.journal_monitor = None
+        callback = getattr(self.app, '_journal_callback', self.app._handle_system_jump)
         self.app.journal_monitor = JournalMonitor(
-            callback=self.app._handle_system_jump,
+            callback=callback,
             manual_journal_path=manual_path,
             selected_commander=self.app.selected_commander.get()
         )
@@ -134,8 +136,9 @@ class JournalOperations:
             if self.app.journal_monitor:
                 self.app.journal_monitor.stop()
             manual_path = self.app.journal_path_var.get().strip() or None
+            callback = getattr(self.app, '_journal_callback', self.app._handle_system_jump)
             self.app.journal_monitor = JournalMonitor(
-                callback=self.app._handle_system_jump,
+                callback=callback,
                 manual_journal_path=manual_path,
                 selected_commander=selected
             )

@@ -69,6 +69,14 @@ class ThreadSafeOverlay:
             return False
         try:
             self._command_queue.put(('size', size_label), timeout=0.5, block=False)
+            try:
+                self.root.update_idletasks()
+                req_width = self.root.winfo_width()
+                req_height = self.root.winfo_reqheight()
+                self.root.geometry(f"{req_width}x{req_height}+{x}+{y}")
+            except Exception as e:
+                logger.error(f"Failed to shrink-to-fit after size change: {e}")
+            self.update_display()
             return True
         except queue.Full:
             logger.warning("Overlay command queue full, size command dropped")
@@ -125,6 +133,11 @@ class ThreadSafeOverlay:
     def is_running(self):
         return self._running.is_set()
 class EDMRNOverlay:
+    def _resize_canvas_to_content(self, min_height, max_height):
+        self.scrollable_frame.update_idletasks()
+        content_height = self.scrollable_frame.winfo_reqheight()
+        new_height = max(min_height, min(content_height, max_height))
+        self.canvas.configure(height=new_height)
     def __init__(self, data_callback, initial_opacity=0.8, command_queue=None, app_instance=None):
         self.data_callback = data_callback
         self.app_instance = app_instance
@@ -166,7 +179,7 @@ class EDMRNOverlay:
                 self.root.geometry(f"{w}x{h}+100+100")
                 self._pending_size = None
             else:
-                self.root.geometry("220x380+100+100")
+                self.root.geometry("220x220+100+100")
             self.root.overrideredirect(True)
             self.root.attributes('-topmost', True)
             self._apply_platform_specific_settings()
@@ -270,17 +283,19 @@ class EDMRNOverlay:
                 anchor="w"
             )
             bodies_title.pack(fill="x", pady=(2, 1))
-            default_bodies_height = 80
-            bodies_frame = tk.Frame(content_frame, bg=bg_color, height=default_bodies_height)
-            bodies_frame.pack(fill="x", expand=False)
-            bodies_frame.pack_propagate(False)
-            self.bodies_frame = bodies_frame
-            self.canvas = tk.Canvas(bodies_frame, bg=bg_color, highlightthickness=0, height=default_bodies_height)
-            scrollbar = ttk.Scrollbar(bodies_frame, orient="vertical", command=self.canvas.yview)
+            min_height = 60
+            max_height = 220
+            self.bodies_frame = tk.Frame(content_frame, bg=bg_color)
+            self.bodies_frame.pack(fill="x", expand=False)
+            self.canvas = tk.Canvas(self.bodies_frame, bg=bg_color, highlightthickness=0)
+            scrollbar = ttk.Scrollbar(self.bodies_frame, orient="vertical", command=self.canvas.yview)
             self.scrollable_frame = tk.Frame(self.canvas, bg=bg_color)
             self.scrollable_frame.bind(
                 "<Configure>",
-                lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+                lambda e: [
+                    self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+                    self._resize_canvas_to_content(min_height, max_height)
+                ]
             )
             self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
             self.canvas.configure(yscrollcommand=scrollbar.set)
@@ -289,8 +304,7 @@ class EDMRNOverlay:
             self.body_labels = []
             
             control_frame = tk.Frame(self.root, bg=bg_color)
-            control_frame.pack(fill="x", side="bottom", pady=(6, 0))
-            
+            control_frame.pack(fill="x", side="bottom")
             tab_frame = tk.Frame(control_frame, bg=bg_color)
             tab_frame.pack(fill="x", pady=(2, 4))
             
@@ -336,7 +350,7 @@ class EDMRNOverlay:
             self.tab_gp_btn.pack(side='left', padx=2)
             
             nav_frame = tk.Frame(control_frame, bg=bg_color)
-            nav_frame.pack(fill="x", pady=(0, 4))
+            nav_frame.pack(fill="x", pady=(0, 0))
             
             nav_btn_config = {
                 'font': ('Segoe UI', 10, 'bold'),
@@ -379,25 +393,16 @@ class EDMRNOverlay:
                 **nav_btn_config
             )
             self.next_btn.pack(side='left', padx=(4, 0))
-            
-            footer_frame = tk.Frame(self.root, bg=bg_color, height=18)
-            footer_frame.pack(fill="x", side="bottom")
-            footer_frame.pack_propagate(False)
-            footer_label = tk.Label(
-                footer_frame,
-                text="Drag header to move",
-                font=("Segoe UI", 7),
-                bg=bg_color,
-                fg=text_color
-            )
-            footer_label.pack(pady=2)
-            self.footer_label = footer_label
             try:
                 if hasattr(self, '_pending_label') and self._pending_label:
                     self.set_size(self._pending_label)
                     self._pending_label = None
             except Exception as e:
                 logger.error(f"Applying pending size label failed: {e}")
+            self.root.update_idletasks()
+            req_width = self.root.winfo_width()
+            req_height = self.root.winfo_reqheight()
+            self.root.geometry(f"{req_width}x{req_height}")
         except Exception as e:
             logger.error(f"Window creation error: {e}")
             if self.root:
@@ -479,14 +484,14 @@ class EDMRNOverlay:
     
     def handle_tab_switch(self, tab_name):
         try:
+            if tab_name not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+                logger.warning(f"Overlay tab switch: Invalid tab name '{tab_name}', skipping.")
+                return
             if self._tab_switch_in_progress:
                 logger.debug(f"Tab switch already in progress, ignoring: {tab_name}")
                 return
-            
             self._tab_switch_in_progress = True
-            
             self._disable_tab_buttons()
-            
             if self.app_instance and self.app_instance.root:
                 try:
                     self.app_instance.root.after(0, lambda: self._handle_tab_switch_callback(tab_name))
@@ -495,7 +500,6 @@ class EDMRNOverlay:
                     self._enable_tab_buttons()
                     self._tab_switch_in_progress = False
                     return
-            
             if self.root:
                 self.root.after(600, self._reset_tab_switch_flag)
         except Exception as e:
@@ -568,7 +572,6 @@ class EDMRNOverlay:
             except Exception:
                 pass
         self.body_labels.clear()
-        
         size_limits = {
             'Small': 18,
             'Medium': 25,
@@ -576,7 +579,6 @@ class EDMRNOverlay:
         }
         current_size = getattr(self, '_current_size_label', 'Medium')
         body_char_limit = size_limits.get(current_size, 25)
-        
         if not bodies or bodies[0] in ['Load route...', 'No bodies to scan']:
             label = tk.Label(
                 self.scrollable_frame,
@@ -588,30 +590,30 @@ class EDMRNOverlay:
             )
             label.pack(fill="x", pady=1)
             self.body_labels.append(label)
-            return
-        for i, body in enumerate(bodies[:6]):
-            display_body = body[:body_char_limit] + "..." if len(body) > body_char_limit else body
-            label = tk.Label(
-                self.scrollable_frame,
-                text=f"• {display_body}",
-                font=("Segoe UI", 8),
-                bg="#0D0D0D",
-                fg="#E0E0E0",
-                anchor="w"
-            )
-            label.pack(fill="x", pady=1)
-            self.body_labels.append(label)
-        if len(bodies) > 6:
-            more_label = tk.Label(
-                self.scrollable_frame,
-                text=f"... +{len(bodies) - 6} more",
-                font=("Segoe UI", 7),
-                bg="#0D0D0D",
-                fg="#888888",
-                anchor="w"
-            )
-            more_label.pack(fill="x", pady=1)
-            self.body_labels.append(more_label)
+        else:
+            for i, body in enumerate(bodies[:6]):
+                display_body = body[:body_char_limit] + "..." if len(body) > body_char_limit else body
+                label = tk.Label(
+                    self.scrollable_frame,
+                    text=f"• {display_body}",
+                    font=("Segoe UI", 8),
+                    bg="#0D0D0D",
+                    fg="#E0E0E0",
+                    anchor="w"
+                )
+                label.pack(fill="x", pady=1)
+                self.body_labels.append(label)
+            if len(bodies) > 6:
+                more_label = tk.Label(
+                    self.scrollable_frame,
+                    text=f"... +{len(bodies) - 6} more",
+                    font=("Segoe UI", 7),
+                    bg="#0D0D0D",
+                    fg="#888888",
+                    anchor="w"
+                )
+                more_label.pack(fill="x", pady=1)
+                self.body_labels.append(more_label)
     def set_size(self, size_label):
         presets = {
             'Small': (200, 320),
@@ -658,11 +660,6 @@ class EDMRNOverlay:
                         self.canvas.configure(height=canvas_height)
                 except Exception:
                     pass
-                try:
-                    if hasattr(self, 'footer_label') and self.footer_label:
-                        self.footer_label.config(text=f"Size: {size_label}")
-                except Exception:
-                    pass
                 self._current_size_label = size_label
             else:
                 self._pending_size = (w, h)
@@ -680,10 +677,16 @@ class EDMRNOverlay:
             if new_data:
                 self.current_data.update(new_data)
             elif new_data is None:
-                logger.warning("Overlay data callback returned None, using cached data")
+                pass
+            if not isinstance(self.current_data, dict):
+                logger.warning(f"[Overlay] current_data is not dict, got {type(self.current_data).__name__}")
+                return
+            self.root.update_idletasks()
+            req_width = self.root.winfo_width()
+            req_height = self.root.winfo_reqheight()
+            self.root.geometry(f"{req_width}x{req_height}")
             data = self.current_data
             system_name = data['current_system']
-            
             size_limits = {
                 'Small': 18,
                 'Medium': 25,
@@ -692,10 +695,8 @@ class EDMRNOverlay:
             current_size = getattr(self, '_current_size_label', 'Medium')
             char_limit = size_limits.get(current_size, 18)
             display_system = system_name[:char_limit] + "..." if len(system_name) > char_limit else system_name
-            
             if self.system_label:
                 self.system_label.config(text=f"{Icons.LOCATION} {display_system}")
-            
             if self.copy_btn:
                 btn_char_limit = size_limits.get(current_size, 18) - 5
                 btn_system = system_name[:btn_char_limit] + "..." if len(system_name) > btn_char_limit else system_name
@@ -739,8 +740,55 @@ class EDMRNOverlay:
                 self.distance_label.config(text=f"{Icons.COMPASS} {dist_text}")
             bodies = data['bodies_to_scan']
             self.update_bodies_display(bodies)
+            exobio_species = data.get('exobio_species', [])
+            if hasattr(self, 'exobio_labels'):
+                for label in self.exobio_labels:
+                    try:
+                        label.destroy()
+                    except Exception:
+                        pass
+                self.exobio_labels.clear()
+            else:
+                self.exobio_labels = []
+            if exobio_species:
+                sep = tk.Label(self.scrollable_frame, text="Exobiology scans:", font=("Segoe UI", 8, "bold"), bg="#0D0D0D", fg="#FFD700", anchor="w")
+                sep.pack(fill="x", pady=(6, 0))
+                self.exobio_labels.append(sep)
+                for species, count in exobio_species[:6]:
+                    icon = "🟢" if count >= 3 else ("🟡" if count == 2 else ("🟠" if count == 1 else "🔴"))
+                    label = tk.Label(
+                        self.scrollable_frame,
+                        text=f"{icon} {species} ({count}/3)",
+                        font=("Segoe UI", 8),
+                        bg="#0D0D0D",
+                        fg="#A3FFB0" if count >= 3 else ("#FFD700" if count == 2 else ("#FFA500" if count == 1 else "#FF5D5D")),
+                        anchor="w"
+                    )
+                    label.pack(fill="x", pady=1)
+                    self.exobio_labels.append(label)
+                if len(exobio_species) > 6:
+                    more_label = tk.Label(
+                        self.scrollable_frame,
+                        text=f"... +{len(exobio_species) - 6} more",
+                        font=("Segoe UI", 7),
+                        bg="#0D0D0D",
+                        fg="#888888",
+                        anchor="w"
+                    )
+                    more_label.pack(fill="x", pady=1)
+                    self.exobio_labels.append(more_label)
         except Exception as e:
             logger.error(f"Overlay update error: {e}")
+        try:
+            if self.root:
+                self.root.update_idletasks()
+                req_width = self.root.winfo_width()
+                req_height = self.root.winfo_reqheight()
+                x = self.root.winfo_x()
+                y = self.root.winfo_y()
+                self.root.geometry(f"{req_width}x{req_height}+{x}+{y}")
+        except Exception as e:
+            logger.error(f"Overlay shrink-to-fit after update_display failed: {e}")
     def toggle_visibility(self):
         if not self.root:
             return
@@ -760,6 +808,9 @@ class EDMRNOverlay:
             return
         try:
             current_tab = self.app_instance.tabview.get()
+            if current_tab not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+                logger.warning(f"Overlay prev: No valid tab selected (current_tab={current_tab!r}), skipping action.")
+                return
             if current_tab == "Route Tracking":
                 self.app_instance._copy_prev_system_to_clipboard()
             elif current_tab == "Neutron Highway":
@@ -768,23 +819,35 @@ class EDMRNOverlay:
                 self.app_instance._galaxy_prev_waypoint()
         except Exception as e:
             logger.error(f"Prev callback error: {e}")
+            try:
+                from edmrn.gui import ErrorDialog
+                ErrorDialog(self.app_instance, "Overlay Error", f"Overlay prev/next error (prev):\n{e}")
+            except Exception:
+                pass
     
     def _handle_next_callback(self):
         if not self.app_instance:
             return
         try:
             current_tab = self.app_instance.tabview.get()
+            if current_tab not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+                logger.warning(f"Overlay next: No valid tab selected (current_tab={current_tab!r}), skipping action.")
+                return
             if current_tab == "Route Tracking":
                 self.app_instance._advance_route_tracking_from_overlay()
             elif current_tab == "Neutron Highway":
                 self.app_instance._neutron_next_waypoint()
             elif current_tab == "Galaxy Plotter":
                 self.app_instance._galaxy_next_waypoint()
-            
             if self.root:
                 self.root.after(100, self.update_display)
         except Exception as e:
             logger.error(f"Next callback error: {e}")
+            try:
+                from edmrn.gui import ErrorDialog
+                ErrorDialog(self.app_instance, "Overlay Error", f"Overlay prev/next error (next):\n{e}")
+            except Exception:
+                pass
     
     def _handle_copy_callback(self):
         if not self.app_instance:
@@ -802,20 +865,21 @@ class EDMRNOverlay:
     
     def _handle_tab_switch_callback(self, tab_name):
         if not self.app_instance:
+            logger.warning("Overlay tab switch callback: app_instance missing, skipping.")
             return
         try:
+            if tab_name not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+                logger.warning(f"Overlay tab switch callback: Invalid tab name '{tab_name}', skipping.")
+                return
             current = self.app_instance.tabview.get()
             if current == tab_name:
                 logger.debug(f"Already on tab: {tab_name}")
                 if self.root:
                     self.root.after(0, lambda: self.update_tab_buttons(tab_name))
                 return
-            
             self.app_instance.tabview.set(tab_name)
-            
             if self.root:
                 self.root.after(0, lambda: self.update_tab_buttons(tab_name))
-            
             logger.info(f"Tab switched to: {tab_name}")
         except Exception as e:
             logger.error(f"Tab switch callback error: {e}")

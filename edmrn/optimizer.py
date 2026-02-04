@@ -5,6 +5,7 @@ import json
 from scipy.spatial.distance import cdist
 from python_tsp.heuristics import solve_tsp_lin_kernighan
 from tqdm import tqdm
+import multiprocessing
 import time
 import threading
 from typing import Callable, Dict, List, Tuple, Optional, Any

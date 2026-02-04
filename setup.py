@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 setup(
     name="edmrn",
-    version="3.0",
+    version="3.2",
     author="Ninurta Kalhu",
     author_email="ninurtakalhu@gmail.com",
     description="ED Multi Route Navigation - Elite Dangerous route optimization and tracking tool",

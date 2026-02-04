@@ -16,6 +16,7 @@ class AppConfig:
     current_theme: str = 'elite_dangerous'
     window_geometry: str = '1100x800+100+100'
     borderless_mode: bool = True
+    log_columns: list = None
     @classmethod
     def get_app_data_path(cls):
         try:
@@ -24,10 +25,12 @@ class AppConfig:
             if not documents.exists():
                 documents = home
             app_data = documents / "EDMRN_Route_Data"
-            app_data.mkdir(exist_ok=True)
+            app_data.mkdir(parents=True, exist_ok=True)
             return str(app_data)
         except Exception:
-            return str(Path.cwd() / "EDMRN_Route_Data")
+            app_data = Path.cwd() / 'EDMRN_Route_Data'
+            app_data.mkdir(parents=True, exist_ok=True)
+            return str(app_data)
     @classmethod
     def get_settings_file(cls):
         app_data = cls.get_app_data_path()

@@ -19,9 +19,16 @@ class GalaxyPlotter:
     def submit_route_job(self,
                         source_system: str,
                         destination_system: str,
-                        range_ly: float = 50.0,
+                        range_ly: float,
                         efficiency: int = 60,
                         supercharge: bool = True,
+                        ship_build: str = "",
+                        cargo: int = 0,
+                        reserve_fuel: float = 0.0,
+                        already_supercharged: bool = False,
+                        use_injections: bool = False,
+                        exclude_secondary: bool = False,
+                        refuel_every_scoopable: bool = True,
                         progress_callback: Optional[Callable[[str], None]] = None) -> Optional[str]:
         try:
             if progress_callback:
@@ -35,33 +42,36 @@ class GalaxyPlotter:
                 "range": range_ly,
                 "efficiency": efficiency,
                 "supercharge_multiplier": supercharge_multiplier,
+                "ship_build": ship_build,
+                "cargo": cargo,
+                "reserve_fuel": reserve_fuel,
+                "already_supercharged": already_supercharged,
+                "use_injections": use_injections,
+                "exclude_secondary_stars": exclude_secondary,
+                "refuel_every_scoopable": refuel_every_scoopable,
             }
-            
-            logger.debug(f"Submitting route params: {params}")
-            
+            params = {k: v for k, v in params.items() if v not in [None, "", False] or k in ["from", "to", "range", "efficiency", "supercharge_multiplier"]}
+            logger.info(f"[SPNSH-REQ] Submitting route params: {json.dumps(params, ensure_ascii=False)}")
             response = requests.post(
                 self.route_api,
                 params=params,
                 timeout=30,
                 headers={'User-Agent': "EDMRN 3.0"}
             )
-            
+            logger.info(f"[SPNSH-RESP] Status: {response.status_code}, Body: {response.text[:1000]}")
             if response.status_code != 202:
                 error_msg = response.text
                 logger.error(f"Failed to submit route job: {response.status_code} - {error_msg}")
                 if progress_callback:
                     progress_callback(f"Error: {error_msg}")
                 return None
-            
             data = response.json()
             job_id = data.get("job")
-            
             if not job_id:
                 logger.error(f"No job ID in response: {data}")
                 if progress_callback:
                     progress_callback("Error: No job ID received from Spansh")
                 return None
-            
             logger.info(f"Route job submitted: {job_id}")
             return job_id
             
@@ -141,25 +151,30 @@ class GalaxyPlotter:
                    exclude_secondary: bool = True,
                    refuel_every_scoopable: bool = True,
                    routing_algorithm: str = "optimistic",
-                   progress_callback: Optional[Callable[[str], None]] = None) -> Optional[Dict[str, Any]]:
+                   progress_callback: Optional[Callable[[str], None]] = None,
+                   range_ly: float = None) -> Optional[Dict[str, Any]]:
         try:
+            logger.info(f"[SPNSH-REQ] plot_route params: source={source_system}, dest={destination_system}, ship_build={ship_build}, cargo={cargo}, reserve_fuel={reserve_fuel}, already_supercharged={already_supercharged}, use_supercharge={use_supercharge}, use_injections={use_injections}, exclude_secondary={exclude_secondary}, refuel_every_scoopable={refuel_every_scoopable}, routing_algorithm={routing_algorithm}, range_ly={range_ly}")
             efficiency = 60 if routing_algorithm == "optimistic" else 80
-            
             job_id = self.submit_route_job(
                 source_system, destination_system,
-                range_ly=50.0,
+                range_ly=range_ly,
                 efficiency=efficiency,
                 supercharge=use_supercharge,
+                ship_build=ship_build,
+                cargo=cargo,
+                reserve_fuel=reserve_fuel,
+                already_supercharged=already_supercharged,
+                use_injections=use_injections,
+                exclude_secondary=exclude_secondary,
+                refuel_every_scoopable=refuel_every_scoopable,
                 progress_callback=progress_callback
             )
-            
             if not job_id:
                 return None
-            
             route_data = self.poll_route_results(job_id, max_wait=300, progress_callback=progress_callback)
-            
+            logger.info(f"[SPNSH-RESP] route_data: {json.dumps(route_data)[:1000]}")
             return route_data
-            
         except Exception as e:
             logger.error(f"Error plotting route: {e}")
             if progress_callback:
@@ -182,21 +197,22 @@ class GalaxyPlotter:
     def format_route_summary(self, route_data: Dict[str, Any]) -> str:
         if not route_data or "result" not in route_data:
             return "No route data available"
-        
+        from edmrn.icons import Icons
         result = route_data["result"]
         system_jumps = result.get("system_jumps", [])
-        
-        summary = []
-        summary.append(f"Total jumps: {len(system_jumps)}")
-        summary.append(f"Total distance: {result.get('distance', 0):.2f} LY")
-        
+
+        total_jumps = len(system_jumps)
+        total_distance = result.get('distance', 0)
         neutron_count = sum(1 for jump in system_jumps if jump.get("neutron_star", False))
-        summary.append(f"Neutron boosts: {neutron_count}")
-        
         refuel_count = sum(1 for jump in system_jumps if jump.get("refuel", False))
-        summary.append(f"Refuel stops: {refuel_count}")
-        
-        return "\n".join(summary)
+
+        summary = []
+        summary.append(f"{Icons.ROCKET} {total_jumps} jumps")
+        summary.append(f"{Icons.LIGHTNING} {neutron_count} neutron boosts")
+        summary.append(f"⛽ {refuel_count} refuels")
+        summary.append(f"{Icons.CHART} {total_distance:.2f} LY")
+
+        return " | ".join(summary)
     
     def export_route_to_csv(self, route_data: Dict[str, Any], filename: str) -> bool:
         try:

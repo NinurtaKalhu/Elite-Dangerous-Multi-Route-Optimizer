@@ -4,8 +4,8 @@ import gc
 import matplotlib.pyplot as plt
 from edmrn.logger import get_logger
 logger = get_logger('MiniMap')
-COLOR_VISITED = '#4CAF50'
-COLOR_SKIPPED = '#FF6B6B'
+COLOR_VISITED = "#32B837"
+COLOR_SKIPPED = "#FF5D5D"
 COLOR_PENDING = '#E0E0E0'
 COLOR_ROUTE_LINE = '#FF8C00'
 COLOR_HIGHLIGHT = '#FFD700'

@@ -60,7 +60,7 @@ class StatusUpdateDialog(ctk.CTkToplevel):
         
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
         button_frame.pack(pady=6, padx=20, fill="x")
-        
+
         visited_btn = ctk.CTkButton(
             button_frame,
             text="Visited",
@@ -71,7 +71,18 @@ class StatusUpdateDialog(ctk.CTkToplevel):
             command=lambda: self.set_result('visited')
         )
         visited_btn.pack(side="left", expand=True, fill="x", padx=4)
-        
+
+        skipped_btn = ctk.CTkButton(
+            button_frame,
+            text="Skipped",
+            fg_color="#FF5D5D",
+            hover_color="#D34242",
+            font=("Segoe UI", 12, "bold"),
+            height=28,
+            command=lambda: self.set_result('skipped')
+        )
+        skipped_btn.pack(side="left", expand=True, fill="x", padx=4)
+
         clear_btn = ctk.CTkButton(
             button_frame,
             text="Clear Status",
@@ -82,7 +93,7 @@ class StatusUpdateDialog(ctk.CTkToplevel):
             command=lambda: self.set_result('clear')
         )
         clear_btn.pack(side="left", expand=True, fill="x", padx=4)
-        
+
         cancel_btn = ctk.CTkButton(
             button_frame,
             text="Cancel",
@@ -96,10 +107,10 @@ class StatusUpdateDialog(ctk.CTkToplevel):
         
         desc_frame = ctk.CTkFrame(self, fg_color="transparent")
         desc_frame.pack(pady=(4, 8))
-        
+
         desc_label = ctk.CTkLabel(
             desc_frame,
-            text="Visited = Mark as visited (Green)  |  Clear = Remove status  |  Cancel = No change",
+            text="Visited = Mark as visited (Green)  |  Skipped = Mark as skipped (Red)  |  Clear = Remove status  |  Cancel = No change",
             font=("Segoe UI", 9),
             text_color="#888888"
         )
@@ -339,9 +350,11 @@ class RouteManager:
         new_status = None
         if result == 'visited':
             new_status = STATUS_VISITED
+        elif result == 'skipped':
+            new_status = STATUS_SKIPPED
         elif result == 'clear':
             new_status = STATUS_UNVISITED
-        
+
         if new_status is not None:
             status_changed = self.app.route_manager.update_system_status(system_name, new_status)
             if status_changed:
@@ -359,7 +372,7 @@ class RouteManager:
             if status == STATUS_VISITED:
                 label.configure(fg_color="#4CAF50")
             elif status == STATUS_SKIPPED:
-                label.configure(fg_color="#FFA500")
+                label.configure(fg_color="#FF5D5D")
             else:
                 text_color = ("#E0E0E0", "#E0E0E0")
                 label.configure(fg_color="transparent", text_color=text_color)

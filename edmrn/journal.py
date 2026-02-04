@@ -80,7 +80,47 @@ class JournalMonitor(threading.Thread):
                 if self.selected_commander and self.selected_commander != 'Auto' and self.current_commander and self.current_commander != self.selected_commander:
                     return
                 if system_name:
-                    self.callback(system_name)
+                    self.current_system = system_name
+                    logger.info(f"[JournalMonitor] FSDJump detected, system: {system_name}")
+                    if self.callback:
+                        try:
+                            self.callback(system_name)
+                        except Exception as e:
+                            logger.error(f"[JournalMonitor] Callback error: {e}")
+                    else:
+                        logger.warning("[JournalMonitor] Callback is None!")
+            if event in ('Scan', 'SAASignalsFound', 'Exobiology', 'CodexEntry', 'ScanOrganic'):
+                system_name = data.get('StarSystem') or data.get('SystemName') or data.get('system')
+                if not system_name and hasattr(self, 'current_system'):
+                    system_name = self.current_system
+                if not system_name and self.current_journal_file:
+                    try:
+                        with open(self.current_journal_file, 'r', encoding='utf-8') as f:
+                            for l in reversed(f.readlines()):
+                                if '"event"' in l and 'FSDJump' in l:
+                                    try:
+                                        d = json.loads(l)
+                                        system_name = d.get('StarSystem')
+                                        if system_name:
+                                            break
+                                    except Exception:
+                                        continue
+                    except Exception:
+                        pass
+                if event in ('Exobiology', 'ScanOrganic'):
+                    logger.info(f"[JournalMonitor] {event} event detected, system: {system_name}")
+                    if self.callback:
+                        try:
+                            self.callback(system_name, data)
+                        except Exception as e:
+                            logger.error(f"[JournalMonitor] Callback error: {e}")
+                else:
+                    logger.debug(f"[JournalMonitor] {event} event detected, system: {system_name}")
+                    if self.callback:
+                        try:
+                            self.callback(system_name, data)
+                        except Exception as e:
+                            logger.error(f"[JournalMonitor] Callback error: {e}")
         except json.JSONDecodeError:
             pass
         except Exception as e:

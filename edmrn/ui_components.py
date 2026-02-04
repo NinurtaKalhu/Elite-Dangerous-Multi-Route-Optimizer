@@ -71,24 +71,56 @@ class UIComponents:
         self.app.file_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         csv_btn_frame = ctk.CTkFrame(top_frame, fg_color="transparent")
         csv_btn_frame.grid(row=2, column=0, sticky="w", pady=(0, 10))
+        btn_common = {
+            'fg_color': colors['background'],
+            'hover_color': colors['secondary_hover'],
+            'border_color': colors['primary'],
+            'border_width': 1,
+            'text_color': colors['primary'],
+            'font': ctk.CTkFont(size=11, weight="normal"),
+            'height': 24,
+            'corner_radius': 5,
+            'anchor': "center"
+        }
         self.app.file_button = ctk.CTkButton(
             csv_btn_frame,
             text="Browse / Reset",
             command=self.app._browse_file,
-            width=80,
-            font=ctk.CTkFont(size=12)
+            width=90,
+            **btn_common
         )
-        self.app.theme_manager.apply_button_theme(self.app.file_button, "secondary")
-        self.app.file_button.pack(side="left", padx=(0, 8))
+        self.app.file_button.pack(side="left", padx=(0, 10))
         self.app.load_backup_btn = ctk.CTkButton(
             csv_btn_frame,
             text="Load Backup",
             command=self.app._load_backup_from_optimizer,
-            width=100,
-            font=ctk.CTkFont(size=12)
+            width=110,
+            **btn_common
         )
-        self.app.theme_manager.apply_button_theme(self.app.load_backup_btn, "secondary")
-        self.app.load_backup_btn.pack(side="left")
+        self.app.load_backup_btn.pack(side="left", padx=(0, 10))
+
+        import webbrowser
+        def open_spansh():
+            webbrowser.open("https://www.spansh.co.uk/bodies")
+        self.app.search_route_btn = ctk.CTkButton(
+            csv_btn_frame,
+            text="Spansh Route Search 🌐",
+            command=open_spansh,
+            width=160,
+            **btn_common
+        )
+        self.app.search_route_btn.pack(side="left", padx=(0, 10))
+
+        def open_alien_wiki():
+            webbrowser.open("https://elite-dangerous.fandom.com/wiki/Category:Alien_life")
+        self.app.alien_life_btn = ctk.CTkButton(
+            csv_btn_frame,
+            text="Alien Life Wiki 👽",
+            command=open_alien_wiki,
+            width=130,
+            **btn_common
+        )
+        self.app.alien_life_btn.pack(side="left", padx=(0, 0))
         jump_label = ctk.CTkLabel(top_frame, text="Ship Jump Range (LY):",
                                  font=ctk.CTkFont(size=13, weight="bold"))
         jump_label.grid(row=0, column=1, sticky="w", pady=(0, 8), padx=(15, 10))
@@ -128,6 +160,7 @@ class UIComponents:
             width=38,
             command=self._toggle_system_dropdown
         )
+        self.app.theme_manager.apply_button_theme(self.app.start_dropdown_btn, "primary")
         self.app.start_dropdown_btn.grid(row=0, column=1)
         
         self.app.start_dropdown_frame = None
@@ -145,6 +178,7 @@ class UIComponents:
             height=28,
             font=ctk.CTkFont(size=11)
         )
+        self.app.theme_manager.apply_button_theme(nearest_btn, "secondary")
         nearest_btn.pack(side="left", padx=(0, 5))
         ctk.CTkLabel(main_frame, text="CSV Column Status:",
                     font=ctk.CTkFont(size=13, weight="bold")).grid(row=1, column=0, sticky="w", pady=(8, 8))
@@ -164,11 +198,11 @@ class UIComponents:
         self.app.current_csv_columns = []
         self.app.csv_file_path.trace_add('write', lambda *args: self.app._update_column_status_display())
         self.app.optional_toggle_btn = ctk.CTkButton(main_frame,
-                                               text="Optional Columns",
-                                               command=self.app._toggle_optional_columns,
-                                               width=140, height=28,
-                                               font=ctk.CTkFont(size=12))
-        self.app.theme_manager.apply_button_theme(self.app.optional_toggle_btn, "secondary")
+                               text="Optional Columns",
+                               command=self.app._toggle_optional_columns,
+                               width=140,
+                               **btn_common
+        )
         self.app.optional_toggle_btn.grid(row=3, column=0, pady=(0, 12), sticky="w")
         self.app.run_button = ctk.CTkButton(main_frame, text="Optimize & Track",
                                        command=self.app._run_optimization_threaded,
@@ -321,9 +355,14 @@ class UIComponents:
         self.app.nearest_find_btn = ctk.CTkButton(
             nearest_frame, text="FIND", width=60, height=24,
             command=self.app._find_nearest_system_by_coordinates,
-            font=ctk.CTkFont(size=11, weight="bold")
+            font=ctk.CTkFont(size=11, weight="normal"),
+            fg_color=colors['background'],
+            hover_color=colors['secondary_hover'],
+            border_color=colors['primary'],
+            border_width=2,
+            text_color=colors['primary'],
+            corner_radius=10
         )
-        self.app.theme_manager.apply_button_theme(self.app.nearest_find_btn, "primary")
         self.app.nearest_find_btn.grid(row=0, column=7, padx=(0, 8), pady=6)
         
         stats_frame = ctk.CTkFrame(info_frame,
@@ -463,12 +502,144 @@ class UIComponents:
                                  font=ctk.CTkFont(size=11),
                                  text_color=colors.get('secondary', '#888888')).pack(side="right", padx=(10, 0))
         
+        from edmrn.slef_store import load_slef_store, add_slef_entry, remove_slef_entry
+        slef_select_frame = ctk.CTkFrame(ship_frame, fg_color="transparent")
+        slef_select_frame.pack(fill="x", padx=10, pady=(0, 2))
+        self.app.slef_var = ctk.StringVar(value="")
+        self.app.slef_combobox = ctk.CTkComboBox(
+            slef_select_frame,
+            variable=self.app.slef_var,
+            values=[entry["name"] for entry in load_slef_store()],
+            width=180,
+            state="readonly"
+        )
+        self.app.slef_combobox.pack(side="left", padx=(0, 6))
+        def update_slef_code(*args):
+            name = self.app.slef_var.get()
+            for entry in load_slef_store():
+                if entry["name"] == name:
+                    self.app.galaxy_ship_build.delete("1.0", "end")
+                    self.app.galaxy_ship_build.insert("1.0", entry["code"])
+                    break
+        self.app.slef_var.trace_add('write', lambda *args: update_slef_code())
+        def on_slef_save():
+            code = self.app.galaxy_ship_build.get("1.0", "end").strip()
+            if not code:
+                return
+            import tkinter.simpledialog
+            name = tkinter.simpledialog.askstring("Save SLEF", "Enter a name for this SLEF code:")
+            if name:
+                add_slef_entry(name, code)
+                self.app.slef_combobox.configure(values=[entry["name"] for entry in load_slef_store()])
+                self.app.slef_var.set(name)
+        def on_slef_delete():
+            name = self.app.slef_var.get()
+            if not name:
+                return
+            import tkinter as tk
+            from tkinter import Toplevel, Label, Button
+            from edmrn.utils import resource_path
+            from pathlib import Path
+            import os, ctypes
+            root = self.app.root
+            colors = self.app.theme_manager.get_theme_colors()
+            confirm_win = Toplevel(root)
+            confirm_win.title("Delete SLEF")
+            confirm_win.resizable(False, False)
+            try:
+                ico_path = resource_path('../assets/explorer_icon.ico')
+                if Path(ico_path).exists():
+                    confirm_win.iconbitmap(ico_path)
+                    if os.name == 'nt':
+                        IMAGE_ICON = 1
+                        LR_LOADFROMFILE = 0x00000010
+                        WM_SETICON = 0x0080
+                        ICON_SMALL = 0
+                        ICON_BIG = 1
+                        hicon = ctypes.windll.user32.LoadImageW(0, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE)
+                        if hicon:
+                            hwnd = confirm_win.winfo_id()
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+                            ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+            except Exception:
+                pass
+            confirm_win.configure(bg=colors['frame'])
+            label = Label(
+                confirm_win,
+                text=f"Are you sure you want to delete the SLEF entry '{name}'?",
+                font=("Segoe UI", 11),
+                bg=colors['frame'],
+                fg=colors['text'],
+                wraplength=340,
+                justify="center"
+            )
+            label.pack(padx=18, pady=(18, 8))
+            btn_frame = tk.Frame(confirm_win, bg=colors['frame'])
+            btn_frame.pack(pady=(0, 14))
+            def do_delete():
+                confirm_win.destroy()
+                remove_slef_entry(name)
+                self.app.slef_combobox.configure(values=[entry["name"] for entry in load_slef_store()])
+                self.app.slef_var.set("")
+                self.app.galaxy_ship_build.delete("1.0", "end")
+            def do_cancel():
+                confirm_win.destroy()
+            Button(
+                btn_frame, text="Delete", width=10, command=do_delete,
+                fg=colors['text'], bg=colors['primary'], activebackground=colors['primary_hover'],
+                font=("Segoe UI", 10, "bold"),
+                relief="raised", bd=2
+            ).pack(side="left", padx=8)
+            Button(
+                btn_frame, text="Cancel", width=10, command=do_cancel,
+                fg=colors['text'], bg=colors['secondary'], activebackground=colors['secondary_hover'],
+                font=("Segoe UI", 10),
+                relief="raised", bd=2
+            ).pack(side="left", padx=8)
+            confirm_win.transient(root)
+            confirm_win.grab_set()
+            root.wait_window(confirm_win)
+        save_btn = ctk.CTkButton(slef_select_frame, text="Save", width=60, command=on_slef_save)
+        self.app.theme_manager.apply_button_theme(save_btn, "primary")
+        save_btn.pack(side="left", padx=(0, 4))
+        del_btn = ctk.CTkButton(slef_select_frame, text="Delete", width=60, command=on_slef_delete)
+        self.app.theme_manager.apply_button_theme(del_btn, "secondary")
+        del_btn.pack(side="left")
         self.app.galaxy_ship_build = ctk.CTkTextbox(ship_frame, height=60, wrap="word")
-        self.app.galaxy_ship_build.pack(fill="x", padx=10, pady=(0, 8))
-        self.app.galaxy_ship_build.insert("1.0", "Paste EDSY or Coriolis share URL here:\nhttps://edsy.org/#/L=...")
+        self.app.galaxy_ship_build.pack(fill="x", padx=10, pady=(0, 2))
+        slef_info_label = ctk.CTkLabel(
+            ship_frame,
+            text="💡 Paste your SLEF (Spansh Loadout Exchange Format) string here.\nDirect SLEF is recommended over EDSY/Coriolis URL.",
+            font=ctk.CTkFont(size=11),
+            text_color=colors.get('secondary', '#888888'),
+            anchor="w",
+            justify="left"
+        )
+        slef_info_label.pack(fill="x", padx=10, pady=(0, 8))
+
+        jump_boost_frame = ctk.CTkFrame(left_col, fg_color=colors['background'], corner_radius=8)
+        jump_boost_frame.grid(row=2, column=0, sticky="ew", pady=(0, 6), padx=16)
+        jump_boost_frame.columnconfigure((0, 1), weight=1)
+
+        ctk.CTkLabel(jump_boost_frame, text="Ship Jump Range (LY):",
+            font=ctk.CTkFont(weight="bold", size=13)).grid(row=0, column=0, pady=(8, 4), padx=10, sticky="w")
+        self.app.galaxy_jump_range_var = ctk.StringVar(value="")
+        ctk.CTkEntry(jump_boost_frame, textvariable=self.app.galaxy_jump_range_var).grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 8))
+
+        ctk.CTkLabel(jump_boost_frame, text="FSD Boost:",
+            font=ctk.CTkFont(weight="bold", size=13)).grid(row=0, column=1, pady=(8, 4), padx=10, sticky="w")
+        self.app.galaxy_boost_var = ctk.StringVar(value="x4 (Normal)")
+        ctk.CTkOptionMenu(
+            jump_boost_frame,
+            values=["x4 (Normal)", "x6 (Caspian)"],
+            variable=self.app.galaxy_boost_var,
+            fg_color=colors['primary'],
+            button_color=colors['primary_hover'],
+            text_color=colors['text'] if colors['text'] != colors['background'] else "#E0E0E0"
+        ).grid(row=1, column=1, sticky="ew", padx=10, pady=(0, 8))
         
         options_frame = ctk.CTkFrame(left_col, fg_color="transparent")
-        options_frame.grid(row=2, column=0, sticky="ew", pady=6, padx=16)
+        options_frame.grid(row=3, column=0, sticky="ew", pady=6, padx=16)
         options_frame.columnconfigure((0, 1), weight=1)
 
         cargo_frame = ctk.CTkFrame(options_frame, fg_color=colors['background'], corner_radius=8)
@@ -505,13 +676,13 @@ class UIComponents:
 
         self.app.galaxy_refuel_every = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(checks_left, text="Refuel Every Scoopable",
-                variable=self.app.galaxy_refuel_every).pack(pady=(4, 8), padx=10, anchor="w")
+            variable=self.app.galaxy_refuel_every).pack(pady=(4, 8), padx=10, anchor="w")
 
         self.app.galaxy_already_supercharged = ctk.BooleanVar(value=False)
         ctk.CTkCheckBox(checks_right, text="Already Supercharged",
                 variable=self.app.galaxy_already_supercharged).pack(pady=(8, 4), padx=10, anchor="w")
 
-        self.app.galaxy_exclude_secondary = ctk.BooleanVar(value=True)
+        self.app.galaxy_exclude_secondary = ctk.BooleanVar(value=False)
         ctk.CTkCheckBox(checks_right, text="Exclude Secondary Stars",
                 variable=self.app.galaxy_exclude_secondary).pack(pady=(4, 8), padx=10, anchor="w")
 
@@ -530,7 +701,7 @@ class UIComponents:
         ).pack(fill="x", padx=10, pady=(0, 10))
         
         button_frame = ctk.CTkFrame(left_col, fg_color="transparent")
-        button_frame.grid(row=3, column=0, pady=10)
+        button_frame.grid(row=4, column=0, pady=10)
         
         self.app.galaxy_calculate_btn = ctk.CTkButton(
             button_frame, text="Optimize & Track",
@@ -668,39 +839,51 @@ class UIComponents:
         parent = self.app.content_root if hasattr(self.app, 'content_root') else self.app.root
         bottom_frame = ctk.CTkFrame(parent, fg_color="transparent", height=50)
         bottom_frame.grid(row=2, column=0, padx=25, pady=(10, 15), sticky="ew")
-        bottom_frame.columnconfigure((0, 1, 2, 3, 4), weight=1)
-        github_btn = ctk.CTkButton(bottom_frame, text="GitHub",
-                                   command=lambda: self.app._open_link("https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer"),
-                                   height=32,
-                                   font=ctk.CTkFont(size=12))
-        self.app.theme_manager.apply_button_theme(github_btn, "secondary")
-        github_btn.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        discord_btn = ctk.CTkButton(bottom_frame, text="Discord",
-                                   command=lambda: self.app._open_link("https://discord.gg/DWvCEXH7ae"),
-                                   height=32,
-                                   font=ctk.CTkFont(size=12))
-        self.app.theme_manager.apply_button_theme(discord_btn, "secondary")
-        discord_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        btn_width = 60
+        donate_label = ctk.CTkLabel(bottom_frame,
+            text="Would you like to support? Donations help EDMRN development!",
+            text_color="#FFAE00",
+            font=ctk.CTkFont(size=12, weight="normal"))
+        donate_label.pack(side="left", padx=(0,8), pady=5)
         kofi_btn = ctk.CTkButton(bottom_frame, text="Ko-fi",
-                                command=lambda: self.app._open_link("https://ko-fi.com/ninurtakalhu"),
-                                fg_color="#FF5E5B",
-                                text_color="white",
-                                height=32,
-                                font=ctk.CTkFont(size=12))
-        kofi_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+            command=lambda: self.app._open_link("https://ko-fi.com/ninurtakalhu"),
+            fg_color="#FF5E5B", text_color="white",
+            height=24, width=btn_width,
+            font=ctk.CTkFont(size=10, weight="bold"))
+        kofi_btn.pack(side="left", padx=2, pady=5)
         patreon_btn = ctk.CTkButton(bottom_frame, text="Patreon",
-                                   command=lambda: self.app._open_link("https://www.patreon.com/c/NinurtaKalhu"),
-                                   fg_color="#FF424D",
-                                   text_color="white",
-                                   height=32,
-                                   font=ctk.CTkFont(size=12))
-        patreon_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+            command=lambda: self.app._open_link("https://www.patreon.com/c/NinurtaKalhu"),
+            fg_color="#FF424D", text_color="white",
+            height=24, width=btn_width,
+            font=ctk.CTkFont(size=10, weight="bold"))
+        patreon_btn.pack(side="left", padx=2, pady=5)
+        spacer = ctk.CTkLabel(bottom_frame, text="", width=1)
+        spacer.pack(side="left", expand=True, fill="x")
+
+        github_btn = ctk.CTkButton(bottom_frame, text="GitHub",
+            command=lambda: self.app._open_link("https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer"),
+            height=24, width=btn_width,
+            font=ctk.CTkFont(size=10, weight="bold"))
+        self.app.theme_manager.apply_button_theme(github_btn, "secondary")
+        github_btn.pack(side="left", padx=2, pady=5)
+        discord_btn = ctk.CTkButton(bottom_frame, text="Discord",
+            command=lambda: self.app._open_link("https://discord.gg/DWvCEXH7ae"),
+            height=24, width=btn_width,
+            font=ctk.CTkFont(size=10, weight="bold"))
+        self.app.theme_manager.apply_button_theme(discord_btn, "secondary")
+        discord_btn.pack(side="left", padx=2, pady=5)
         about_btn = ctk.CTkButton(bottom_frame, text="About",
-                                 command=self.app._show_about_info,
-                                 height=32,
-                                 font=ctk.CTkFont(size=12))
+            command=self.app._show_about_info,
+            height=24, width=btn_width,
+            font=ctk.CTkFont(size=10, weight="bold"))
         self.app.theme_manager.apply_button_theme(about_btn, "primary")
-        about_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+        about_btn.pack(side="left", padx=2, pady=5)
+        manual_btn = ctk.CTkButton(bottom_frame, text="User Manual",
+            command=self.app._show_manual,
+            height=24, width=btn_width,
+            font=ctk.CTkFont(size=10, weight="bold"))
+        self.app.theme_manager.apply_button_theme(manual_btn, "secondary")
+        manual_btn.pack(side="left", padx=2, pady=5)
 
     def _toggle_system_dropdown(self):
         if hasattr(self.app, 'start_dropdown_frame') and self.app.start_dropdown_frame:

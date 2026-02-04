@@ -66,6 +66,11 @@ def resource_path(relative_path: str) -> str:
         base_path = Path(__file__).resolve().parent
     try:
         candidate = base_path / relative_path
-        return str(candidate.resolve())
-    except Exception:
-        return str(base_path / relative_path)
+        resolved = candidate.resolve()
+        return str(resolved)
+    except Exception as e:
+        from edmrn.logger import get_logger
+        logger = get_logger('resource_path')
+        logger.error(f"resource_path: Exception for {relative_path}: {e}")
+        fallback = base_path / relative_path
+        return str(fallback)
