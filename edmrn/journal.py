@@ -33,11 +33,26 @@ class JournalMonitor(threading.Thread):
                                'Frontier Developments',
                                'Elite Dangerous')
         else:
-            path = os.path.join(os.path.expanduser('~'),
-                               '.local',
-                               'share',
-                               'Frontier Developments',
-                               'Elite Dangerous')
+            steam_dir = os.path.join(os.path.expanduser('~'), '.steam')
+            if os.path.exists(steam_dir):
+                path = os.path.join(steam_dir,
+                    'steam',
+                    'steamapps',
+                    'compatdata',
+                    '359320',
+                    'pfx',
+                    'drive_c',
+                    'users',
+                    'steamuser',
+                    'Saved Games',
+                    'Frontier Developments',
+                    'Elite Dangerous')
+            else:
+                path = os.path.join(os.path.expanduser('~'),
+                    '.local',
+                    'share',
+                    'Frontier Developments',
+                    'Elite Dangerous')
         if os.path.exists(path):
             return path
         else:
