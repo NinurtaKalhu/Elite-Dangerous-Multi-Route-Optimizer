@@ -36,6 +36,9 @@ class GalaxyPlotter:
             
             supercharge_multiplier = 6 if supercharge else 4
             
+            if ship_build and len(ship_build) > 2000:
+                ship_build = self._simplify_ship_build(ship_build)
+            
             params = {
                 "from": source_system,
                 "to": destination_system,
@@ -55,8 +58,8 @@ class GalaxyPlotter:
             response = requests.post(
                 self.route_api,
                 params=params,
-                timeout=30,
-                headers={'User-Agent': "EDMRN 3.0"}
+                timeout=60,
+                headers={'User-Agent': "EDMRN 3.3"}
             )
             logger.info(f"[SPNSH-RESP] Status: {response.status_code}, Body: {response.text[:1000]}")
             if response.status_code != 202:
@@ -85,6 +88,60 @@ class GalaxyPlotter:
             if progress_callback:
                 progress_callback(f"Error: {e}")
             return None
+    
+    def _simplify_ship_build(self, ship_build: str) -> str:
+        try:
+            if ship_build.startswith('http://') or ship_build.startswith('https://'):
+                return ship_build
+            
+            build_data = json.loads(ship_build)
+            
+            if isinstance(build_data, list) and len(build_data) > 0:
+                build = build_data[0]
+                header = build.get('header', {})
+                data = build.get('data', {})
+                
+                simplified = [{
+                    "header": {
+                        "appName": header.get('appName', 'EDSY'),
+                        "appVersion": header.get('appVersion', 0),
+                        "appURL": header.get('appURL', '')
+                    },
+                    "data": {
+                        "event": "Loadout",
+                        "Ship": data.get('Ship', ''),
+                        "ShipName": data.get('ShipName', ''),
+                        "ShipIdent": data.get('ShipIdent', ''),
+                        "UnladenMass": data.get('UnladenMass', 0),
+                        "CargoCapacity": data.get('CargoCapacity', 0),
+                        "MaxJumpRange": data.get('MaxJumpRange', 0),
+                        "FuelCapacity": data.get('FuelCapacity', {}),
+                        "Modules": []
+                    }
+                }]
+                
+                essential_slots = [
+                    'FrameShiftDrive', 'MainEngines', 'PowerPlant',
+                    'FuelTank', 'CargoHatch', 'Armour'
+                ]
+                
+                for module in data.get('Modules', []):
+                    if module.get('Slot') in essential_slots:
+                        simplified[0]['data']['Modules'].append({
+                            "Slot": module.get('Slot'),
+                            "Item": module.get('Item'),
+                            "On": module.get('On', True),
+                            "Engineering": module.get('Engineering')
+                        })
+                
+                result = json.dumps(simplified, ensure_ascii=False)
+                logger.info(f"[SHIP-BUILD] Simplified from {len(ship_build)} to {len(result)} chars")
+                return result
+            
+            return ship_build
+        except Exception as e:
+            logger.warning(f"[SHIP-BUILD] Failed to simplify: {e}")
+            return ship_build
     
     def poll_route_results(self,
                           job_id: str,

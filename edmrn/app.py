@@ -24,14 +24,13 @@ from tkinter import filedialog
 from pathlib import Path
 from PIL import Image, ImageTk
 from customtkinter import CTkImage
-from customtkinter import CTkImage
 import webbrowser
 import requests
 from bs4 import BeautifulSoup
 from edmrn.icons import Icons
 from edmrn.updater import setup_auto_updates
 from edmrn.logger import setup_logging, get_logger
-from edmrn.config import AppConfig
+from edmrn.config import AppConfig, Paths
 from edmrn.utils import resource_path
 from edmrn.ed_theme import apply_elite_dangerous_theme
 from edmrn.theme_manager import ThemeManager
@@ -44,6 +43,9 @@ from edmrn.route_management import RouteManagement
 from edmrn.system_autocomplete import SystemAutocompleter
 from edmrn.galaxy_plotter import GalaxyPlotter
 from edmrn.gui import ErrorDialog, InfoDialog, WarningDialog, ConfirmDialog
+from edmrn.galaxy_handler import GalaxyHandler
+from edmrn.app_window import AppWindow
+from edmrn.journal_handler import JournalHandler
 _hicon_cache_app = {}
 def _load_hicon_app(path):
     try:
@@ -57,7 +59,6 @@ def _load_hicon_app(path):
         return hicon
     except Exception:
         return None
-from edmrn.config import AppConfig, Paths
 from edmrn.optimizer import RouteOptimizer
 from edmrn.tracker import ThreadSafeRouteManager, RouteTracker, STATUS_VISITED, STATUS_SKIPPED, STATUS_UNVISITED
 from edmrn.journal import JournalMonitor
@@ -78,6 +79,21 @@ class EDMRN_App:
             event = None
             if isinstance(event_data, dict):
                 event = event_data.get('event')
+            if event == 'Loadout':
+                max_jump_range = event_data.get('MaxJumpRange')
+                if max_jump_range:
+                    def _update_jump():
+                        try:
+                            self.jump_range.set(f"{max_jump_range:.1f}")
+                            self._save_jump_range()
+                            logger.info(f"Jump range updated from journal: {max_jump_range:.1f} LY")
+                        except Exception:
+                            pass
+                    if threading.current_thread() is threading.main_thread():
+                        _update_jump()
+                    else:
+                        self.root.after(0, _update_jump)
+                return
             if event in ('Scan', 'SAASignalsFound', 'CodexEntry'):
                 def _log_update():
                     try:
@@ -303,6 +319,9 @@ class EDMRN_App:
         self.neutron_router = NeutronRouter()
         self.system_autocompleter = SystemAutocompleter()
         self.galaxy_plotter = GalaxyPlotter()
+        self.galaxy_handler = GalaxyHandler(self)
+        self.app_window = AppWindow(self)
+        self.journal_handler = JournalHandler(self)
         self.galaxy_plotter_route_data = None
         self.galaxy_route_waypoints = []
         self.galaxy_current_waypoint_index = 0
@@ -311,6 +330,7 @@ class EDMRN_App:
         self.progress_label = None
         self.map_frame = None
         self.overlay_enabled = False
+        self._cached_tab_name = 'Route Optimization'
         self.overlay_manager = get_overlay_manager()
         self.journal_monitor = None
         self._tab_switch_lock = threading.Lock()
@@ -359,12 +379,13 @@ class EDMRN_App:
     def fetch_edsm_system_data(self, system_name):
         """Fetch full system details from EDSM API (traffic, factions, permit, gmp included)."""
         import traceback
+        headers = {'User-Agent': 'EDMRN 3.3'}
         try:
             url_basic = (
                 f'https://www.edsm.net/api-v1/system?systemName={system_name}'
                 f'&showInformation=1&showCoordinates=1&showPrimaryStar=1&showTraffic=1&showPermit=1&showGalacticMapping=1'
             )
-            response_basic = requests.get(url_basic, timeout=10)
+            response_basic = requests.get(url_basic, headers=headers, timeout=10)
             if response_basic.status_code != 200:
                 return {"error": f"EDSM API error: {response_basic.status_code}"}
             data = response_basic.json()
@@ -373,7 +394,7 @@ class EDMRN_App:
             data['gmp'] = data.get('galacticMapping', [])
 
             url_bodies = f'https://www.edsm.net/api-system-v1/bodies?systemName={system_name}'
-            response_bodies = requests.get(url_bodies, timeout=10)
+            response_bodies = requests.get(url_bodies, headers=headers, timeout=10)
             if response_bodies.status_code == 200:
                 bodies_data = response_bodies.json()
                 if isinstance(bodies_data, list):
@@ -386,7 +407,7 @@ class EDMRN_App:
                 data['bodies'] = []
 
             url_stations = f'https://www.edsm.net/api-system-v1/stations?systemName={system_name}'
-            response_stations = requests.get(url_stations, timeout=10)
+            response_stations = requests.get(url_stations, headers=headers, timeout=10)
             if response_stations.status_code == 200:
                 stations_data = response_stations.json()
                 if isinstance(stations_data, list):
@@ -399,7 +420,7 @@ class EDMRN_App:
                 data['stations'] = []
 
             url_factions = f'https://www.edsm.net/api-system-v1/factions?systemName={system_name}'
-            response_factions = requests.get(url_factions, timeout=10)
+            response_factions = requests.get(url_factions, headers=headers, timeout=10)
             if response_factions.status_code == 200:
                 factions_data = response_factions.json()
                 if 'factions' in factions_data:
@@ -407,7 +428,7 @@ class EDMRN_App:
 
             try:
                 system_url = f'https://www.edsm.net/en/system/id/{data.get("id")}/name/{system_name.replace(" ", "+")}' if data.get("id") else f'https://www.edsm.net/en/system?systemName={system_name.replace(" ", "+")}'
-                response_page = requests.get(system_url, timeout=10)
+                response_page = requests.get(system_url, headers=headers, timeout=10)
                 if response_page.status_code == 200:
                     soup = BeautifulSoup(response_page.content, 'html.parser')
                     gmp_card = soup.find('a', href=lambda x: x and 'forums.frontier.co.uk' in x and 'Galactic-Mapping-Project' in x)
@@ -621,16 +642,18 @@ class EDMRN_App:
         self.tab_tracker = self.tabview.add("Route Tracking")
         self.tab_neutron = self.tabview.add("Neutron Highway")
         self.tab_galaxy_plotter = self.tabview.add("Galaxy Plotter")
+        self.tab_custom_route = self.tabview.add("Custom Route")
         self.tab_system_info = self.tabview.add("System Info")
         self.tab_log = self.tabview.add("Log")
         self.tab_settings = self.tabview.add("Settings")
-        for tab in [self.tab_optimizer, self.tab_tracker, self.tab_neutron, self.tab_galaxy_plotter, self.tab_system_info, self.tab_log, self.tab_settings]:
+        for tab in [self.tab_optimizer, self.tab_tracker, self.tab_neutron, self.tab_galaxy_plotter, self.tab_custom_route, self.tab_system_info, self.tab_log, self.tab_settings]:
             tab.configure(fg_color=colors['background'])
         
         self.tabview.set("Route Optimization")
         
         def on_tab_change():
             current_tab = self.tabview.get()
+            self._cached_tab_name = current_tab
             
             # Lazy load tabs on first access
             if current_tab == "System Info" and "System Info" not in self._lazy_loaded_tabs:
@@ -639,6 +662,8 @@ class EDMRN_App:
                 self._lazy_load_tab("Galaxy Plotter")
             elif current_tab == "Settings" and "Settings" not in self._lazy_loaded_tabs:
                 self._lazy_load_tab("Settings")
+            elif current_tab == "Custom Route" and "Custom Route" not in self._lazy_loaded_tabs:
+                self._lazy_load_tab("Custom Route")
             
             if current_tab == "Neutron Highway" and self.neutron_router.last_route:
                 if not self.journal_monitor:
@@ -1134,6 +1159,11 @@ class EDMRN_App:
             elif tab_name == "Settings":
                 self.settings_manager.create_settings_tab()
                 self._lazy_loaded_tabs["Settings"] = True
+            
+            elif tab_name == "Custom Route":
+                from edmrn.custom_route import CustomRouteTab
+                self.custom_route_tab = CustomRouteTab(self)
+                self._lazy_loaded_tabs["Custom Route"] = True
         
         except Exception as e:
             from edmrn.logger import get_logger
@@ -1148,7 +1178,7 @@ class EDMRN_App:
         if not hasattr(self, 'root') or not self.root:
             return
 
-        tabs_to_preload = ["System Info", "Galaxy Plotter", "Settings"]
+        tabs_to_preload = ["System Info", "Galaxy Plotter", "Settings", "Custom Route"]
 
         def load_next(index=0):
             if index >= len(tabs_to_preload):
@@ -1334,7 +1364,7 @@ class EDMRN_App:
             pass
     
     def _get_overlay_data(self):
-        current_tab = self.tabview.get()
+        current_tab = getattr(self, '_cached_tab_name', 'Route Optimization')
         if current_tab == "Neutron Highway":
             data = self.neutron_router.get_overlay_data()
         elif current_tab == "Galaxy Plotter":
@@ -1343,6 +1373,8 @@ class EDMRN_App:
                 self.galaxy_current_waypoint_index,
                 self.galaxy_plotter_route_data
             )
+        elif current_tab == "Custom Route":
+            data = self._get_custom_route_overlay_data()
         else:
             data = self.route_tracker.get_overlay_data(self)
         exobio_species = getattr(self, '_overlay_exobio_species', [])
@@ -1354,6 +1386,42 @@ class EDMRN_App:
             logger.info(f"[Overlay] exobio_species in overlay data: {exobio_species_capped}")
             self._last_logged_exobio_species = exobio_species_capped
         return data
+    
+    def _get_custom_route_overlay_data(self):
+        if not hasattr(self, 'custom_route_tab') or not self.custom_route_tab:
+            return self._get_empty_overlay_data()
+        manager = self.custom_route_tab.manager
+        route = manager.get_route()
+        if not route:
+            return self._get_empty_overlay_data()
+        current = manager.get_current_waypoint()
+        current_system = current['name'] if current else 'No route'
+        next_system = ''
+        if manager.current_index < len(route) - 1:
+            next_system = route[manager.current_index + 1]['name']
+        stats = manager.get_statistics(float(self.jump_range.get() or 70.0))
+        return {
+            'current_system': current_system,
+            'current_status': 'current',
+            'next_system': next_system,
+            'progress': f"{manager.current_index + 1}/{len(route)} | {stats['total_distance']:.0f} LY total",
+            'traveled_distance': f"{manager.current_index}/{len(route)}",
+            'total_distance': f"{stats['total_distance']:.0f} LY",
+            'bodies_to_scan': [],
+            'distance': f"{stats['total_distance']:.0f} LY | {stats['total_jumps']} jumps"
+        }
+    
+    def _get_empty_overlay_data(self):
+        return {
+            'current_system': 'No route',
+            'current_status': 'pending',
+            'next_system': '',
+            'progress': '0/0',
+            'traveled_distance': '0/0',
+            'total_distance': '0 LY',
+            'bodies_to_scan': [],
+            'distance': '0 LY'
+        }
     
     def _update_overlay_tab_state(self, tab_name):
         if not self.overlay_enabled or not self.overlay_manager._instance:

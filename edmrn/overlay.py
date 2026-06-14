@@ -149,6 +149,8 @@ class EDMRNOverlay:
         self.start_y = 0
         self.current_tab = "Route Tracking"
         self._tab_switch_in_progress = False
+        self._nav_lock = threading.Lock()
+        self._last_nav_time = 0
         self.current_data = {
             'current_system': 'EDMRN',
             'current_status': 'READY',
@@ -349,6 +351,17 @@ class EDMRNOverlay:
             )
             self.tab_gp_btn.pack(side='left', padx=2)
             
+            self.tab_cr_btn = tk.Button(
+                tab_frame,
+                text='CR',
+                bg='#2A2A2A',
+                fg='#888888',
+                activebackground='#3A3A3A',
+                command=lambda: self.handle_tab_switch('Custom Route'),
+                **tab_btn_config
+            )
+            self.tab_cr_btn.pack(side='left', padx=2)
+            
             nav_frame = tk.Frame(control_frame, bg=bg_color)
             nav_frame.pack(fill="x", pady=(0, 0))
             
@@ -484,7 +497,7 @@ class EDMRNOverlay:
     
     def handle_tab_switch(self, tab_name):
         try:
-            if tab_name not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+            if tab_name not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter", "Custom Route"):
                 logger.warning(f"Overlay tab switch: Invalid tab name '{tab_name}', skipping.")
                 return
             if self._tab_switch_in_progress:
@@ -530,6 +543,8 @@ class EDMRNOverlay:
                 self.tab_nh_btn.config(state='normal')
             if hasattr(self, 'tab_gp_btn'):
                 self.tab_gp_btn.config(state='normal')
+            if hasattr(self, 'tab_cr_btn'):
+                self.tab_cr_btn.config(state='normal')
         except Exception as e:
             logger.error(f"Error enabling tab buttons: {e}")
     
@@ -558,6 +573,12 @@ class EDMRNOverlay:
                 self.tab_gp_btn.config(bg=active_bg, fg=active_fg)
             else:
                 self.tab_gp_btn.config(bg=inactive_bg, fg=inactive_fg)
+        
+        if hasattr(self, 'tab_cr_btn'):
+            if active_tab == 'Custom Route':
+                self.tab_cr_btn.config(bg=active_bg, fg=active_fg)
+            else:
+                self.tab_cr_btn.config(bg=inactive_bg, fg=inactive_fg)
     def set_opacity(self, alpha_value):
         if self.root:
             try:
@@ -673,7 +694,11 @@ class EDMRNOverlay:
         if not self.root:
             return
         try:
-            new_data = self.data_callback()
+            try:
+                new_data = self.data_callback()
+            except Exception as e:
+                logger.debug(f"Data callback error: {e}")
+                new_data = None
             if new_data:
                 self.current_data.update(new_data)
             elif new_data is None:
@@ -806,9 +831,16 @@ class EDMRNOverlay:
     def _handle_prev_callback(self):
         if not self.app_instance:
             return
+        import time
+        current_time = time.time()
+        if current_time - self._last_nav_time < 0.3:
+            return
+        if not self._nav_lock.acquire(blocking=False):
+            return
         try:
-            current_tab = self.app_instance.tabview.get()
-            if current_tab not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+            self._last_nav_time = current_time
+            current_tab = getattr(self.app_instance, '_cached_tab_name', 'Route Optimization')
+            if current_tab not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter", "Custom Route"):
                 logger.warning(f"Overlay prev: No valid tab selected (current_tab={current_tab!r}), skipping action.")
                 return
             if current_tab == "Route Tracking":
@@ -817,20 +849,28 @@ class EDMRNOverlay:
                 self.app_instance._neutron_prev_waypoint()
             elif current_tab == "Galaxy Plotter":
                 self.app_instance._galaxy_prev_waypoint()
+            elif current_tab == "Custom Route":
+                if hasattr(self.app_instance, 'custom_route_tab'):
+                    self.app_instance.custom_route_tab._prev_waypoint()
+                    self.app_instance.custom_route_tab._copy_current_system()
         except Exception as e:
             logger.error(f"Prev callback error: {e}")
-            try:
-                from edmrn.gui import ErrorDialog
-                ErrorDialog(self.app_instance, "Overlay Error", f"Overlay prev/next error (prev):\n{e}")
-            except Exception:
-                pass
+        finally:
+            self._nav_lock.release()
     
     def _handle_next_callback(self):
         if not self.app_instance:
             return
+        import time
+        current_time = time.time()
+        if current_time - self._last_nav_time < 0.3:
+            return
+        if not self._nav_lock.acquire(blocking=False):
+            return
         try:
-            current_tab = self.app_instance.tabview.get()
-            if current_tab not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+            self._last_nav_time = current_time
+            current_tab = getattr(self.app_instance, '_cached_tab_name', 'Route Optimization')
+            if current_tab not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter", "Custom Route"):
                 logger.warning(f"Overlay next: No valid tab selected (current_tab={current_tab!r}), skipping action.")
                 return
             if current_tab == "Route Tracking":
@@ -839,27 +879,36 @@ class EDMRNOverlay:
                 self.app_instance._neutron_next_waypoint()
             elif current_tab == "Galaxy Plotter":
                 self.app_instance._galaxy_next_waypoint()
-            if self.root:
-                self.root.after(100, self.update_display)
+            elif current_tab == "Custom Route":
+                if hasattr(self.app_instance, 'custom_route_tab'):
+                    self.app_instance.custom_route_tab._next_waypoint()
+                    self.app_instance.custom_route_tab._copy_current_system()
         except Exception as e:
             logger.error(f"Next callback error: {e}")
-            try:
-                from edmrn.gui import ErrorDialog
-                ErrorDialog(self.app_instance, "Overlay Error", f"Overlay prev/next error (next):\n{e}")
-            except Exception:
-                pass
+        finally:
+            self._nav_lock.release()
+    
+    def _safe_update_display(self):
+        try:
+            if self.root and self.root.winfo_exists():
+                self.update_display()
+        except Exception as e:
+            logger.debug(f"Safe update display error: {e}")
     
     def _handle_copy_callback(self):
         if not self.app_instance:
             return
         try:
-            current_tab = self.app_instance.tabview.get()
+            current_tab = getattr(self.app_instance, '_cached_tab_name', 'Route Optimization')
             if current_tab == "Route Tracking":
                 self.app_instance._copy_next_system_to_clipboard()
             elif current_tab == "Neutron Highway":
                 self.app_instance._copy_current_neutron_system()
             elif current_tab == "Galaxy Plotter":
                 self.app_instance._copy_current_galaxy_system()
+            elif current_tab == "Custom Route":
+                if hasattr(self.app_instance, 'custom_route_tab'):
+                    self.app_instance.custom_route_tab._copy_current_system()
         except Exception as e:
             logger.error(f"Copy callback error: {e}")
     
@@ -868,16 +917,17 @@ class EDMRNOverlay:
             logger.warning("Overlay tab switch callback: app_instance missing, skipping.")
             return
         try:
-            if tab_name not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter"):
+            if tab_name not in ("Route Tracking", "Neutron Highway", "Galaxy Plotter", "Custom Route"):
                 logger.warning(f"Overlay tab switch callback: Invalid tab name '{tab_name}', skipping.")
                 return
-            current = self.app_instance.tabview.get()
+            current = getattr(self.app_instance, '_cached_tab_name', 'Route Optimization')
             if current == tab_name:
                 logger.debug(f"Already on tab: {tab_name}")
                 if self.root:
                     self.root.after(0, lambda: self.update_tab_buttons(tab_name))
                 return
             self.app_instance.tabview.set(tab_name)
+            self.app_instance._cached_tab_name = tab_name
             if self.root:
                 self.root.after(0, lambda: self.update_tab_buttons(tab_name))
             logger.info(f"Tab switched to: {tab_name}")
@@ -903,13 +953,15 @@ class EDMRNOverlay:
                             pass
                         elif cmd == 'prev':
                             if self.app_instance:
-                                self.app_instance.root.after(0, self._handle_prev_callback)
+                                self.app_instance.root.after(0, lambda: self._handle_prev_callback())
+                                self.app_instance.root.after(200, lambda: self._safe_update_display())
                         elif cmd == 'next':
                             if self.app_instance:
-                                self.app_instance.root.after(0, self._handle_next_callback)
+                                self.app_instance.root.after(0, lambda: self._handle_next_callback())
+                                self.app_instance.root.after(200, lambda: self._safe_update_display())
                         elif cmd == 'copy_current':
                             if self.app_instance:
-                                self.app_instance.root.after(0, self._handle_copy_callback)
+                                self.app_instance.root.after(0, lambda: self._handle_copy_callback())
                         elif cmd == 'switch_tab' and value is not None:
                             if self.app_instance:
                                 self.app_instance.root.after(0, lambda: self._handle_tab_switch_callback(value))

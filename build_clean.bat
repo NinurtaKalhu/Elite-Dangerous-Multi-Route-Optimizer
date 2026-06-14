@@ -1,6 +1,6 @@
 @echo off
 echo ================================================
-echo EDMRN v3.2 Clean Build Script
+echo EDMRN v3.3 Clean Build Script
 echo ================================================
 echo.
 
@@ -43,16 +43,16 @@ if errorlevel 1 (
 echo.
 
 echo [4/4] Verifying output...
-if exist "dist\EDMRN_v3.2.exe" (
+if exist "dist\EDMRN_v3.3.exe" (
     echo.
     echo ================================================
     echo BUILD SUCCESSFUL!
     echo ================================================
     echo.
-    dir /b "dist\EDMRN_v3.2.exe"
-    for %%A in ("dist\EDMRN_v3.2.exe") do echo Size: %%~zA bytes
+    dir /b "dist\EDMRN_v3.3.exe"
+    for %%A in ("dist\EDMRN_v3.3.exe") do echo Size: %%~zA bytes
     echo.
-    echo EXE location: %CD%\dist\EDMRN_v3.2.exe
+    echo EXE location: %CD%\dist\EDMRN_v3.3.exe
     echo.
 ) else (
     echo ERROR: EXE file was not created!

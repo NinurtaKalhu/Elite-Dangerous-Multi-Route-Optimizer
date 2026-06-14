@@ -200,7 +200,7 @@ class ManualWindow(ctk.CTkToplevel):
         def _build_section_content(self):
             self.section_content = {
                 "whats_new": (
-                    "WHAT'S NEW IN v3.2.0",
+                    "WHAT'S NEW IN v3.3.0",
                     [
                         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                         "",
@@ -574,7 +574,7 @@ class ManualWindow(ctk.CTkToplevel):
                         "📋 DROPDOWN/UI MISALIGNMENT",
                         "  Problem: UI elements appear misaligned",
                         "  Solutions:",
-                        "    1. Fixed in v3.2.0 - update if needed",
+                        "    1. Fixed in v3.3.0 - update if needed",
                         "    2. Restart application",
                         "    3. Check display scaling (100-150% recommended)",
                         "    4. Try different theme in Settings",
@@ -674,7 +674,7 @@ class ManualWindow(ctk.CTkToplevel):
         def _render_section(self, key: str):
                 self.manual_textbox.configure(state="normal")
                 self.manual_textbox.delete("1.0", "end")
-                self.manual_textbox.insert("end", "ED MULTI ROUTE NAVIGATION (EDMRN) v3.2.0 - USER MANUAL\n")
+                self.manual_textbox.insert("end", "ED MULTI ROUTE NAVIGATION (EDMRN) v3.3.0 - USER MANUAL\n")
                 self.manual_textbox.insert("end", "Optimized routes, journal tracking, Spansh primary autocomplete.\n\n")
                 title, lines = self.section_content.get(key, ("", []))
                 if title:
@@ -1185,7 +1185,7 @@ class AboutWindow(ctk.CTkToplevel):
             justify="center"
         ).grid(row=2, column=0, pady=(0, 20))
         info_text = """
-    Version 3.2.0 - AGPL-3 Licensed
+    Version 3.3.0 - AGPL-3 Licensed
 January 2026
 Developed by CMDR Ninurta Kalhu
 Elite Dangerous © Frontier Developments plc.

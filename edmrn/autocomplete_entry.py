@@ -37,6 +37,14 @@ class AutocompleteEntry(ctk.CTkFrame):
         self.entry.bind("<Down>", self._on_down_arrow)
         self.entry.bind("<Up>", self._on_up_arrow)
         self.entry.bind("<Return>", self._on_return)
+        self.bind("<Destroy>", self._on_destroy)
+
+    def _on_destroy(self, event=None):
+        self._hide_dropdown()
+
+    def destroy(self):
+        self._hide_dropdown()
+        super().destroy()
 
     def _create_dropdown(self):
         if not self.winfo_exists():
@@ -50,10 +58,17 @@ class AutocompleteEntry(ctk.CTkFrame):
 
         if self.is_dropdown_open:
             self._hide_dropdown()
-        self.dropdown_frame = None
-        self.listbox = None
-        self.is_dropdown_open = False
-        self.selected_index = -1
+        
+        if self.dropdown_frame is not None:
+            try:
+                if self.dropdown_frame.winfo_exists():
+                    self.dropdown_frame.destroy()
+            except Exception:
+                pass
+            self.dropdown_frame = None
+            self.listbox = None
+            self.is_dropdown_open = False
+            self.selected_index = -1
 
         try:
             if not self.entry.winfo_exists():
@@ -68,6 +83,7 @@ class AutocompleteEntry(ctk.CTkFrame):
             self.dropdown_frame = tk.Toplevel(self.winfo_toplevel())
             self.dropdown_frame.wm_overrideredirect(True)
             self.dropdown_frame.wm_attributes("-topmost", True)
+            self.dropdown_frame.protocol("WM_DELETE_WINDOW", self._hide_dropdown)
         except Exception:
             return
 
@@ -149,7 +165,13 @@ class AutocompleteEntry(ctk.CTkFrame):
             pass
         if self.dropdown_frame is not None:
             try:
-                self.dropdown_frame.destroy()
+                if self.dropdown_frame.winfo_exists():
+                    self.dropdown_frame.grab_release()
+            except Exception:
+                pass
+            try:
+                if self.dropdown_frame.winfo_exists():
+                    self.dropdown_frame.destroy()
             except Exception:
                 pass
             self.dropdown_frame = None

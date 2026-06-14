@@ -75,6 +75,14 @@ class JournalMonitor(threading.Thread):
                     self.current_commander = commander
                     logger.debug(f"Detected commander from journal: {commander}")
                 return
+            if event == 'Loadout':
+                max_jump_range = data.get('MaxJumpRange')
+                if max_jump_range and self.callback:
+                    try:
+                        self.callback(None, {'event': 'Loadout', 'MaxJumpRange': max_jump_range})
+                    except Exception as e:
+                        logger.error(f"[JournalMonitor] Loadout callback error: {e}")
+                return
             if event == 'FSDJump':
                 system_name = data.get('StarSystem')
                 if self.selected_commander and self.selected_commander != 'Auto' and self.current_commander and self.current_commander != self.selected_commander:

@@ -1,4 +1,4 @@
-# 🚀 ED Multi Route Navigation (EDMRN) v3.2.0
+# 🚀 ED Multi Route Navigation (EDMRN) v3.3.0
 
 ***"I saw the darkness and was inspired by the light! - CMDR Ninurta KALHU"***
 
@@ -7,14 +7,14 @@
 **The Ultimate Multi-Route Optimization & Tracking Tool for Elite Dangerous**  
 
 Completely modular architecture with professional theme system, advanced route planning, and real-time tracking.
-![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue) ![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-green) ![Version 3.2.0](https://img.shields.io/badge/Version-3.2.0-brightgreen) ![Platform: Windows](https://img.shields.io/badge/Platform-Windows-0078D4) ![Status: Active](https://img.shields.io/badge/Status-Active-success)
+![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue) ![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-green) ![Version 3.3.0](https://img.shields.io/badge/Version-3.3.0-brightgreen) ![Platform: Windows](https://img.shields.io/badge/Platform-Windows-0078D4) ![Status: Active](https://img.shields.io/badge/Status-Active-success)
 
 ---
 
 
 ## Table of Contents
 
-- [What's New in v3.2](#-whats-new-in-v32)
+- [What's New in v3.3](#-whats-new-in-v33)
 - [Key Features](#-key-features)
 - [Download & Installation](#-download--installation)
 - [Quick Start Guide](#-quick-start-guide)
@@ -26,7 +26,74 @@ Completely modular architecture with professional theme system, advanced route p
 - [License](#-license)
 - [Developer](#-developer)
 ---
-## What's New in v3.2
+## What's New in v3.3
+
+### Custom Route Planner (Brand New)
+
+**Route Planning Features:**
+- New "Custom Route" tab for manual system route planning
+- Add systems by name with autocomplete support (Spansh + EDSM)
+- Add systems by coordinates (X, Y, Z) manually
+- TSP optimization for shortest route calculation
+- Neutron Path mode for reduced jumps using neutron star boosts
+- 3D MiniMap visualization with route lines
+- Navigation through waypoints with Previous/Next buttons
+- Jump range calculation based on ship's FSD (auto-detected from journal)
+- LY distance display between systems
+- Total jump count with neutron boost comparison
+
+**System List Management:**
+- Click-to-select systems for batch operations
+- Remove selected systems or Clear All
+- Visual feedback: orange=current, yellow=selected, gray=pending
+- Drag-to-reorder support
+
+**Import/Export:**
+- JSON format with full metadata
+- TXT format for simple system lists
+- Bidirectional compatibility
+
+**Overlay Integration:**
+- Custom Route tab added to overlay (CR button)
+- Previous/Next navigation from overlay
+- Auto-copy system names to clipboard
+- Auto-start overlay after optimization
+
+### Code Refactoring & Architecture Improvements (June 2026)
+
+**Dead Code Cleanup**
+- Removed duplicate modules: `platform.py`, `route_manager.py`, `table_widget.py`
+- Cleaned up `exceptions.py` - removed unused exception classes
+- Fixed duplicate method definitions in `app.py`
+- Removed duplicate imports
+
+**New Modules - System Info Split**
+- `exobiology.py` - Exobiology tracking and display (444 lines)
+- `journal_cache.py` - Journal file reading and caching (218 lines)
+- `log_viewer.py` - Log table and filtering (782 lines)
+- `system_info_section.py` reduced from 2419 to 784 lines
+
+**New Modules - App.py Split**
+- `galaxy_handler.py` - Galaxy Plotter logic (349 lines)
+- `app_window.py` - Window management and borderless mode (297 lines)
+- `journal_handler.py` - Journal event processing (419 lines)
+- `custom_route.py` - Custom Route Planner (963 lines)
+
+**Bug Fixes**
+- Fixed EDSM API 403 errors by adding User-Agent headers
+- Fixed Galaxy Plotter 414 Request-URI Too Large error
+- Fixed overlay freeze on rapid button clicks
+- Fixed autocomplete dropdown orphan windows
+- Fixed MiniMap matplotlib 3D rendering errors
+- Added thread-safe operations for overlay interactions
+- Journal auto-detects ship jump range from Loadout event
+
+**Architecture Improvements**
+- Composition pattern for better separation of concerns
+- Delegation methods for cleaner API
+- Thread-safe cache for overlay tab state
+- All modules verified with syntax checks
+- Application tested and confirmed working
 
 ### System Info Tab (Brand New)
 
@@ -51,10 +118,11 @@ Completely modular architecture with professional theme system, advanced route p
 ### Other Improvements
 
 - Modernization, readability, and performance improvements across all themes and UI
-- New modules: system_info_section.py, table_widget.py, column_display_names.py, codex_translation.py, slef_store.py
+- New modules: system_info_section.py, column_display_names.py, codex_translation.py, slef_store.py
+- Refactored modules: exobiology.py, journal_cache.py, log_viewer.py, galaxy_handler.py, app_window.py, journal_handler.py
 - Bug fixes and performance optimizations
 
-### Enhanced User Experience (v3.2.0 - February 2026)
+### Enhanced User Experience (v3.3.0 - June 2026)
 
 **Visit History System**
 
@@ -95,7 +163,7 @@ Completely modular architecture with professional theme system, advanced route p
 
 **Fully Modular Architecture**
 
-- 15+ independent, maintainable modules
+- 35+ independent, maintainable modules
 - Thread-safe design with proper locking
 - Separated concerns for better scalability
 - Enhanced performance and memory management
@@ -116,11 +184,12 @@ Completely modular architecture with professional theme system, advanced route p
 
 ---
 
-##  Key Features (v3.2.0)
+##  Key Features (v3.3.0)
 
 
 ### Core Functionality
 
+ **Custom Route Planner** - Manual system route planning with autocomplete, coordinates, neutron boosts, and 3D visualization
  **System Info Tab** - Complete system details, statistics, exobiology, bodies, stations, and notes in one screen
  **Log Tab** - Advanced journal viewing, filtering, column selection, and detail panel
 -  **Smart Route Optimization** - TSP-based shortest path algorithm with configurable starting points
@@ -140,6 +209,16 @@ Completely modular architecture with professional theme system, advanced route p
 -  **Smart Backup System** - Atomic writes, automatic backups, integrity verification
 -  **GeForce Now Support** - Cloud gaming optimized with borderless mode detection
 
+### Custom Route Planner Features
+
+-  **System Management** - Add by name (autocomplete) or coordinates (X, Y, Z)
+-  **Route Optimization** - TSP algorithm with shortest distance or neutron path modes
+-  **Neutron Boost** - Calculate jumps using neutron star boosts (6x range)
+-  **Jump Statistics** - LY distance and jump count between systems
+-  **System Selection** - Click-to-select for batch operations
+-  **Import/Export** - JSON and TXT format support
+-  **Overlay Integration** - Full overlay support with navigation controls
+
 ### Technical Excellence
 
 -  **Modular Architecture** - 35+ independent modules for maintainability
@@ -153,13 +232,13 @@ Completely modular architecture with professional theme system, advanced route p
 
 ### Recommended: Pre-built Executable (Windows)
 
-**Latest Release: v3.2.0**
+**Latest Release: v3.3.0**
 
-[📥 DOWNLOAD EDMRN v3.2.0 CLICK HERE](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.2/EDMRN.v3.2.exe)
+[📥 DOWNLOAD EDMRN v3.3.0 CLICK HERE](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.3/EDMRN.v3.3.exe)
 
 **Quick Start (Windows):**
 
-1. Download `EDMRN_v3.2.0.exe` from [Releases](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
+1. Download `EDMRN_v3.3.exe` from [Releases](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)
 2. Run the executable - no installation required!
 3. Fully portable - runs from any location
 4. All dependencies included
@@ -419,7 +498,7 @@ EDMRN is built on the philosophy of **Fermat's Principle of Least Time**. While 
 - **Brian Kernighan (1942-)**: A living legend of computer science (co-creator of C, Unix, and AWK). His work at Bell Labs laid the foundation for the efficiency you see in EDMRN today.
 - **Shen Lin (1932-2017)**: The mathematical genius who, alongside Kernighan, solved the TSP complexity with the variable n-opt heuristic.
 
-In version 3.2.0, this engine is more refined than ever, allowing 500+ system routes to be optimized in seconds on modern CPUs like the Ryzen 9, while maintaining minimal system overhead.
+In version 3.3.0, this engine is more refined than ever, allowing 500+ system routes to be optimized in seconds on modern CPUs like the Ryzen 9, while maintaining minimal system overhead.
 
 ---
 
@@ -502,163 +581,95 @@ Some antivirus software may flag EDMRN.exe (common with PyInstaller-built apps):
 ## Project Structure
 
 ```
-
-EDMRN_v3.2/
-
-│ ├── system_info_section.py # System Info tab and detailed system analysis
-
-│ ├── table_widget.py # Advanced table and log viewing interface
-
-│ ├── column_display_names.py # Column names and display management
-
-│ ├── codex_translation.py # Codex and signal translation support
-
-│ ├── slef_store.py # Ship build and data storage module
-
-├── edmrn/ # Main application package
-
-│ ├── app.py # Main GUI application & window management
-
-│ ├── optimizer.py # TSP route optimization engine
-
-│ ├── tracker.py # Route tracking & visit history system
-
-│ ├── minimap.py # 3D visualization with matplotlib
-
-│ ├── overlay.py # In-game overlay window system
-
-│ ├── journal.py # Journal file monitoring & parsing
-
-│ ├── journal_operations.py # Journal file operations & detection
-
-│ ├── logger.py # Centralized logging system
-
-│ ├── backup.py # Backup management & restoration
-
-│ ├── autosave.py # Auto-save functionality with atomics
-
-│ ├── platform_detector.py # Platform & GeForce Now detection
-
-│ ├── exceptions.py # Custom exception definitions
-
-│ ├── utils.py # Utility functions & helpers
-
-│ ├── config.py # Configuration management
-
-│ ├── gui.py # GUI dialogs & components
-
-│ ├── ui_components.py # Reusable UI widgets
-
-│ ├── theme_manager.py # Theme switching & color management
-
-│ ├── theme_editor.py # Theme editor for customization
-
-│ ├── route_management.py # Route handling & CSV operations
-
-│ ├── route_manager.py # Route state management
-
-│ ├── settings_manager.py # Settings UI & persistence
-
-│ ├── neutron_manager.py # Neutron highway UI & controls
-
-│ ├── neutron.py # Neutron routing engine & Spansh API
-
-│ ├── file_operations.py # File I/O operations
-
-│ ├── system_autocomplete.py # EDSM/Spansh autocomplete system
-
-│ ├── autocomplete_entry.py # Custom autocomplete widget
-
-│ ├── themes/ # JSON theme definitions
-
-│ │ ├── elite_dangerous.json
-
-│ │ ├── aisling_duval.json
-
-│ │ ├── archon_delaine.json
-
-│ │ ├── arissa_lavigny_duval.json
-
-│ │ ├── denton_patreus.json
-
-│ │ ├── edmund_mahon.json
-
-│ │ ├── felicia_winters.json
-
-│ │ ├── li_yong_rui.json
-
-│ │ ├── pranav_antal.json
-
-│ │ ├── zachary_hudson.json
-
-│ │ └── zemina_torval.json
-
-│ └── __init__.py # Package initialization & version
-
-│
-
-├── assets/ # Application resources
-
-│ ├── explorer_icon.ico # Windows icon
-
-│ └── explorer_icon.png # Application icon
-
-│
-
-├── screenshots/ # Documentation screenshots
-
-├── requirements.txt # Python dependencies
-
-├── version_info.txt # Version metadata for builds
-
-├── run.py # Application entry point
-
-├── main.py # Alternative launcher
-
-├── build_edmrn.bat # Windows executable build script
-
-├── edmrn.spec # PyInstaller specification
-
-├── CHANGELOG.md # Version history & changes
-
-├── LICENSE # AGPL-3.0 license
-
-└── README.md # This file
-
+EDMRN_v3.3/
+├── edmrn/                          # Main application package
+│   ├── app.py                      # Main GUI application & orchestrator
+│   ├── app_window.py               # Window management & borderless mode
+│   ├── galaxy_handler.py           # Galaxy Plotter logic & navigation
+│   ├── journal_handler.py          # Journal event processing & CMDR data
+│   ├── custom_route.py             # Custom Route Planner
+│   ├── exobiology.py               # Exobiology tracking & display
+│   ├── journal_cache.py            # Journal file reading & caching
+│   ├── log_viewer.py               # Log table & filtering
+│   ├── system_info_section.py      # System Info tab UI
+│   ├── optimizer.py                # TSP route optimization engine
+│   ├── tracker.py                  # Route tracking & visit history
+│   ├── minimap.py                  # 3D visualization with matplotlib
+│   ├── overlay.py                  # In-game overlay window system
+│   ├── journal.py                  # Journal file monitoring & parsing
+│   ├── journal_operations.py       # Journal file operations & detection
+│   ├── logger.py                   # Centralized logging system
+│   ├── backup.py                   # Backup management & restoration
+│   ├── autosave.py                 # Auto-save functionality
+│   ├── platform_detector.py        # Platform detection
+│   ├── exceptions.py               # Custom exception definitions
+│   ├── utils.py                    # Utility functions & helpers
+│   ├── config.py                   # Configuration management
+│   ├── gui.py                      # GUI dialogs & components
+│   ├── ui_components.py            # Reusable UI widgets
+│   ├── theme_manager.py            # Theme switching & colors
+│   ├── theme_editor.py             # Theme editor for customization
+│   ├── ed_theme.py                 # Elite Dangerous theme constants
+│   ├── route_management.py         # Route handling & CSV operations
+│   ├── settings_manager.py         # Settings UI & persistence
+│   ├── neutron_manager.py          # Neutron highway UI & controls
+│   ├── neutron.py                  # Neutron routing engine
+│   ├── galaxy_plotter.py           # Galaxy plotter Spansh API
+│   ├── file_operations.py          # File I/O operations
+│   ├── system_autocomplete.py      # EDSM/Spansh autocomplete
+│   ├── autocomplete_entry.py       # Custom autocomplete widget
+│   ├── edmrn_sheet.py              # Themed spreadsheet widget
+│   ├── column_display_names.py     # Column display names
+│   ├── codex_translation.py        # Codex translation support
+│   ├── slef_store.py               # Ship build storage
+│   ├── icons.py                    # Unicode emoji constants
+│   ├── updater.py                  # GitHub update checker
+│   ├── visit_history.py            # Visit history manager
+│   ├── visit_history_dialog.py     # Visit history dialog
+│   ├── themes/                     # JSON theme definitions
+│   │   ├── elite_dangerous.json
+│   │   ├── aisling_duval.json
+│   │   ├── archon_delaine.json
+│   │   ├── arissa_lavigny_duval.json
+│   │   ├── denton_patreus.json
+│   │   ├── edmund_mahon.json
+│   │   ├── felicia_winters.json
+│   │   ├── li_yong_rui.json
+│   │   ├── pranav_antal.json
+│   │   ├── zachary_hudson.json
+│   │   └── zemina_torval.json
+│   └── __init__.py                 # Package initialization
+├── assets/                         # Application resources
+│   ├── explorer_icon.ico
+│   └── explorer_icon.png
+├── main.py                         # Primary entry point
+├── run.py                          # Alternative entry point
+├── setup.py                        # PyPI packaging
+├── edmrn.spec                      # PyInstaller build spec
+├── build_clean.bat                 # Windows build script
+├── requirements.txt                # Python dependencies
+├── LICENSE                         # AGPL-3.0 license
+└── README.md                       # This file
 ```
 
+---
 
-### Key Modules Explained
+## License
 
-**Core Application:**
+EDMRN is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
--  `app.py` - Main window, tab management, application lifecycle
--  `optimizer.py` - Traveling Salesman Problem solver using scipy
--  `tracker.py` - Visit tracking, system status management
+---
 
-**User Interface:**
+## Developer
 
--  `gui.py` - Dialogs (About, Credits, Help)
--  `ui_components.py` - Tab creation, reusable widgets
--  `theme_manager.py` - Theme loading, color generation
--  `settings_manager.py` - Settings tab UI
+**CMDR Ninurta KALHU** - Lead Developer
 
-**Route Planning:**
+- GitHub: [NinurtaKalhu](https://github.com/NinurtaKalhu)
+- Email: ninurtakalhu@gmail.com
 
--  `neutron_manager.py` + `neutron.py` - Neutron highway routing
--  `route_management.py` + `route_manager.py` - Route state & CSV
--  `SpanshRouter/` - Galaxy plotter integration
+---
 
-**Data Management:**
-
--  `backup.py` + `autosave.py` - Backup system with atomic writes
--  `journal.py` + `journal_operations.py` - Journal monitoring
--  `file_operations.py` - File I/O utilities
-
-**Overlay System:**
-
--  `overlay.py` - Transparent window overlay
--  `platform_detector.py` - GeForce Now & borderless detection
+*Built with Python, CustomTkinter, and love for Elite Dangerous exploration.*
 
 ---
 
@@ -830,7 +841,7 @@ Passionate explorer building tools for the Elite Dangerous community.
 ---
 ## Version History Highlights
 
-### v3.2.0 (February 2026) - Current Release
+### v3.3.0 (June 2026) - Current Release
 
 -  System Info tab: System details, statistics, exobiology, bodies, stations, notes
 -  Log tab: Advanced journal viewing, filtering, column selection, detail panel
@@ -920,7 +931,7 @@ Passionate explorer building tools for the Elite Dangerous community.
 
 Made with ❤️ by [Ninurta Kalhu](https://github.com/NinurtaKalhu) for the Elite Dangerous community
 
-**EDMRN v3.2.0** | February 2026 | [AGPL-3.0](LICENSE)
+**EDMRN v3.3.0** | June 2026 | [AGPL-3.0](LICENSE)
 
 
 
