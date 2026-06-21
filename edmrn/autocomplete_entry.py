@@ -76,6 +76,7 @@ class AutocompleteEntry(ctk.CTkFrame):
             self.entry.update_idletasks()
             root_x = self.entry.winfo_rootx()
             root_y = self.entry.winfo_rooty() + self.entry.winfo_height()
+            entry_width = self.entry.winfo_width()
         except Exception:
             return
 
@@ -84,6 +85,7 @@ class AutocompleteEntry(ctk.CTkFrame):
             self.dropdown_frame.wm_overrideredirect(True)
             self.dropdown_frame.wm_attributes("-topmost", True)
             self.dropdown_frame.protocol("WM_DELETE_WINDOW", self._hide_dropdown)
+            self.dropdown_frame.geometry(f"{entry_width}x200+{root_x}+{root_y}")
         except Exception:
             return
 
@@ -217,38 +219,6 @@ class AutocompleteEntry(ctk.CTkFrame):
             self.suggestion_provider(text, self._update_suggestions)
         else:
             self._hide_dropdown()
-    
-    def _update_suggestions(self, suggestions: List[str]):
-        self.suggestions_list = suggestions[:self.max_suggestions]
-        
-        if not self.suggestions_list:
-            self._hide_dropdown()
-            return
-        
-        if not self.is_dropdown_open:
-            self._create_dropdown()
-        
-        if not self.is_dropdown_open or self.listbox is None:
-            return
-        
-        try:
-            self.listbox.delete(0, tk.END)
-            for suggestion in self.suggestions_list:
-                self.listbox.insert(tk.END, suggestion)
-        except Exception:
-            return
-        
-        self.selected_index = -1
-        
-        if self.dropdown_frame:
-            try:
-                self.entry.update_idletasks()
-                root_x = self.entry.winfo_rootx()
-                root_y = self.entry.winfo_rooty() + self.entry.winfo_height()
-                entry_width = self.entry.winfo_width()
-                self.dropdown_frame.geometry(f"{entry_width}x200+{root_x}+{root_y}")
-            except Exception:
-                pass
     
     def _on_focus_in(self, event):
         if not self.user_has_typed:

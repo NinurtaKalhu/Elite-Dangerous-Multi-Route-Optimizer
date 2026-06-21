@@ -69,14 +69,6 @@ class ThreadSafeOverlay:
             return False
         try:
             self._command_queue.put(('size', size_label), timeout=0.5, block=False)
-            try:
-                self.root.update_idletasks()
-                req_width = self.root.winfo_width()
-                req_height = self.root.winfo_reqheight()
-                self.root.geometry(f"{req_width}x{req_height}+{x}+{y}")
-            except Exception as e:
-                logger.error(f"Failed to shrink-to-fit after size change: {e}")
-            self.update_display()
             return True
         except queue.Full:
             logger.warning("Overlay command queue full, size command dropped")
@@ -275,6 +267,22 @@ class EDMRNOverlay:
                 anchor="w"
             )
             self.distance_label.pack(fill="x", pady=1)
+            self.fuel_label = tk.Label(
+                content_frame,
+                text=f"{Icons.ROCKET} Fuel: ---%",
+                font=("Consolas", 9),
+                bg=bg_color,
+                fg=text_color,
+                anchor="w"
+            )
+            self.fuel_label.pack(fill="x", pady=1)
+            self.fuel_bar = tk.Canvas(
+                content_frame,
+                height=6,
+                bg=bg_color,
+                highlightthickness=0
+            )
+            self.fuel_bar.pack(fill="x", pady=(0, 3))
             ttk.Separator(content_frame, orient="horizontal").pack(fill="x", pady=6)
             bodies_title = tk.Label(
                 content_frame,
@@ -763,6 +771,35 @@ class EDMRNOverlay:
                 else:
                     dist_text = f"{data['traveled_distance']}/{data['total_distance']}"
                 self.distance_label.config(text=f"{Icons.COMPASS} {dist_text}")
+            fuel_data = data.get('fuel', {})
+            if self.fuel_label and fuel_data:
+                is_on_foot = fuel_data.get('is_on_foot', False)
+                fuel_pct = fuel_data.get('percentage', 0)
+                fuel_current = fuel_data.get('current_fuel', 0)
+                fuel_cap = fuel_data.get('capacity', 0)
+                if is_on_foot:
+                    fuel_text = f"{Icons.ROCKET} On Foot"
+                    fuel_color = "#888888"
+                elif fuel_cap and fuel_cap > 0:
+                    fuel_text = f"{Icons.ROCKET} Fuel: {fuel_pct:.0f}% ({fuel_current:.1f}/{fuel_cap:.1f}t)"
+                    fuel_color = fuel_data.get('color', '#4CAF50')
+                else:
+                    fuel_text = f"{Icons.ROCKET} Fuel: ---%"
+                    fuel_color = "#888888"
+                self.fuel_label.config(text=fuel_text, fg=fuel_color)
+            if self.fuel_bar and fuel_data:
+                is_on_foot = fuel_data.get('is_on_foot', False)
+                if is_on_foot:
+                    self.fuel_bar.delete("all")
+                else:
+                    fuel_pct = fuel_data.get('percentage', 0)
+                    fuel_color = fuel_data.get('color', '#4CAF50')
+                    self.fuel_bar.delete("all")
+                    bar_width = self.fuel_bar.winfo_width()
+                    if bar_width > 0:
+                        fill_width = int(bar_width * (fuel_pct / 100))
+                        self.fuel_bar.create_rectangle(0, 0, fill_width, 6, fill=fuel_color, outline="")
+                        self.fuel_bar.create_rectangle(fill_width, 0, bar_width, 6, fill="#333333", outline="")
             bodies = data['bodies_to_scan']
             self.update_bodies_display(bodies)
             exobio_species = data.get('exobio_species', [])

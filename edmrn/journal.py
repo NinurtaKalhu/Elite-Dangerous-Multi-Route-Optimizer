@@ -77,9 +77,11 @@ class JournalMonitor(threading.Thread):
                 return
             if event == 'Loadout':
                 max_jump_range = data.get('MaxJumpRange')
+                fuel_capacity = data.get('FuelCapacity', {})
+                fuel_main_capacity = fuel_capacity.get('Main', 0) if isinstance(fuel_capacity, dict) else 0
                 if max_jump_range and self.callback:
                     try:
-                        self.callback(None, {'event': 'Loadout', 'MaxJumpRange': max_jump_range})
+                        self.callback(None, {'event': 'Loadout', 'MaxJumpRange': max_jump_range, 'FuelCapacity': fuel_main_capacity})
                     except Exception as e:
                         logger.error(f"[JournalMonitor] Loadout callback error: {e}")
                 return

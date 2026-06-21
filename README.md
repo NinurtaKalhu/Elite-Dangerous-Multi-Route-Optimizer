@@ -25,8 +25,37 @@ Completely modular architecture with professional theme system, advanced route p
 - [Project Structure](#-project-structure)
 - [License](#-license)
 - [Developer](#-developer)
----
 ## What's New in v3.3
+
+### Fuel Tracker (Brand New)
+
+**Real-time Fuel Monitoring:**
+- Automatic fuel level detection from game's Status.json
+- Ship fuel capacity auto-detected from journal Loadout event
+- On-foot detection with "OnFoot" display
+- Visual indicators in header and overlay
+
+**Overlay Display:**
+- Fuel percentage with progress bar
+- Color coding: Green (>50%), Yellow (25-50%), Orange (15-25%), Red (<15%)
+- Real-time updates every second
+
+**Header Display:**
+- Fuel level shown next to CMDR info
+- Format: `Fuel: 85% (13.6/16.0t)`
+- On-foot: `Fuel: On Foot`
+
+**Audio Alerts:**
+- Configurable warning level (5-30%)
+- Sound alert toggle (ON/OFF)
+- WAV file notification
+- 60-second cooldown to prevent spam (once per minute)
+
+**Settings Integration:**
+- Warning Level selector
+- Critical Level selector
+- Sound Enable/Disable switch
+- Volume control (Windows system volume)
 
 ### Custom Route Planner (Brand New)
 
@@ -68,16 +97,16 @@ Completely modular architecture with professional theme system, advanced route p
 - Removed duplicate imports
 
 **New Modules - System Info Split**
-- `exobiology.py` - Exobiology tracking and display (444 lines)
-- `journal_cache.py` - Journal file reading and caching (218 lines)
-- `log_viewer.py` - Log table and filtering (782 lines)
+- `exobiology.py` - Exobiology tracking and display
+- `journal_cache.py` - Journal file reading and caching
+- `log_viewer.py` - Log table and filtering
 - `system_info_section.py` reduced from 2419 to 784 lines
 
 **New Modules - App.py Split**
-- `galaxy_handler.py` - Galaxy Plotter logic (349 lines)
-- `app_window.py` - Window management and borderless mode (297 lines)
-- `journal_handler.py` - Journal event processing (419 lines)
-- `custom_route.py` - Custom Route Planner (963 lines)
+- `galaxy_handler.py` - Galaxy Plotter logic
+- `app_window.py` - Window management and borderless mode
+- `journal_handler.py` - Journal event processing
+- `custom_route.py` - Custom Route Planner
 
 **Bug Fixes**
 - Fixed EDSM API 403 errors by adding User-Agent headers
@@ -87,6 +116,7 @@ Completely modular architecture with professional theme system, advanced route p
 - Fixed MiniMap matplotlib 3D rendering errors
 - Added thread-safe operations for overlay interactions
 - Journal auto-detects ship jump range from Loadout event
+- Fixed autocomplete popup appearing at top-left corner
 
 **Architecture Improvements**
 - Composition pattern for better separation of concerns
@@ -95,16 +125,16 @@ Completely modular architecture with professional theme system, advanced route p
 - All modules verified with syntax checks
 - Application tested and confirmed working
 
-### System Info Tab (Brand New)
+### System Info Tab
 
-- Comprehensive system details, statistics, exobiology summary, celestial bodies, stations, and galactic notes in one screen
-- Advanced autocomplete with Spansh.co.uk and EDSM.net API integration for fast system search
+- Comprehensive system details, statistics, exobiology summary, celestial bodies, stations, and system history in one screen
+- Advanced autocomplete with Spansh.co.uk, EDSM.net and edAstro.com API integration for fast system search
 - System statistics, exobiology findings, planets, and surface details
 - Detailed tables for all celestial bodies and stations with filtering and quick access
-- Galactic notes and custom annotations
+- System History with GMP data from EDAstro API
 - Fully theme-compatible with modern, readable interface
 
-### Log Tab (Brand New)
+### Log Tab
 
 - Advanced journal viewing, filtering, and analysis for game logs
 - Multi-filtering with time range, text search, and column selection
@@ -122,7 +152,7 @@ Completely modular architecture with professional theme system, advanced route p
 - Refactored modules: exobiology.py, journal_cache.py, log_viewer.py, galaxy_handler.py, app_window.py, journal_handler.py
 - Bug fixes and performance optimizations
 
-### Enhanced User Experience (v3.3.0 - June 2026)
+### Enhanced User Experience (v3.2.0 - June 2026)
 
 **Visit History System**
 
@@ -189,9 +219,10 @@ Completely modular architecture with professional theme system, advanced route p
 
 ### Core Functionality
 
+ **Fuel Tracker** - Real-time fuel monitoring with audio alerts and visual indicators
  **Custom Route Planner** - Manual system route planning with autocomplete, coordinates, neutron boosts, and 3D visualization
- **System Info Tab** - Complete system details, statistics, exobiology, bodies, stations, and notes in one screen
- **Log Tab** - Advanced journal viewing, filtering, column selection, and detail panel
+-  **System Info Tab** - Complete system details, statistics, exobiology, bodies, stations, and notes in one screen
+-  **Log Tab** - Advanced journal viewing, filtering, column selection, and detail panel
 -  **Smart Route Optimization** - TSP-based shortest path algorithm with configurable starting points
 -  **Interactive 3D Visualization** - Real-time 3D mini-map with zoom, rotate, and pan controls
 -  **In-Game Overlay** - Transparent overlay with live progress tracking (Ctrl+O toggle)
@@ -213,7 +244,8 @@ Completely modular architecture with professional theme system, advanced route p
 
 -  **System Management** - Add by name (autocomplete) or coordinates (X, Y, Z)
 -  **Route Optimization** - TSP algorithm with shortest distance or neutron path modes
--  **Neutron Boost** - Calculate jumps using neutron star boosts (6x range)
+-  **Start/End Points** - Fixed starting and ending systems for route planning
+-  **Neutron Boost** - Select x4 (standard) or x6 (Caspian) FSD boost multiplier
 -  **Jump Statistics** - LY distance and jump count between systems
 -  **System Selection** - Click-to-select for batch operations
 -  **Import/Export** - JSON and TXT format support
@@ -536,6 +568,16 @@ EDMRN relies on these excellent community services:
   - Long-term caching for static data
   - Fallback mechanism for reliability
 
+### EDAstro / GEC - Galactic Exploration Catalog
+
+- **Usage**:
+  - Galactic Mapping Project (GMP) data
+  - System history and POI information
+- **API**: ID64-based lookup for system-specific GMP entries
+- **Website**: [edastro.com](https://edastro.com)
+- **Attribution**: Creative Commons (CC BY-NC-SA 3.0)
+- **Special Thanks**: CMDR Orvidius for maintaining the GEC API
+
 ### API Usage Optimization
 
 EDMRN implements responsible API usage:
@@ -546,7 +588,7 @@ EDMRN implements responsible API usage:
 - Fallback mechanisms for reliability
 - Rate limiting respects server resources
 
-**Note**: EDMRN is not affiliated with EDSM or Spansh. We're grateful for their services!
+**Note**: EDMRN is not affiliated with EDAstro, EDSM or Spansh. We're grateful for their services!
 
 ---
 
@@ -588,6 +630,7 @@ EDMRN_v3.3/
 │   ├── galaxy_handler.py           # Galaxy Plotter logic & navigation
 │   ├── journal_handler.py          # Journal event processing & CMDR data
 │   ├── custom_route.py             # Custom Route Planner
+│   ├── fuel_tracker.py             # Fuel tracking & alerts
 │   ├── exobiology.py               # Exobiology tracking & display
 │   ├── journal_cache.py            # Journal file reading & caching
 │   ├── log_viewer.py               # Log table & filtering
@@ -654,12 +697,6 @@ EDMRN_v3.3/
 
 ---
 
-## License
-
-EDMRN is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## Developer
 
 **CMDR Ninurta KALHU** - Lead Developer
@@ -698,7 +735,7 @@ If EDMRN enhances your Elite Dangerous experience, consider supporting developme
 - ✅ Creates overlay window for in-game display
 - ✅ Copies system names to clipboard (manual paste, user-initiated)
 - ✅ Checks GitHub for updates (version comparison only)
-- ✅ Makes API calls to EDSM/Spansh (system data, route calculations)
+- ✅ Makes API calls to EDAstro/EDSM/Spansh (Galactic Exploration Catalog (GEC), System data, Route calculations)
 
 ### ❌ What EDMRN Does NOT Do:
 
@@ -787,8 +824,6 @@ Passionate explorer building tools for the Elite Dangerous community.
 
 ### Connect:
 
-### Connect:
-
 - **Discord**: [EDMRN Community](https://discord.gg/DWvCEXH7ae)
 - **Email**: ninurtakalhu@gmail.com
 - **X (Twitter)**: [@NinurtaKalhu](https://twitter.com/NinurtaKalhu)
@@ -799,46 +834,11 @@ Passionate explorer building tools for the Elite Dangerous community.
 - Project started: 2025
 - Lines of code: 20,000+
 - Themes created: 11
-- Modules: 35+
+- Modules: 46+
 - Made with ❤️ for Elite Dangerous
 
 ---
 
-## Screenshots
-
-### Main Interface
-
-![Route Optimization](screenshots/SS1.png)
-*Route optimization with CSV import and TSP algorithm*
- ![Route Tracking with 3D Map](screenshots/SS2.png)
-*Interactive 3D map with real-time journal tracking*
-
-### Advanced Features
-
-![Neutron Highway Router](screenshots/SS3.png)
-*Neutron highway routing with autocomplete*
-![Galaxy Plotter](screenshots/SS3a.png)
-*Galaxy Plotter with autocomplete*
-![Backup Management](screenshots/SS4.png)
-
-### Settings & Customization
-
-![Settings Panel](screenshots/SS5.png)
-*Comprehensive settings and configuration*
- 
-### In-Game Experience
-
-![Overlay Tracking](screenshots/SS6.png)
-*New transparent overlay "3 TABS" showing real-time progress for "VR and "Geforce Now players"*
-
-### About & Credits
-
-![About Window](screenshots/SS8.png)
-*Version info and credits*
-![User Manual](screenshots/SS9.png)
-*Comprehensive user manual and attributions*
-
----
 ## Version History Highlights
 
 ### v3.3.0 (June 2026) - Current Release
@@ -898,7 +898,7 @@ Passionate explorer building tools for the Elite Dangerous community.
 ### Special Thanks To:
 
 **Data Providers:**
-
+- [EDASTRO](https://www.edastro.com)
 - [EDSM](https://www.edsm.net)
 - [Spansh](https://spansh.co.uk)
 
@@ -966,8 +966,8 @@ Made with ❤️ by [Ninurta Kalhu](https://github.com/NinurtaKalhu) for the Eli
 ![Stations info](screenshots/SS009.png)
 *Stations info*
 
-![Galactic Notes](screenshots/SS010.png)
-*Galactic Notes & Info*
+![System History](screenshots/SS010.png)
+*System History & Info*
 
 ### Log
 ![Log info](screenshots/SS011.png)

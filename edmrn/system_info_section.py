@@ -291,10 +291,6 @@ class SystemInfoSection:
         self.theme_manager.apply_button_theme(fetch_btn, "secondary")
         fetch_btn.grid(row=0, column=1, sticky="w", padx=(0, 10))
 
-        self.plot_btn = ctk.CTkButton(name_row, text="Plot route to -", command=self._plot_route, width=180)
-        self.theme_manager.apply_button_theme(self.plot_btn, "primary")
-        self.plot_btn.grid(row=0, column=2, sticky="e")
-
         self.system_info_status = ctk.CTkLabel(self.parent, text="Enter a system name and click Fetch Data", text_color=colors['text'], font=ctk.CTkFont(size=11))
 
         self.tabview = ctk.CTkTabview(self.parent, fg_color=colors['background'], border_color=colors['border'], border_width=1)
@@ -302,7 +298,7 @@ class SystemInfoSection:
         self.tab_overview = self.tabview.add("Overview")
         self.tab_bodies = self.tabview.add("Bodies")
         self.tab_stations = self.tabview.add("Stations")
-        self.tab_gmp = self.tabview.add("Galactic Notes")
+        self.tab_gmp = self.tabview.add("System History")
         name_row.pack(fill="x", padx=20, pady=(8, 4))
         self.system_info_status.pack(anchor="w", padx=24, pady=(0, 6))
 
@@ -712,6 +708,70 @@ class SystemInfoSection:
                 formatted_text += f"{formatted_paragraph}\n\n"
         return formatted_text.strip()
 
+    def _format_gmp_markdown(self, text):
+        import re
+        lines = text.split('\n')
+        result = []
+        in_quote = False
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                result.append('')
+                continue
+            if stripped.startswith('![') or stripped.startswith('![IMAGE'):
+                continue
+            if stripped == '---':
+                result.append('═' * 50)
+                continue
+            if stripped.startswith('> '):
+                quote_text = stripped[2:]
+                quote_text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', quote_text)
+                wrapped = []
+                words = quote_text.split()
+                current_line = '  │ '
+                for word in words:
+                    if len(current_line) + len(word) + 1 > 70:
+                        wrapped.append(current_line)
+                        current_line = '  │ ' + word
+                    else:
+                        current_line += ' ' + word if current_line != '  │ ' else word
+                wrapped.append(current_line)
+                result.extend(wrapped)
+                result.append('  │')
+                continue
+            if re.match(r'^(TYPE|REGION):', stripped):
+                result.append(f'  ★ {stripped}')
+                result.append('')
+                continue
+            if stripped.startswith('*--') and stripped.endswith('*'):
+                credit = stripped.strip('*').strip()
+                result.append('')
+                result.append(f'  ─── {credit} ───')
+                result.append('')
+                continue
+            if stripped.startswith('*IMAGE CREDIT'):
+                credit = stripped.replace('*IMAGE CREDIT:', '').replace('*', '').strip()
+                result.append(f'  [Image: {credit}]')
+                continue
+            cleaned = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', stripped)
+            cleaned = re.sub(r'\*([^*]+)\*', r'\1', cleaned)
+            cleaned = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', cleaned)
+            if cleaned.strip():
+                wrapped = []
+                words = cleaned.split()
+                current_line = ''
+                for word in words:
+                    if len(current_line) + len(word) + 1 > 70:
+                        wrapped.append(current_line)
+                        current_line = word
+                    else:
+                        current_line += ' ' + word if current_line else word
+                if current_line:
+                    wrapped.append(current_line)
+                result.extend(wrapped)
+                result.append('')
+        return '\n'.join(result).strip()
+
     def update_gmp(self, gmp):
         if not hasattr(self, 'tab_gmp') or self.tab_gmp is None:
             return
@@ -732,28 +792,22 @@ class SystemInfoSection:
         gmp_frame.columnconfigure(0, weight=1)
         row = 0
         if not gmp:
-            label = ctk.CTkLabel(gmp_frame, text="No Galactic Notes data.", text_color="#888", font=ctk.CTkFont(size=16), justify="left")
+            label = ctk.CTkLabel(gmp_frame, text="No System History data.", text_color="#888", font=ctk.CTkFont(size=16), justify="left")
             label.grid(row=row, column=0, sticky="nw", padx=4, pady=4)
             self.gmp_info_label = label
             return
         if isinstance(gmp, str):
-            sections = self._format_gmp_content(gmp)
-            formatted_text = ""
-            for section_type, content in sections:
-                if section_type == 'header':
-                    formatted_text += f"\n{content.replace('📌 ', '').upper()}\n{'-'*40}\n"
-                elif section_type == 'paragraph':
-                    formatted_text += f"{content}\n\n"
-            custom_font = ctk.CTkFont(family="Calibri", size=16)
+            formatted_text = self._format_gmp_markdown(gmp)
+            custom_font = ctk.CTkFont(family="Consolas", size=14)
             text_box = ctk.CTkTextbox(gmp_frame, wrap="word", font=custom_font)
-            text_box.insert("0.0", formatted_text.strip())
-            text_box.configure(state="disabled", text_color=colors['primary'])
+            text_box.insert("0.0", formatted_text)
+            text_box.configure(state="disabled", text_color=colors['text'], fg_color=colors['frame'])
             text_box.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
             self.gmp_info_label = text_box
             return
         gmp_list = gmp if isinstance(gmp, list) else [gmp]
         if len(gmp_list) == 0:
-            label = ctk.CTkLabel(gmp_frame, text="No Galactic Notes data.", text_color="#888", font=ctk.CTkFont(size=16), justify="left")
+            label = ctk.CTkLabel(gmp_frame, text="No System History data.", text_color="#888", font=ctk.CTkFont(size=16), justify="left")
             label.grid(row=row, column=0, sticky="nw", padx=4, pady=4)
             self.gmp_info_label = label
             return
@@ -798,15 +852,6 @@ class SystemInfoSection:
                 section_row += 1
             row += 1
         self.gmp_info_label = gmp_frame
-
-    def _plot_route(self):
-        name = self.info_values['system_name'].cget('text')
-        if name and name != "-":
-            try:
-                import pyperclip
-                pyperclip.copy(name)
-            except Exception:
-                pass
 
     def update_trivia(self, data):
         name = data.get('name', '-')

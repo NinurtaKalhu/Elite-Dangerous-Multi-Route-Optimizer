@@ -43,6 +43,11 @@ class SettingsManager:
         theme_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         self.create_theme_settings_card(theme_frame)
         
+        fuel_frame = ctk.CTkFrame(scroll_frame, corner_radius=10, fg_color=colors['frame'],
+                                  border_color=colors['border'], border_width=1)
+        fuel_frame.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+        self.create_fuel_settings_card(fuel_frame)
+        
     def create_overlay_settings_card(self, parent):
         ctk.CTkLabel(parent, text="📺 Overlay",
                      font=ctk.CTkFont(size=13, weight="bold")).pack(pady=(8, 6))
@@ -255,3 +260,100 @@ class SettingsManager:
                           command=lambda: self.app._toggle_borderless_setting(self.app.borderless_var.get()),
                           text="")
         borderless_switch.pack(side="right")
+    
+    def create_fuel_settings_card(self, parent):
+        ctk.CTkLabel(parent, text="⛽ Fuel Tracker",
+                     font=ctk.CTkFont(size=13, weight="bold")).pack(pady=(8, 6))
+        
+        # Warning Level
+        warning_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        warning_frame.pack(fill="x", padx=10, pady=(0, 4))
+        ctk.CTkLabel(warning_frame, text="Warning Level:",
+                     font=ctk.CTkFont(size=11)).pack(side="left")
+        self.app.fuel_warning_var = tk.IntVar(value=self.app.config.fuel_warning_level)
+        warning_menu = ctk.CTkOptionMenu(warning_frame, variable=self.app.fuel_warning_var,
+                                         values=["5", "10", "15", "20", "25", "30"],
+                                         command=self._on_fuel_warning_change,
+                                         width=60)
+        warning_menu.pack(side="right")
+        ctk.CTkLabel(warning_frame, text="%",
+                     font=ctk.CTkFont(size=11)).pack(side="right", padx=(0, 5))
+        
+        # Critical Level
+        critical_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        critical_frame.pack(fill="x", padx=10, pady=(0, 4))
+        ctk.CTkLabel(critical_frame, text="Critical Level:",
+                     font=ctk.CTkFont(size=11)).pack(side="left")
+        self.app.fuel_critical_var = tk.IntVar(value=self.app.config.fuel_critical_level)
+        critical_menu = ctk.CTkOptionMenu(critical_frame, variable=self.app.fuel_critical_var,
+                                          values=["1", "2", "3", "5", "10"],
+                                          command=self._on_fuel_critical_change,
+                                          width=60)
+        critical_menu.pack(side="right")
+        ctk.CTkLabel(critical_frame, text="%",
+                     font=ctk.CTkFont(size=11)).pack(side="right", padx=(0, 5))
+        
+        # Sound Enabled
+        sound_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        sound_frame.pack(fill="x", padx=10, pady=(0, 4))
+        ctk.CTkLabel(sound_frame, text="Sound Alert:",
+                     font=ctk.CTkFont(size=11)).pack(side="left")
+        self.app.fuel_sound_var = tk.BooleanVar(value=self.app.config.fuel_sound_enabled)
+        sound_switch = ctk.CTkSwitch(sound_frame, variable=self.app.fuel_sound_var,
+                                     command=self._on_fuel_sound_change,
+                                     text="")
+        sound_switch.pack(side="right")
+        
+        # Sound Volume
+        volume_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        volume_frame.pack(fill="x", padx=10, pady=(0, 4))
+        ctk.CTkLabel(volume_frame, text="Volume:",
+                     font=ctk.CTkFont(size=11)).pack(side="left")
+        self.app.fuel_volume_label = ctk.CTkLabel(volume_frame,
+                                                   text=f"{self.app.config.fuel_sound_volume}%",
+                                                   font=ctk.CTkFont(size=11, weight="bold"))
+        self.app.fuel_volume_label.pack(side="right")
+        self.app.fuel_volume_slider = ctk.CTkSlider(volume_frame, from_=0, to=100,
+                                                    number_of_steps=10,
+                                                    command=self._on_fuel_volume_change,
+                                                    width=120)
+        self.app.fuel_volume_slider.set(self.app.config.fuel_sound_volume)
+        self.app.fuel_volume_slider.pack(side="right", padx=(0, 5))
+        
+        # Current Status
+        status_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        status_frame.pack(fill="x", padx=10, pady=(8, 4))
+        ctk.CTkLabel(status_frame, text="Status:",
+                     font=ctk.CTkFont(size=11)).pack(side="left")
+        self.app.fuel_status_label = ctk.CTkLabel(status_frame, text="---",
+                                                   font=ctk.CTkFont(size=11, weight="bold"))
+        self.app.fuel_status_label.pack(side="right")
+    
+    def _on_fuel_warning_change(self, value):
+        self.app.config.fuel_warning_level = int(value)
+        self.app.config.save()
+        if hasattr(self.app, 'fuel_tracker'):
+            self.app.fuel_tracker.set_warning_level(int(value))
+        logger.info(f"Fuel warning level changed to {value}%")
+    
+    def _on_fuel_critical_change(self, value):
+        self.app.config.fuel_critical_level = int(value)
+        self.app.config.save()
+        logger.info(f"Fuel critical level changed to {value}%")
+    
+    def _on_fuel_sound_change(self):
+        enabled = self.app.fuel_sound_var.get()
+        self.app.config.fuel_sound_enabled = enabled
+        self.app.config.save()
+        if hasattr(self.app, 'fuel_tracker'):
+            self.app.fuel_tracker.config.sound_enabled = enabled
+        logger.info(f"Fuel sound alert {'enabled' if enabled else 'disabled'}")
+    
+    def _on_fuel_volume_change(self, value):
+        volume = int(float(value))
+        self.app.config.fuel_sound_volume = volume
+        self.app.config.save()
+        self.app.fuel_volume_label.configure(text=f"{volume}%")
+        if hasattr(self.app, 'fuel_tracker'):
+            self.app.fuel_tracker.config.sound_volume = volume
+        logger.info(f"Fuel sound volume changed to {volume}%")

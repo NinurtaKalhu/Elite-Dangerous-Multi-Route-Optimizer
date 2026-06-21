@@ -2,8 +2,9 @@ import sys
 import logging
 
 def global_exception_hook(exctype, value, traceback):
-    with open("edmrn_crash.log", "a", encoding="utf-8") as f:
-        import traceback as tb
+    import traceback as tb
+    crash_log = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "edmrn_crash.log")
+    with open(crash_log, "a", encoding="utf-8") as f:
         f.write("\n--- EDMRN Crash ---\n")
         f.write("".join(tb.format_exception(exctype, value, traceback)))
     print("An unexpected error occurred! Details have been saved to edmrn_crash.log.")
@@ -63,6 +64,7 @@ from edmrn.optimizer import RouteOptimizer
 from edmrn.tracker import ThreadSafeRouteManager, RouteTracker, STATUS_VISITED, STATUS_SKIPPED, STATUS_UNVISITED
 from edmrn.journal import JournalMonitor
 from edmrn.overlay import get_overlay_manager
+from edmrn.fuel_tracker import FuelTracker
 from edmrn.minimap import MiniMapFrame, MiniMapFrameFallback
 from edmrn.backup import BackupManager
 from edmrn.autosave import AutoSaveManager
@@ -81,6 +83,7 @@ class EDMRN_App:
                 event = event_data.get('event')
             if event == 'Loadout':
                 max_jump_range = event_data.get('MaxJumpRange')
+                fuel_capacity = event_data.get('FuelCapacity', 0)
                 if max_jump_range:
                     def _update_jump():
                         try:
@@ -93,6 +96,16 @@ class EDMRN_App:
                         _update_jump()
                     else:
                         self.root.after(0, _update_jump)
+                if fuel_capacity and fuel_capacity > 0:
+                    def _update_fuel_capacity():
+                        try:
+                            self.fuel_tracker.update_fuel_capacity(fuel_capacity)
+                        except Exception:
+                            pass
+                    if threading.current_thread() is threading.main_thread():
+                        _update_fuel_capacity()
+                    else:
+                        self.root.after(0, _update_fuel_capacity)
                 return
             if event in ('Scan', 'SAASignalsFound', 'CodexEntry'):
                 def _log_update():
@@ -223,7 +236,15 @@ class EDMRN_App:
                      text_color=colors['primary']).grid(row=0, column=4, sticky="w", pady=2)
         ctk.CTkLabel(cmdr_info_frame, textvariable=self.cmdr_location,
                      font=ctk.CTkFont(size=11),
-                     text_color=colors['text']).grid(row=0, column=5, sticky="w", padx=(3, 0), pady=2)
+                     text_color=colors['text']).grid(row=0, column=5, sticky="w", padx=(3, 12), pady=2)
+        self.fuel_header_label = ctk.CTkLabel(cmdr_info_frame, text="Fuel:",
+                     font=ctk.CTkFont(size=12, weight="bold"),
+                     text_color=colors['primary'])
+        self.fuel_header_label.grid(row=0, column=6, sticky="w", pady=2)
+        self.fuel_header_value = ctk.CTkLabel(cmdr_info_frame, text="---%",
+                     font=ctk.CTkFont(size=11),
+                     text_color=colors['text'])
+        self.fuel_header_value.grid(row=0, column=7, sticky="w", padx=(3, 0), pady=2)
         
         update_btn = ctk.CTkButton(
             header_frame,
@@ -235,6 +256,26 @@ class EDMRN_App:
         )
         self.theme_manager.apply_button_theme(update_btn, "primary")
         update_btn.grid(row=0, column=2, sticky="e", padx=(0, 10), pady=5)
+
+    def _update_fuel_display(self, fuel_data):
+        """Header'daki yakıt göstergesini güncelle."""
+        try:
+            if hasattr(self, 'fuel_header_value') and self.fuel_header_value:
+                is_on_foot = fuel_data.get('is_on_foot', False)
+                if is_on_foot:
+                    self.fuel_header_value.configure(text="On Foot", text_color="#888888")
+                else:
+                    fuel_pct = fuel_data.get('percentage', 0)
+                    fuel_current = fuel_data.get('current_fuel', 0)
+                    fuel_cap = fuel_data.get('capacity', 0)
+                    fuel_color = fuel_data.get('color', '#4CAF50')
+                    if fuel_cap and fuel_cap > 0:
+                        text = f"{fuel_pct:.0f}% ({fuel_current:.1f}/{fuel_cap:.1f}t)"
+                    else:
+                        text = "---%"
+                    self.fuel_header_value.configure(text=text, text_color=fuel_color)
+        except Exception as e:
+            logger.debug(f"Fuel display update error: {e}")
 
     def handle_onfoot_bio_event(self, system_name, event_data=None):
         """
@@ -332,6 +373,7 @@ class EDMRN_App:
         self.overlay_enabled = False
         self._cached_tab_name = 'Route Optimization'
         self.overlay_manager = get_overlay_manager()
+        self.fuel_tracker = FuelTracker(self)
         self.journal_monitor = None
         self._tab_switch_lock = threading.Lock()
         self._last_tab_switch_time = 0
@@ -383,7 +425,7 @@ class EDMRN_App:
         try:
             url_basic = (
                 f'https://www.edsm.net/api-v1/system?systemName={system_name}'
-                f'&showInformation=1&showCoordinates=1&showPrimaryStar=1&showTraffic=1&showPermit=1&showGalacticMapping=1'
+                f'&showInformation=1&showCoordinates=1&showPrimaryStar=1&showTraffic=1&showPermit=1&showId=1'
             )
             response_basic = requests.get(url_basic, headers=headers, timeout=10)
             if response_basic.status_code != 200:
@@ -391,7 +433,6 @@ class EDMRN_App:
             data = response_basic.json()
             if isinstance(data, list):
                 data = {"bodies": data}
-            data['gmp'] = data.get('galacticMapping', [])
 
             url_bodies = f'https://www.edsm.net/api-system-v1/bodies?systemName={system_name}'
             response_bodies = requests.get(url_bodies, headers=headers, timeout=10)
@@ -427,21 +468,26 @@ class EDMRN_App:
                     data['factions'] = factions_data['factions']
 
             try:
-                system_url = f'https://www.edsm.net/en/system/id/{data.get("id")}/name/{system_name.replace(" ", "+")}' if data.get("id") else f'https://www.edsm.net/en/system?systemName={system_name.replace(" ", "+")}'
-                response_page = requests.get(system_url, headers=headers, timeout=10)
-                if response_page.status_code == 200:
-                    soup = BeautifulSoup(response_page.content, 'html.parser')
-                    gmp_card = soup.find('a', href=lambda x: x and 'forums.frontier.co.uk' in x and 'Galactic-Mapping-Project' in x)
-                    if gmp_card:
-                        gmp_content = gmp_card.parent.parent.get_text().strip()
-                        lines = [line.strip() for line in gmp_content.split('\n') if line.strip()]
-                        data['gmp'] = '\n'.join(lines[1:])
+                system_id64 = data.get('id64')
+                if system_id64:
+                    gec_url = f'https://edastro.com/gec/json/id64/{system_id64}'
+                    response_gec = requests.get(gec_url, headers=headers, timeout=15)
+                    if response_gec.status_code == 200:
+                        gec_data = response_gec.json()
+                        if gec_data and isinstance(gec_data, dict) and gec_data.get('name'):
+                            gmp_text = f"{gec_data.get('name', '')}\nType: {gec_data.get('type', '')}\nRegion: {gec_data.get('region', '')}\n\n{gec_data.get('summary', '')}\n\n{gec_data.get('descriptionMardown', '')}"
+                            poi_url = gec_data.get('poiUrl', '')
+                            if poi_url:
+                                gmp_text += f"\n\nLink: {poi_url}"
+                            data['gmp'] = gmp_text.strip()
+                        else:
+                            data['gmp'] = ""
                     else:
                         data['gmp'] = ""
                 else:
                     data['gmp'] = ""
             except Exception as e:
-                logger.warning(f"Failed to scrape GMP data for {system_name}: {e}")
+                logger.warning(f"Failed to fetch GEC data for {system_name}: {e}")
                 data['gmp'] = ""
 
             if data.get("id"):
@@ -862,20 +908,6 @@ class EDMRN_App:
             InfoDialog(self, "Restart Required", "Please restart the app to apply borderless mode change.")
         except Exception:
             pass
-    def _get_overlay_data(self):
-        current_tab = self.tabview.get()
-        if current_tab == "Neutron Highway":
-            data = self.neutron_router.get_overlay_data()
-        elif current_tab == "Galaxy Plotter":
-            data = self.galaxy_plotter.get_overlay_data(
-                self.galaxy_route_waypoints,
-                self.galaxy_current_waypoint_index,
-                self.galaxy_plotter_route_data
-            )
-        else:
-            data = self.route_tracker.get_overlay_data(self)
-        data['exobio_species'] = getattr(self, '_overlay_exobio_species', [])
-        return data
         ctk.CTkLabel(cmdr_info_frame, text="Location:",
                      font=ctk.CTkFont(size=12, weight="bold"),
                      text_color=colors['primary']).grid(row=0, column=4, sticky="w", pady=2)
@@ -1380,6 +1412,11 @@ class EDMRN_App:
         exobio_species = getattr(self, '_overlay_exobio_species', [])
         exobio_species_capped = [(species, min(count, 3)) for species, count in exobio_species]
         data['exobio_species'] = exobio_species_capped
+        fuel_data = self.fuel_tracker.get_fuel_data()
+        fuel_data['color'] = self.fuel_tracker.get_fuel_color()
+        if fuel_data.get('is_on_foot'):
+            fuel_data['color'] = '#888888'
+        data['fuel'] = fuel_data
         if not hasattr(self, '_last_logged_exobio_species') or self._last_logged_exobio_species != exobio_species_capped:
             from edmrn.logger import get_logger
             logger = get_logger('App')
@@ -2129,13 +2166,6 @@ class EDMRN_App:
         else:
             WarningDialog(self, "Auto-save", "Already running")
 
-    def _stop_autosave(self):
-        colors = self.theme_manager.get_theme_colors()
-        if self.autosave_manager.stop():
-            self.autosave_status.configure(text="Stopped", text_color=colors['secondary'])
-            self.autosave_start_btn.configure(text="Start", command=self._start_autosave, fg_color=colors['primary'])
-            self._log("Auto-save stopped")
-
     def _manual_save(self):
         if self.autosave_manager.save_now():
             self._log("Manual save completed")
@@ -2189,23 +2219,6 @@ class EDMRN_App:
             InfoDialog(self, "Success", f"Journal path is valid!\n\nFound {len(journal_files)} files\nLatest: {Path(latest).name}")
         else:
             WarningDialog(self, "Warning", "Path exists but no journal files found")
-
-    def _apply_journal_settings(self):
-        manual_path = self.journal_path_var.get().strip() or None
-        self.config.journal_path = manual_path if manual_path else ''
-        self.config.save()
-        if self.journal_monitor:
-            self.journal_monitor.stop()
-        self.journal_monitor = JournalMonitor(
-            callback=self._handle_system_jump,
-            manual_journal_path=manual_path,
-            selected_commander=self.selected_commander.get()
-        )
-        self.journal_monitor.start()
-        path_used = manual_path if manual_path else "Auto-detected path"
-        self._log(f"Journal Monitor restarted with: {path_used}")
-        InfoDialog(self, "Success", "Journal monitor restarted with new settings!")
-        threading.Thread(target=self._get_latest_cmdr_data, daemon=True).start()
 
     def _switch_commander(self, selected):
         if selected:
@@ -2415,7 +2428,7 @@ class EDMRN_App:
             logger.error(f"Theme editor error: {e}")
 
     def _get_available_themes(self):
-        themes_dir = os.path.join("edmrn", "themes")
+        themes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes")
         theme_files = []
         if os.path.exists(themes_dir):
             for file in os.listdir(themes_dir):
@@ -2526,12 +2539,8 @@ class EDMRN_App:
                 
                 if result:
                     try:
-                        temp_root = tk.Tk()
-                        temp_root.withdraw()
-                        temp_root.clipboard_clear()
-                        temp_root.clipboard_append(system_name)
-                        temp_root.update()
-                        temp_root.destroy()
+                        import pyperclip
+                        pyperclip.copy(system_name)
                         self._log(f"✓ '{system_name}' copied to clipboard (Distance: {distance:.2f} LY)")
                     except Exception:
                         self._log(f"ERROR: Failed to copy system name")
@@ -3091,6 +3100,9 @@ class EDMRN_App:
             if route_data:
                 self._create_route_tracker_tab_content()
 
+            self.fuel_tracker.set_callback(self._update_fuel_display)
+            self.fuel_tracker.start_tracking()
+            
             if not self._preload_started:
                 self._preload_started = True
                 try:

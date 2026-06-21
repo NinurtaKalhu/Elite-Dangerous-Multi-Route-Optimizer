@@ -7,18 +7,12 @@ from pathlib import Path
 spec_root = os.path.abspath(SPECPATH)
 project_root = os.path.dirname(spec_root)
 
-# Find tksheet package location (avoid importing venv packages into build env)
-local_tksheet = os.path.join(spec_root, 'tksheet')
-venv_root = os.path.join(project_root, '.venv_clean')
-venv_site = os.path.join(venv_root, 'Lib', 'site-packages')
-venv_tksheet = os.path.join(venv_site, 'tksheet')
-
-if os.path.isdir(local_tksheet):
-    tksheet_datas = [(local_tksheet, 'tksheet')]
-    print(f"[SPEC] tksheet found in build folder: {local_tksheet}")
-elif os.path.isdir(venv_tksheet):
-    tksheet_datas = [(venv_tksheet, 'tksheet')]
-    print(f"[SPEC] tksheet found via venv path: {venv_tksheet}")
+# Find tksheet package location
+import importlib.util
+spec_tksheet = importlib.util.find_spec('tksheet')
+if spec_tksheet and spec_tksheet.origin:
+    tksheet_datas = [(os.path.dirname(spec_tksheet.origin), 'tksheet')]
+    print(f"[SPEC] tksheet found: {os.path.dirname(spec_tksheet.origin)}")
 else:
     tksheet_datas = []
     print("[SPEC] WARNING: tksheet not found!")
@@ -31,7 +25,8 @@ a = Analysis(
     binaries=[],
     datas=[
         (os.path.join(spec_root, 'assets'), 'assets'), 
-        (os.path.join(spec_root, 'edmrn', 'themes'), 'edmrn/themes')
+        (os.path.join(spec_root, 'edmrn', 'themes'), 'edmrn/themes'),
+        (os.path.join(spec_root, 'sounds'), 'sounds')
     ] + tksheet_datas,
     hiddenimports=[
         # EDMRN Core modules - ALL modules
@@ -80,6 +75,7 @@ a = Analysis(
         'edmrn.icons',
         'edmrn.ed_theme',
         'edmrn.exceptions',
+        'edmrn.fuel_tracker',
         # External modules - CORRECTED
         'customtkinter',
         'PIL._tkinter_finder',

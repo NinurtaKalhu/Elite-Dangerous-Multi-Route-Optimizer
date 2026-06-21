@@ -2,6 +2,7 @@ import platform
 import os
 import sys
 import socket
+import tempfile
 import psutil
 class PlatformDetector:
     def __init__(self):
@@ -98,12 +99,7 @@ class PlatformDetector:
         else:
             return f"{self.system} {self.release} ({self.architecture})"
     def get_temp_dir(self):
-        if self.is_windows():
-            return os.environ.get('TEMP', os.environ.get('TMP', 'C:\\Temp'))
-        elif self.is_macos():
-            return '/tmp'
-        else:
-            return '/tmp' if os.path.exists('/tmp') else '/var/tmp'
+        return tempfile.gettempdir()
 _platform_detector = None
 def get_platform_detector():
     global _platform_detector

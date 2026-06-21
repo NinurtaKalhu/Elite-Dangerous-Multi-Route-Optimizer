@@ -93,11 +93,12 @@ class MiniMapFrame(ctk.CTkFrame):
             xlim = self.ax.get_xlim()
             ylim = self.ax.get_ylim()
             zlim = self.ax.get_zlim()
-            x_center = event.xdata if event.xdata else (xlim[0] + xlim[1]) / 2
-            y_center = event.ydata if event.ydata else (ylim[0] + ylim[1]) / 2
+            x_center = (xlim[0] + xlim[1]) / 2
+            y_center = (ylim[0] + ylim[1]) / 2
+            z_center = (zlim[0] + zlim[1]) / 2
             new_xlim = [x_center + (x - x_center) * zoom_factor for x in xlim]
             new_ylim = [y_center + (y - y_center) * zoom_factor for y in ylim]
-            new_zlim = [(zlim[0] + zlim[1])/2 + (z - (zlim[0] + zlim[1])/2) * zoom_factor for z in zlim]
+            new_zlim = [z_center + (z - z_center) * zoom_factor for z in zlim]
             self.ax.set_xlim(new_xlim)
             self.ax.set_ylim(new_ylim)
             self.ax.set_zlim(new_zlim)
@@ -105,14 +106,6 @@ class MiniMapFrame(ctk.CTkFrame):
                 self.canvas.draw_idle()
         except Exception as e:
             logger.error(f"Zoom error: {e}")
-            try:
-                self.ax.set_xlim([x * zoom_factor for x in self.ax.get_xlim()])
-                self.ax.set_ylim([y * zoom_factor for y in self.ax.get_ylim()])
-                self.ax.set_zlim([z * zoom_factor for z in self.ax.get_zlim()])
-                if self.canvas:
-                    self.canvas.draw_idle()
-            except Exception:
-                pass
     def plot_route(self, route_list, show_lines=True, point_size=30):
         if not self.matplotlib_available:
             return False
@@ -458,7 +451,7 @@ class MiniMapFrame(ctk.CTkFrame):
             self.ax.clear()
         if self.fig:
             self.fig.clf()
-        plt.close('all')
+            plt.close(self.fig)
 class MiniMapFrameFallback(ctk.CTkFrame):
     def __init__(self, master, on_system_selected=None, **kwargs):
         super().__init__(master, **kwargs)

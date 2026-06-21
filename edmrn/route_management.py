@@ -585,13 +585,16 @@ class RouteManagement:
         next_system_name = self.app.route_tracker.get_next_unvisited_system()
         if next_system_name:
             try:
-                temp_root = tk.Tk()
-                temp_root.withdraw()
-                temp_root.clipboard_clear()
-                temp_root.clipboard_append(next_system_name)
-                temp_root.update()
-                temp_root.destroy()
+                import pyperclip
+                pyperclip.copy(next_system_name)
                 self.app._log(f"'{next_system_name}' (Next System) copied to clipboard.")
+            except ImportError:
+                try:
+                    self.app.root.clipboard_clear()
+                    self.app.root.clipboard_append(next_system_name)
+                    self.app._log(f"'{next_system_name}' (Next System) copied to clipboard.")
+                except Exception:
+                    self.app._log("ERROR: Failed to copy system name to clipboard.")
             except Exception:
                 self.app._log("ERROR: Failed to copy system name to clipboard.")
         else:
@@ -616,12 +619,17 @@ class RouteManagement:
             return
 
         try:
-            temp_root = tk.Tk()
-            temp_root.withdraw()
-            temp_root.clipboard_clear()
-            temp_root.clipboard_append(prev_system_name)
-            temp_root.update()
-            temp_root.destroy()
+            import pyperclip
+            pyperclip.copy(prev_system_name)
             self.app._log(f"'{prev_system_name}' (Previous System) copied to clipboard.")
+        except ImportError:
+            try:
+                self.app.root.clipboard_clear()
+                self.app.root.clipboard_append(prev_system_name)
+                self.app._log(f"'{prev_system_name}' (Previous System) copied to clipboard.")
+            except Exception:
+                self.app._log("ERROR: Failed to copy system name to clipboard.")
         except Exception:
-            self.app._log("ERROR: Failed to copy previous system to clipboard.")
+            self.app._log("ERROR: Failed to copy system name to clipboard.")
+        else:
+            self.app._log("INFO: Route complete. Nothing to copy.")

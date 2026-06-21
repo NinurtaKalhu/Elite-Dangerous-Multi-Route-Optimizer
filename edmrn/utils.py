@@ -1,5 +1,6 @@
 import os
 import json
+import platform
 import tempfile
 import shutil
 import threading
@@ -57,6 +58,35 @@ class ThreadSafeList:
     def __contains__(self, item):
         with self._lock:
             return item in self._list
+def get_ed_journal_dir():
+    system = platform.system()
+    if system == "Windows":
+        path = os.path.join(os.path.expanduser('~'),
+                           'Saved Games',
+                           'Frontier Developments',
+                           'Elite Dangerous')
+    elif system == "Darwin":
+        path = os.path.join(os.path.expanduser('~'),
+                           'Library',
+                           'Application Support',
+                           'Frontier Developments',
+                           'Elite Dangerous')
+    else:
+        path = os.path.join(os.path.expanduser('~'),
+                           '.local',
+                           'share',
+                           'Frontier Developments',
+                           'Elite Dangerous')
+    if os.path.exists(path):
+        return path
+    return None
+
+def get_ed_status_path():
+    journal_dir = get_ed_journal_dir()
+    if journal_dir:
+        return os.path.join(journal_dir, 'Status.json')
+    return None
+
 def resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
         base_path = Path(sys._MEIPASS)

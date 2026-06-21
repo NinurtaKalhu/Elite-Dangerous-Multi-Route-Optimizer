@@ -28,6 +28,7 @@ class CustomRouteManager:
         self.current_index = 0
         self.is_optimized = False
         self.starting_system = None
+        self.ending_system = None
         self._optimize_lock = threading.Lock()
 
     def detect_current_system(self) -> Optional[str]:
@@ -49,6 +50,9 @@ class CustomRouteManager:
 
     def set_starting_system(self, name: str):
         self.starting_system = name
+
+    def set_ending_system(self, name: str):
+        self.ending_system = name
 
     def add_system(self, name: str) -> bool:
         for s in self.systems:
@@ -100,77 +104,117 @@ class CustomRouteManager:
             self.systems.insert(to_idx, system)
             self.is_optimized = False
 
-    def optimize_route(self, mode: str = 'distance') -> bool:
-        if len(self.systems) < 2:
+    def optimize_route(self, mode: str = 'distance', boost_multiplier: float = 6.0) -> bool:
+        if len(self.systems) < 1:
             return False
-        if not self._optimize_lock.acquire(blocking=False):
+        acquired = self._optimize_lock.acquire(blocking=True, timeout=5)
+        if not acquired:
+            logger.error("Could not acquire optimization lock")
             return False
         try:
+            logger.info(f"Starting optimization: {len(self.systems)} systems, mode={mode}")
+            start_data = None
+            end_data = None
+            middle_systems = list(self.systems)
+
             if self.starting_system:
-                starting_system_data = None
                 for s in self.systems:
                     if s['name'].lower() == self.starting_system.lower():
-                        starting_system_data = s
+                        start_data = s
+                        middle_systems = [s for s in middle_systems if s['name'].lower() != self.starting_system.lower()]
                         break
-                if not starting_system_data:
-                    start_coords = self._fetch_coordinates(self.starting_system)
-                    if start_coords:
-                        starting_system_data = {
+                if not start_data:
+                    coords = self._fetch_coordinates(self.starting_system)
+                    if coords:
+                        start_data = {
                             'name': self.starting_system,
-                            'x': start_coords[0],
-                            'y': start_coords[1],
-                            'z': start_coords[2],
+                            'x': coords[0], 'y': coords[1], 'z': coords[2],
                             'added_order': -1
                         }
-                if starting_system_data:
-                    all_systems = [starting_system_data] + [s for s in self.systems if s['name'].lower() != self.starting_system.lower()]
-                else:
-                    all_systems = list(self.systems)
+
+            if self.ending_system:
+                for s in self.systems:
+                    if s['name'].lower() == self.ending_system.lower():
+                        end_data = s
+                        middle_systems = [s for s in middle_systems if s['name'].lower() != self.ending_system.lower()]
+                        break
+                if not end_data:
+                    coords = self._fetch_coordinates(self.ending_system)
+                    if coords:
+                        end_data = {
+                            'name': self.ending_system,
+                            'x': coords[0], 'y': coords[1], 'z': coords[2],
+                            'added_order': 999999
+                        }
+
+            if middle_systems:
+                logger.info(f"TSP optimization: {len(middle_systems)} middle systems")
+                coords_arr = np.array([[s['x'], s['y'], s['z']] for s in middle_systems])
+                from edmrn.optimizer import RouteOptimizer
+                optimizer = RouteOptimizer()
+                distance_matrix = optimizer.calculate_distance_matrix(coords_arr)
+                permutation, _ = solve_tsp(distance_matrix)
+                ordered_middle = [middle_systems[idx] for idx in permutation]
+                logger.info("TSP optimization completed")
             else:
-                all_systems = list(self.systems)
+                ordered_middle = []
 
-            coords = np.array([[s['x'], s['y'], s['z']] for s in all_systems])
-            n = len(coords)
+            all_systems = []
+            if start_data:
+                all_systems.append(start_data)
+            all_systems.extend(ordered_middle)
+            if end_data:
+                all_systems.append(end_data)
 
-            from edmrn.optimizer import RouteOptimizer
-            optimizer = RouteOptimizer()
-            distance_matrix = optimizer.calculate_distance_matrix(coords)
-
-            permutation, distance = solve_tsp(distance_matrix)
+            logger.info(f"Final route: {len(all_systems)} systems")
+            if len(all_systems) < 2:
+                self.optimized_route = all_systems.copy()
+                if self.optimized_route:
+                    self.optimized_route[0]['distance_from_prev'] = 0
+                self.current_index = 0
+                self.is_optimized = True
+                self.optimization_mode = mode
+                return True
 
             self.optimized_route = []
-            for idx in permutation:
-                system = all_systems[idx].copy()
-                self.optimized_route.append(system)
-
-            for i in range(len(self.optimized_route)):
+            logger.info("Calculating distances...")
+            for i in range(len(all_systems)):
+                system = all_systems[i].copy()
                 if i == 0:
-                    self.optimized_route[i]['distance_from_prev'] = 0
+                    system['distance_from_prev'] = 0
+                    system['normal_jumps'] = 0
+                    system['neutron_jumps'] = 0
+                    system['uses_neutron'] = False
+                    self.optimized_route.append(system)
                 else:
-                    prev = self.optimized_route[i - 1]
-                    curr = self.optimized_route[i]
-                    dx = curr['x'] - prev['x']
-                    dy = curr['y'] - prev['y']
-                    dz = curr['z'] - prev['z']
+                    prev = all_systems[i - 1]
+                    dx = all_systems[i]['x'] - prev['x']
+                    dy = all_systems[i]['y'] - prev['y']
+                    dz = all_systems[i]['z'] - prev['z']
                     dist = math.sqrt(dx**2 + dy**2 + dz**2)
-                    self.optimized_route[i]['distance_from_prev'] = round(dist, 2)
-                    
+                    system['distance_from_prev'] = round(dist, 2)
+
                     if mode == 'neutron':
                         jump_range = self.app.jump_range.get() if hasattr(self.app, 'jump_range') else '70'
                         try:
                             jr = float(jump_range)
                         except:
                             jr = 70.0
+
                         normal_jumps = max(1, math.ceil(dist / jr))
-                        neutron_range = jr * 6
-                        neutron_jumps = max(1, math.ceil(dist / neutron_range))
-                        self.optimized_route[i]['normal_jumps'] = normal_jumps
-                        self.optimized_route[i]['neutron_jumps'] = neutron_jumps
-                        self.optimized_route[i]['uses_neutron'] = normal_jumps > neutron_jumps
+                        neutron_jumps = max(1, math.ceil(dist / (jr * boost_multiplier)))
+                        system['normal_jumps'] = normal_jumps
+                        system['neutron_jumps'] = neutron_jumps
+                        system['uses_neutron'] = normal_jumps > neutron_jumps
+                        system['segment_waypoints'] = [prev['name'], all_systems[i]['name']]
+
+                    self.optimized_route.append(system)
+            logger.info(f"Route calculation completed: {len(self.optimized_route)} systems in optimized_route")
 
             self.current_index = 0
             self.is_optimized = True
             self.optimization_mode = mode
+            logger.info(f"optimize_route returning True: systems={len(self.systems)}, optimized_route={len(self.optimized_route)}")
             return True
         except Exception as e:
             logger.error(f"Route optimization failed: {e}")
@@ -180,7 +224,9 @@ class CustomRouteManager:
 
     def get_route(self) -> List[Dict]:
         if self.is_optimized and self.optimized_route:
+            logger.debug(f"get_route: returning optimized_route ({len(self.optimized_route)} systems)")
             return self.optimized_route
+        logger.debug(f"get_route: returning systems ({len(self.systems)} systems)")
         return self.systems
 
     def get_statistics(self, jump_range: float = None) -> Dict:
@@ -324,15 +370,26 @@ class CustomRouteManager:
 
 
 def solve_tsp(distance_matrix):
-    try:
-        from python_tsp.heuristics import solve_tsp_lin_kernighan
-        permutation, distance = solve_tsp_lin_kernighan(distance_matrix)
-        return permutation, distance
-    except Exception:
-        n = len(distance_matrix)
-        permutation = list(range(n))
-        distance = sum(distance_matrix[i][i + 1] for i in range(n - 1))
-        return permutation, distance
+    n = len(distance_matrix)
+    permutation = [0]
+    total = 0
+    current = 0
+    visited = {0}
+    for _ in range(n - 1):
+        nearest = None
+        nearest_dist = float('inf')
+        for j in range(n):
+            if j not in visited and distance_matrix[current][j] < nearest_dist:
+                nearest = j
+                nearest_dist = distance_matrix[current][j]
+        if nearest is not None:
+            permutation.append(nearest)
+            total += nearest_dist
+            visited.add(nearest)
+            current = nearest
+        else:
+            break
+    return permutation, total
 
 
 class CustomRouteTab:
@@ -368,7 +425,7 @@ class CustomRouteTab:
             on_suggestion_callback=self._on_suggestion_selected,
             fg_color=colors['frame'],
             text_color=colors['text'],
-            width=250
+            width=200
         )
         self.starting_entry.pack(side="left", padx=(0, 8))
 
@@ -378,6 +435,30 @@ class CustomRouteTab:
         )
         self.app.theme_manager.apply_button_theme(set_start_btn, "secondary")
         set_start_btn.pack(side="left", padx=(0, 16))
+
+        ctk.CTkLabel(
+            top_frame, text="Ending System:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=colors['text']
+        ).pack(side="left", padx=(0, 8))
+
+        self.ending_entry = AutocompleteEntry(
+            top_frame,
+            placeholder_text="Optional destination",
+            suggestion_provider=self._get_suggestions,
+            on_suggestion_callback=self._on_suggestion_selected,
+            fg_color=colors['frame'],
+            text_color=colors['text'],
+            width=200
+        )
+        self.ending_entry.pack(side="left", padx=(0, 8))
+
+        set_end_btn = ctk.CTkButton(
+            top_frame, text="Set", width=40,
+            command=self._set_ending_system
+        )
+        self.app.theme_manager.apply_button_theme(set_end_btn, "secondary")
+        set_end_btn.pack(side="left", padx=(0, 16))
 
         ctk.CTkLabel(
             top_frame, text="Add System:",
@@ -459,6 +540,18 @@ class CustomRouteTab:
             bottom_btn_frame, text="Neutron Path",
             variable=self.sort_var, value="neutron",
             text_color=colors['text']
+        ).pack(side="left", padx=(0, 8))
+
+        ctk.CTkLabel(
+            bottom_btn_frame, text="Boost:",
+            font=ctk.CTkFont(size=11),
+            text_color=colors['text']
+        ).pack(side="left", padx=(8, 4))
+
+        self.boost_var = ctk.StringVar(value="x4")
+        ctk.CTkOptionMenu(
+            bottom_btn_frame, values=["x4", "x6"],
+            variable=self.boost_var, width=60
         ).pack(side="left", padx=(0, 8))
 
         export_frame = ctk.CTkFrame(left_frame, fg_color="transparent")
@@ -563,7 +656,17 @@ class CustomRouteTab:
         name = self.starting_entry.get().strip()
         if name:
             self.manager.set_starting_system(name)
+            if name.lower() not in [s['name'].lower() for s in self.manager.systems]:
+                self._add_system_async(name)
             self.app._log(f"Starting system set to: {name}")
+
+    def _set_ending_system(self):
+        name = self.ending_entry.get().strip()
+        if name:
+            self.manager.set_ending_system(name)
+            if name.lower() not in [s['name'].lower() for s in self.manager.systems]:
+                self._add_system_async(name)
+            self.app._log(f"Ending system set to: {name}")
 
     def _get_suggestions(self, query: str, callback: Callable):
         def fetch():
@@ -666,19 +769,31 @@ class CustomRouteTab:
                          "Please add at least 2 systems to optimize the route.")
             return
         mode = self.sort_var.get()
+        boost_val = self.boost_var.get()
+        boost_multiplier = 6.0 if boost_val == "x6" else 4.0
         self.optimize_btn.configure(state="disabled", text="Optimizing...")
+        logger.info(f"Optimize clicked: mode={mode}, boost={boost_val}")
         
         def do_optimize():
-            success = self.manager.optimize_route(mode)
-            self.app.root.after(0, lambda: self._on_optimize_complete(success))
+            try:
+                logger.info("Starting optimization thread...")
+                success = self.manager.optimize_route(mode, boost_multiplier)
+                logger.info(f"Optimization completed: success={success}")
+                self.app.root.after(0, lambda: self._on_optimize_complete(success))
+            except Exception as e:
+                logger.error(f"Optimization error: {e}")
+                self.app.root.after(0, lambda: self._on_optimize_complete(False))
         
         threading.Thread(target=do_optimize, daemon=True).start()
 
     def _on_optimize_complete(self, success):
+        logger.info(f"BEFORE _refresh_ui: systems={len(self.manager.systems)}, optimized_route={len(self.manager.optimized_route)}")
         self.optimize_btn.configure(state="normal", text="Optimize Route")
         if success:
             self._refresh_ui()
+            logger.info(f"AFTER _refresh_ui: systems={len(self.manager.systems)}, optimized_route={len(self.manager.optimized_route)}")
             stats = self.manager.get_statistics(self._get_jump_range())
+            logger.info(f"AFTER get_statistics: systems={len(self.manager.systems)}, optimized_route={len(self.manager.optimized_route)}, stats_systems={stats['systems']}")
             self.app._log(f"Route optimized: {stats['systems']} systems, {stats['total_distance']:.0f} LY, {stats.get('total_jumps', stats['jumps'])} jumps")
             self._ensure_overlay_started()
         else:
@@ -725,15 +840,6 @@ class CustomRouteTab:
 
     def _next_waypoint(self):
         self.manager.get_next_waypoint()
-        try:
-            if hasattr(self.app, 'root') and self.app.root:
-                self.app.root.after(0, self._update_navigation)
-                self.app.root.after(0, self._update_system_list_visual)
-        except Exception:
-            pass
-
-    def _prev_waypoint(self):
-        self.manager.get_prev_waypoint()
         try:
             if hasattr(self.app, 'root') and self.app.root:
                 self.app.root.after(0, self._update_navigation)

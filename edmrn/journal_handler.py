@@ -7,6 +7,7 @@ import tkinter as tk
 from pathlib import Path
 from edmrn.journal import JournalMonitor
 from edmrn.gui import InfoDialog, WarningDialog, ErrorDialog
+from edmrn.utils import get_ed_journal_dir
 
 logger = logging.getLogger('JournalHandler')
 
@@ -217,10 +218,7 @@ class JournalHandler:
         return sorted(list(commanders))
 
     def get_auto_journal_path(self):
-        base = os.path.join(os.path.expanduser('~'), 'Saved Games', 'Frontier Developments', 'Elite Dangerous')
-        if os.path.exists(base):
-            return base
-        return None
+        return get_ed_journal_dir()
 
     def browse_journal_path(self):
         from tkinter import filedialog

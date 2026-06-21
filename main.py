@@ -43,26 +43,25 @@ def main():
     root.withdraw()
     splash = SplashScreen(master=root)
     splash.update()
+    splash_start_time = time.time()
     import threading
+    app_ready = False
     def load_app():
+        nonlocal app_ready
         try:
             from edmrn.app import EDMRN_App
             t2 = time.time(); print(f"[STARTUP] EDMRN_App imported in {t2-t1:.3f} s")
             app = EDMRN_App(root=root)
             t3 = time.time(); print(f"[STARTUP] EDMRN_App instance created in {t3-t2:.3f} s")
+            app_ready = True
             def on_ready():
-                splash.destroy()
-                root.deiconify()
-                try:
-                    app.run()
-                except Exception as e:
-                    import traceback
-                    with open("edmrn_crash.log", "a", encoding="utf-8") as f:
-                        f.write("\n--- EDMRN Mainloop Crash ---\n")
-                        f.write(traceback.format_exc())
-                    print("An unexpected error occurred! Details have been saved to edmrn_crash.log.")
-                    raise
-                t4 = time.time(); print(f"[STARTUP] app.run() returned in {t4-t3:.3f} s")
+                elapsed = time.time() - splash_start_time
+                min_display_time = 3.0
+                remaining = min_display_time - elapsed
+                if remaining > 0:
+                    root.after(int(remaining * 1000), lambda: _close_splash(splash, root, app, t3))
+                else:
+                    _close_splash(splash, root, app, t3)
             root.after(0, on_ready)
         except Exception as e:
             print(f"\n[ERROR] Application could not be started: {e}")
@@ -71,6 +70,25 @@ def main():
             sys.exit(1)
     threading.Thread(target=load_app, daemon=True).start()
     root.mainloop()
+
+def _close_splash(splash, root, app, t3):
+    import time
+    try:
+        splash.destroy()
+    except Exception:
+        pass
+    root.deiconify()
+    try:
+        app.run()
+    except Exception as e:
+        import traceback
+        crash_log = os.path.join(os.path.dirname(os.path.abspath(__file__)), "edmrn_crash.log")
+        with open(crash_log, "a", encoding="utf-8") as f:
+            f.write("\n--- EDMRN Mainloop Crash ---\n")
+            f.write(traceback.format_exc())
+        print("An unexpected error occurred! Details have been saved to edmrn_crash.log.")
+        raise
+    t4 = time.time(); print(f"[STARTUP] app.run() returned in {t4-t3:.3f} s")
 if __name__ == "__main__":
     import multiprocessing
     multiprocessing.freeze_support()

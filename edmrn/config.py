@@ -17,6 +17,10 @@ class AppConfig:
     window_geometry: str = '1100x800+100+100'
     borderless_mode: bool = True
     log_columns: list = None
+    fuel_warning_level: int = 15
+    fuel_critical_level: int = 5
+    fuel_sound_enabled: bool = True
+    fuel_sound_volume: int = 100
     @classmethod
     def get_app_data_path(cls):
         try:

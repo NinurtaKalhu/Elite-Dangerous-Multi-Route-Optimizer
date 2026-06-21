@@ -3,8 +3,11 @@ import tkinter as tk
 from tkinter import colorchooser, filedialog
 import json
 import os
+from pathlib import Path
 from .ed_theme import EliteDangerousTheme
 from edmrn.gui import ConfirmDialog, ErrorDialog, InfoDialog
+
+_THEMES_DIR = Path(__file__).resolve().parent / "themes"
 class ThemeEditor:
     def __init__(self, parent, theme_manager):
         self.parent = parent
@@ -17,7 +20,7 @@ class ThemeEditor:
         self.window.grab_set()
         self.setup_ui()
     def load_current_theme(self):
-        theme_path = os.path.join("edmrn", "themes", "elite_dangerous.json")
+        theme_path = str(_THEMES_DIR / "elite_dangerous.json")
         try:
             with open(theme_path, 'r') as f:
                 return json.load(f)
@@ -123,7 +126,7 @@ class ThemeEditor:
             self.current_theme[widget_type] = {}
         self.current_theme[widget_type][property_name] = [hex_color, hex_color]
     def save_theme(self):
-        theme_path = os.path.join("edmrn", "themes", "elite_dangerous.json")
+        theme_path = str(_THEMES_DIR / "elite_dangerous.json")
         try:
             with open(theme_path, 'w') as f:
                 json.dump(self.current_theme, f, indent=2)

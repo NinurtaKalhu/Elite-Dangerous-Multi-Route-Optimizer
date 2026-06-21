@@ -5,6 +5,7 @@ import hashlib
 import threading
 import logging
 from collections import defaultdict
+from edmrn.utils import get_ed_journal_dir
 
 logger = logging.getLogger('JournalCache')
 
@@ -20,7 +21,7 @@ class JournalCache:
         self._journal_latest_file = None
         self._journal_latest_size = 0
         self._journal_cache_thread = None
-        self._journal_dir = os.path.join(os.path.expanduser('~'), 'Saved Games', 'Frontier Developments', 'Elite Dangerous')
+        self._journal_dir = get_ed_journal_dir() or os.path.join(os.path.expanduser('~'), 'Saved Games', 'Frontier Developments', 'Elite Dangerous')
 
     def prime_async(self):
         if self._journal_cache_thread and self._journal_cache_thread.is_alive():
