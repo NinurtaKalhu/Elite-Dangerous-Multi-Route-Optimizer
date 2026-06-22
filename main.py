@@ -3,7 +3,6 @@ import os
 import logging
 import tkinter as tk
 
-# DEBUG: Log to file for EXE debugging
 DEBUG_LOG = os.path.join(os.path.dirname(__file__), 'debug_startup.log')
 def debug_log(msg):
     with open(DEBUG_LOG, 'a', encoding='utf-8') as f:
