@@ -265,7 +265,6 @@ class SettingsManager:
         ctk.CTkLabel(parent, text="⛽ Fuel Tracker",
                      font=ctk.CTkFont(size=13, weight="bold")).pack(pady=(8, 6))
         
-        # Warning Level
         warning_frame = ctk.CTkFrame(parent, fg_color="transparent")
         warning_frame.pack(fill="x", padx=10, pady=(0, 4))
         ctk.CTkLabel(warning_frame, text="Warning Level:",
@@ -279,7 +278,6 @@ class SettingsManager:
         ctk.CTkLabel(warning_frame, text="%",
                      font=ctk.CTkFont(size=11)).pack(side="right", padx=(0, 5))
         
-        # Critical Level
         critical_frame = ctk.CTkFrame(parent, fg_color="transparent")
         critical_frame.pack(fill="x", padx=10, pady=(0, 4))
         ctk.CTkLabel(critical_frame, text="Critical Level:",
@@ -293,7 +291,6 @@ class SettingsManager:
         ctk.CTkLabel(critical_frame, text="%",
                      font=ctk.CTkFont(size=11)).pack(side="right", padx=(0, 5))
         
-        # Sound Enabled
         sound_frame = ctk.CTkFrame(parent, fg_color="transparent")
         sound_frame.pack(fill="x", padx=10, pady=(0, 4))
         ctk.CTkLabel(sound_frame, text="Sound Alert:",
@@ -304,7 +301,6 @@ class SettingsManager:
                                      text="")
         sound_switch.pack(side="right")
         
-        # Sound Volume
         volume_frame = ctk.CTkFrame(parent, fg_color="transparent")
         volume_frame.pack(fill="x", padx=10, pady=(0, 4))
         ctk.CTkLabel(volume_frame, text="Volume:",
@@ -320,7 +316,6 @@ class SettingsManager:
         self.app.fuel_volume_slider.set(self.app.config.fuel_sound_volume)
         self.app.fuel_volume_slider.pack(side="right", padx=(0, 5))
         
-        # Current Status
         status_frame = ctk.CTkFrame(parent, fg_color="transparent")
         status_frame.pack(fill="x", padx=10, pady=(8, 4))
         ctk.CTkLabel(status_frame, text="Status:",

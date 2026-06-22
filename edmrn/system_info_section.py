@@ -17,7 +17,6 @@ logger = logging.getLogger('SystemInfoSection')
 
 class SystemInfoSection:
     def update_system_info(self, system_data):
-        """Update System Info tab UI with new system_data."""
         import threading
         try:
             if not isinstance(system_data, dict):

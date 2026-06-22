@@ -1259,7 +1259,7 @@ or connected to Frontier Developments plc.*
 Data & Services:
 • Route calculations by Spansh (spansh.co.uk)
 • System data by EDSM (edsm.net)
-
+• GMP data source by EdAstro (EdAstro.com)
 Thank you to all contributors and the Elite Dangerous exploration community!
 Fly safe, Commander! o7
         """.strip()
