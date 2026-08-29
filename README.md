@@ -1,3 +1,5 @@
+## GITHUB DOWNLOAD LINK: ***[Click Here](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/download/v3.3/EDMRN.v3.3.exe)***
+
 # 🚀 ED Multi Route Navigation (EDMRN) v3.3.0
 
 ***"I saw the darkness and was inspired by the light! - CMDR Ninurta KALHU"***
