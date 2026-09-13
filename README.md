@@ -16,8 +16,7 @@ Completely modular architecture with professional theme system, advanced route p
 
 ## Table of Contents
 
-- [What's New in v3.3](#-whats-new-in-v33)
-- [Key Features](#-key-features)
+- [What's New in v3.3](#-whats-new-in-v33) - [Key Features](#-key-features)
 - [Download & Installation](#-download--installation)
 - [Quick Start Guide](#-quick-start-guide)
 - [System Requirements](#-system-requirements)
