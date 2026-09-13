@@ -16,16 +16,10 @@ Completely modular architecture with professional theme system, advanced route p
 
 ## Table of Contents
 
-- [What's New in v3.3](#-whats-new-in-v33) - [Key Features](#-key-features)
-- [Download & Installation](#-download--installation)
-- [Quick Start Guide](#-quick-start-guide)
-- [System Requirements](#-system-requirements)
-- [In-Game Overlay](#-in-game-overlay-features)
-- [Settings & Configuration](#-settings--configuration)
-- [API Credits & Attribution](#-api-credits--attribution)
-- [Project Structure](#-project-structure)
-- [License](#-license)
-- [Developer](#-developer)
+- [What's New in v3.3](#-whats-new-in-v33) - [Key Features](#-key-features) - [Download & Installation](#-download--installation) - [Quick Start Guide](#-quick-start-guide)
+- [System Requirements](#-system-requirements) - [In-Game Overlay](#-in-game-overlay-features) - [Settings & Configuration](#-settings--configuration)
+- [API Credits & Attribution](#-api-credits--attribution) - [Project Structure](#-project-structure) - [License](#-license) - [Developer](#-developer)
+
 ## What's New in v3.3
 
 ### Fuel Tracker (Brand New)
