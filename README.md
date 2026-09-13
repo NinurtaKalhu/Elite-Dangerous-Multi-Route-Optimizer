@@ -940,62 +940,85 @@ Made with ❤️ by [Ninurta Kalhu](https://github.com/NinurtaKalhu) for the Eli
 ## 📸 Screenshots
 
 ![Route Optimization](screenshots/SS001.png)
+
 *Route optimization with CSV import and TSP LK algorithm*
 
 ![Load Backup](screenshots/SS002.png)
+
 *LSelect backup route*
 
 ![Visited System](screenshots/SS003.png)
+
 *Previously visited systems*
 
 ![Route Tracking with 3D Map](screenshots/SS004.png)
+
 *Interactive 3D map with real-time journal tracking*
 
 ### Advanced Features
+
 ![Neutron Highway Router](screenshots/SS005.png)
+
 *Neutron highway routing*
 
 ![Galaxy Plotter](screenshots/SS006.png)
+
 *Galaxy Plotter*
 
 ### System Info
+
 ![System info](screenshots/SS007.png)
+
 *System info and Bioscan*
 
 ![Bodies](screenshots/SS008.png)
+
 *Bodies info*
 
 ![Stations info](screenshots/SS009.png)
+
 *Stations info*
 
 ![System History](screenshots/SS010.png)
+
 *System History & Info*
 
 ### Log
+
 ![Log info](screenshots/SS011.png)
+
 *Log info*
 
 ![Log Details](screenshots/SS012.png)
+
 *Log Details*
 
 ![Log Details Select Columns](screenshots/SS013.png)
+
 *Log Details Select Columns*
 
 ![Log Details Select Columns Advanced](screenshots/SS014.png)
+
 *Log Details Select Columns Advanced*
 
 ### Settings & Customization
+
 ![Settings Panel](screenshots/SS015.png)
+
 *Comprehensive settings and configuration*
 
 ### In-Game Experience
+
 ![Overlay Tracking](screenshots/SS000.png)
+
 *New transparent overlay "3 TABS" showing real-time progress for "VR and "Geforce Now players"*
 
 ### About & User Manual
 
 ![User Manual](screenshots/SS016.png)
+
 *Comprehensive user manual and attributions*
 
 ![About Window](screenshots/SS017.png)
+
 *Version info and credits*
