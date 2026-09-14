@@ -41,7 +41,7 @@ Whether you're planning a long exploration expedition, optimizing an exobiology 
 
 ---
 
-##  Why EDMRN?
+<h2>Why EDMRN?</h2>
 
 Elite Dangerous gives you an enormous galaxy to explore.
 
@@ -51,7 +51,7 @@ The problem is deciding **how to get there efficiently**, remembering where you'
 
 EDMRN is designed to solve that problem.
 
-###  Built for Commanders Who Want To:
+<h3>Built for Commanders Who Want To:</h3>
 
 *  Plan large **exploration and exobiology expeditions**
 *  Optimize routes across **hundreds of systems**
@@ -66,7 +66,7 @@ EDMRN is designed to solve that problem.
 *  Customize the application with **11 PowerPlay-inspired themes**
 
 
-##  See EDMRN in action
+<h2>See EDMRN in action</h2>
 
 <p align="center">
   <img src="screenshots/SS001.png" alt="EDMRN Route Optimization" width="32%">
@@ -78,17 +78,17 @@ EDMRN is designed to solve that problem.
 
 ---
 
-#  Download EDMRN
+<h1>Download EDMRN</h1>
 
-## Windows - Recommended
+<h2>Windows - Recommended</h2>
 
-###  Download the latest release
+<h3>Download the latest release</h3>
 
 **[ DOWNLOAD EDMRN](https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases)**
 
 No installer is required.
 
-### Quick Start
+<h3>Quick Start</h3>
 
 1. Download `EDMRN_v3.3.exe` from the official GitHub Releases page.
 2. Run the executable.
@@ -102,9 +102,9 @@ EDMRN can run from any location because the pre-built executable includes its re
 
 ---
 
-#  What Can EDMRN Do?
+<h1>What Can EDMRN Do?</h1>
 
-##  Exploration & Exobiology
+<h2>Exploration & Exobiology</h2>
 
 Build a route containing large numbers of systems with [Spansh](https://www.spansh.co.uk/bodies) and let EDMRN optimize the order in which you visit them.
 
@@ -121,7 +121,7 @@ EDMRN can track your progress automatically as you move through the galaxy.
 
 ---
 
-##  Multi-Route Optimization
+<h2>Multi-Route Optimization</h2>
 
 When your route contains many systems, manually deciding the order can become inefficient.
 
@@ -144,7 +144,7 @@ On modern hardware, routes containing **500+ systems** can be optimized in secon
 
 ---
 
-#  Neutron Highway
+<h1>Neutron Highway</h1>
 
 Travelling long distances?
 
@@ -166,24 +166,24 @@ EDMRN also supports neutron-aware optimization inside the Custom Route Planner.
 
 ---
 
-#  Custom Route Planner
+<h1>Custom Route Planner</h1>
 
 The Custom Route Planner gives you direct control over your route.
 
-### Add systems by:
+<h3>Add systems by:</h3>
 
 * System name
 * Autocomplete
 * Manual coordinates `(X, Y, Z)`
 
-### Optimize with:
+<h3>Optimize with:</h3>
 
 * TSP shortest-path mode
 * Neutron Path mode
 * Configurable starting system
 * Fixed start/end systems
 
-### Manage your route:
+<h3>Manage your route:</h3>
 
 * Click to select systems
 * Batch-remove selected systems
@@ -191,7 +191,7 @@ The Custom Route Planner gives you direct control over your route.
 * View current / selected / pending states
 * Navigate using Previous / Next
 
-### Route information:
+<h3>Route information:</h3>
 
 * Light-year distance
 * Jump count
@@ -199,11 +199,11 @@ The Custom Route Planner gives you direct control over your route.
 * Ship FSD jump range
 * Route visualization
 
-### Import / Export:
+<h3>Import / Export:</h3>
 
 * CSV with full metadata
 
-### Overlay integration:
+<h3>Overlay integration:</h3>
 
 * Custom Route tab available inside the overlay
 * Previous / Next navigation
@@ -212,11 +212,11 @@ The Custom Route Planner gives you direct control over your route.
 
 ---
 
-#  Real-Time Fuel Tracker
+<h1>Real-Time Fuel Tracker</h1>
 
 EDMRN includes real-time fuel monitoring.
 
-### Automatic detection
+<h3>Automatic detection</h3>
 
 EDMRN can detect:
 
@@ -225,7 +225,7 @@ EDMRN can detect:
 * On-foot status
 * Current CMDR information
 
-### Fuel display
+<h3>Fuel display</h3>
 
 Fuel is displayed in both the main application and the in-game overlay.
 
@@ -237,7 +237,7 @@ When on foot:
 
 `Fuel: On Foot`
 
-### Visual indicators
+<h3>Visual indicators</h3>
 
 Fuel status uses configurable warning levels:
 
@@ -248,7 +248,7 @@ Fuel status uses configurable warning levels:
 
 Fuel information is updated in real time.
 
-### Audio alerts
+<h3>Audio alerts</h3>
 
 Configure:
 
@@ -261,7 +261,7 @@ Audio alerts use WAV notifications with a cooldown to prevent repeated warnings.
 
 ---
 
-#  Automatic Journal Tracking
+<h1>Automatic Journal Tracking</h1>
 
 EDMRN can monitor the Elite Dangerous journal in real time.
 
@@ -274,7 +274,7 @@ This allows the application to automatically detect:
 * Route progress
 * Visited systems
 
-### Journal features
+<h3>Journal features</h3>
 
 * Automatic journal discovery
 * Manual journal path configuration
@@ -288,7 +288,7 @@ Your exploration progress can continue across sessions.
 
 ---
 
-#  Interactive 3D Route Visualization
+<h1>Interactive 3D Route Visualization</h1>
 
 EDMRN provides a real-time 3D view of your route.
 
@@ -305,11 +305,11 @@ The route view updates as journal events are received.
 
 ---
 
-#  In-Game Overlay
+<h1>In-Game Overlay</h1>
 
 Keep EDMRN visible while playing Elite Dangerous without constantly switching windows.
 
-### Overlay displays:
+<h3>Overlay displays:</h3>
 
 | Component        | Description                             |
 | ---------------- | --------------------------------------- |
@@ -321,7 +321,7 @@ Keep EDMRN visible while playing Elite Dangerous without constantly switching wi
 | Route Info       | Total systems and completion percentage |
 | Fuel Tracker     | Live fuel percentage and status         |
 
-### Overlay controls
+<h3>Overlay controls</h3>
 
 * **Ctrl+O** - Show / hide
 * Drag - Reposition
@@ -330,7 +330,7 @@ Keep EDMRN visible while playing Elite Dangerous without constantly switching wi
 * Always-on-top support
 * Automatic launch option
 
-### Recommended setup
+<h3>Recommended setup</h3>
 
 For best compatibility:
 
@@ -338,7 +338,7 @@ For best compatibility:
 * Place the overlay away from critical HUD elements
 * Disable VSync if additional overlay responsiveness is required
 
-### GeForce NOW support
+<h3>GeForce NOW support</h3>
 
 EDMRN includes features for cloud gaming environments:
 
@@ -348,11 +348,11 @@ EDMRN includes features for cloud gaming environments:
 
 ---
 
-#  System Information
+<h1>System Information</h1>
 
 The System Info tab provides detailed information about the current or selected system.
 
-### Includes:
+<h3>Includes:</h3>
 
 * System information
 * Statistics
@@ -372,11 +372,11 @@ System lookup uses community data services including:
 
 ---
 
-#  Journal Log Viewer
+<h1>Journal Log Viewer</h1>
 
 EDMRN includes a dedicated Log tab for inspecting Elite Dangerous journal data.
 
-### Features
+<h3>Features</h3>
 
 * Time-range filtering
 * Text search
@@ -398,11 +398,11 @@ Large logs are handled using caching and incremental updates to reduce UI freeze
 
 ---
 
-#  Visit History
+<h1>Visit History</h1>
 
 EDMRN remembers your exploration history.
 
-### Features
+<h3>Features</h3>
 
 * Persistent system visit tracking
 * Automatic visit detection
@@ -415,13 +415,13 @@ Your previous journey remains useful even after creating a new route.
 
 ---
 
-#  Smart Save, Backup & Recovery
+<h1>Smart Save, Backup & Recovery</h1>
 
 Long expeditions should not be lost because of a corrupted file.
 
 EDMRN includes a backup and recovery system.
 
-### Auto-save / Save / Backup
+<h3>Auto-save / Save / Backup</h3>
 
 > [!WARNING]
 > This is no longer necessary, because EDMRN uses an atomic recording system and every step is recorded instantly. Thanks to this, nothing is lost even in the event of a power outage.
@@ -437,7 +437,7 @@ You can also trigger a manual save with:
 
 `Ctrl+S`
 
-### Backup protection
+<h3>Backup protection</h3>
 
 Before important operations, EDMRN can:
 
@@ -449,7 +449,7 @@ Before important operations, EDMRN can:
 
 ---
 
-#  Galaxy Plotter
+<h1>Galaxy Plotter</h1>
 
 EDMRN integrates with the **Spansh Exact Router**.
 
@@ -470,7 +470,7 @@ EDMRN can calculate more precise fuel requirements based on the selected ship co
 
 ---
 
-#  Smart System Autocomplete
+<h1>Smart System Autocomplete</h1>
 
 System search integrates with community galaxy databases.
 
@@ -489,11 +489,11 @@ Autocomplete is designed to reduce unnecessary API requests while keeping the se
 
 ---
 
-#  11 PowerPlay Themes
+<h1>11 PowerPlay Themes</h1>
 
 EDMRN includes 11 built-in themes inspired by Elite Dangerous factions.
 
-### Available themes
+<h3>Available themes</h3>
 
 * Elite Dangerous
 * Aisling Duval
@@ -513,9 +513,9 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 
 ---
 
-#  Advanced Configuration
+<h1>Advanced Configuration</h1>
 
-## Overlay
+<h2>Overlay</h2>
 
 * Start / Stop
 * Opacity
@@ -525,7 +525,7 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 * Position memory
 * Keyboard toggle
 
-## Journal
+<h2>Journal</h2>
 
 * Automatic path detection
 * Custom path
@@ -533,7 +533,7 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 * Real-time updates
 * Connection testing
 
-## Auto-Save
+<h2>Auto-Save</h2>
 
 > [!WARNING]
 > This is no longer necessary, because EDMRN uses an atomic recording system and every step is recorded instantly. Thanks to this, nothing is lost even in the event of a power outage.
@@ -545,7 +545,7 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 * Automatic backup
 * Recovery
 
-## Route Optimization
+<h2>Route Optimization</h2>
 
 * Starting system
 * Jump range precision to 0.01 LY
@@ -558,9 +558,9 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 > [!IMPORTANT]
 > This step of creating your ".CSV" file on [SPANSH](https://www.spansh.co.uk/bodies) is the most important part of being able to use EDMRN.
 
-#  Quick Start
+<h1>Quick Start</h1>
 
-## Step 1 - Create your route
+<h2>Step 1 - Create your route</h2>
 
 Use **Spansh.co.uk** to create your system list.
 
@@ -585,7 +585,7 @@ Only `System Name`, `X`, `Y`, and `Z` are required.
 
 ---
 
-## Step 2 - Optimize
+<h2>Step 2 - Optimize</h2>
 
 1. Open EDMRN.
 2. Select your CSV with **Browse**.
@@ -598,7 +598,7 @@ EDMRN will calculate the route and prepare it for live tracking.
 
 ---
 
-## Step 3 - Track your journey
+<h2>Step 3 - Track your journey</h2>
 
 Once you start travelling:
 
@@ -607,7 +607,7 @@ Once you start travelling:
 * Route progress is shown visually.
 * You can manually mark systems as visited or skipped.
 
-### Quick actions
+<h3>Quick actions</h3>
 
 * **Copy Next**
 * **Data Folder**
@@ -616,7 +616,7 @@ Once you start travelling:
 
 ---
 
-## Step 4 - Optional: Neutron Highway
+<h2>Step 4 - Optional: Neutron Highway</h2>
 
 1. Enter source and destination.
 2. Select your jump range.
@@ -627,7 +627,7 @@ Once you start travelling:
 
 ---
 
-## Step 5 - Optional: Galaxy Plotter
+<h2>Step 5 - Optional: Galaxy Plotter</h2>
 
 1. Open Galaxy Plotter.
 2. Select your ship build.
@@ -638,7 +638,7 @@ Once you start travelling:
 
 ---
 
-## Step 6 - Start the Overlay
+<h2>Step 6 - Start the Overlay</h2>
 
 Go to:
 
@@ -663,7 +663,7 @@ The overlay can display your:
 
 ---
 
-## Step 7 - Choose a Theme
+<h2>Step 7 - Choose a Theme</h2>
 
 Go to:
 
@@ -678,10 +678,10 @@ EDMRN automatically restarts to apply the selected theme.
 <details>
 <summary><strong> System Requirements</strong></summary>
 
-#  System Requirements
+<h1>System Requirements</h1>
 
 
-## Minimum
+<h2>Minimum</h2>
 
 * **OS:** Windows 10 / 11 64-bit
 * **RAM:** 4 GB
@@ -694,14 +694,14 @@ For source installation:
 * pip
 * Git
 
-## Recommended
+<h2>Recommended</h2>
 
 * **OS:** Windows 11 64-bit
 * **RAM:** 8 GB
 * **Monitor:** 1920x1080 or higher
 * **Elite Dangerous:** Borderless Window mode for overlay
 
-## Elite Dangerous Settings
+<h2>Elite Dangerous Settings</h2>
 
 Journal logging should be enabled.
 
@@ -718,18 +718,18 @@ Default journal location:
 <details>
 <summary><strong> Running From Source</strong></summary>
 
-#  Running From Source
+<h1>Running From Source</h1>
 
 
 EDMRN can also be run directly from source.
 
-## Requirements
+<h2>Requirements</h2>
 
 * Python 3.12+
 * pip
 * Git
 
-## Install
+<h2>Install</h2>
 
 ```bash
 git clone https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer.git
@@ -741,7 +741,7 @@ pip install -r requirements.txt
 python run.py
 ```
 
-## Build the Windows executable
+<h2>Build the Windows executable</h2>
 
 Install PyInstaller:
 
@@ -762,7 +762,7 @@ build_edmrn.bat
 <details>
 <summary><strong> Optimization Engine Details</strong></summary>
 
-#  The Optimization Engine
+<h1>The Optimization Engine</h1>
 
 
 > **"Light doesn't choose the shortest path... it chooses the fastest."**
@@ -773,11 +773,11 @@ The route engine uses a custom reimplementation of the **Lin-Kernighan (LK)** al
 
 The project takes inspiration from the work of:
 
-### Brian Kernighan
+<h3>Brian Kernighan</h3>
 
 Co-creator of C, Unix and AWK, whose work at Bell Labs helped establish the foundations of modern computing.
 
-### Shen Lin
+<h3>Shen Lin</h3>
 
 The mathematician whose work with Kernighan helped establish the variable n-opt heuristic approach associated with the TSP.
 
@@ -790,12 +790,12 @@ EDMRN's optimization engine has been refined to handle large exploration routes 
 <details>
 <summary><strong> API Credits & Community Services</strong></summary>
 
-#  API Credits & Community Services
+<h1>API Credits & Community Services</h1>
 
 
 EDMRN would not exist without the Elite Dangerous community's excellent data services.
 
-## Spansh
+<h2>Spansh</h2>
 
 Used for:
 
@@ -817,7 +817,7 @@ Attribution is provided in accordance with Spansh's terms.
 
 ---
 
-## EDSM
+<h2>EDSM</h2>
 
 Used for:
 
@@ -842,7 +842,7 @@ Attribution is provided in accordance with EDSM's terms.
 
 ---
 
-## EDAstro / GEC
+<h2>EDAstro / GEC</h2>
 
 Used for:
 
@@ -859,7 +859,7 @@ Special thanks to **CMDR Orvidius** for maintaining the GEC API.
 
 ---
 
-## Responsible API Usage
+<h2>Responsible API Usage</h2>
 
 EDMRN is designed to be respectful of community infrastructure.
 
@@ -883,12 +883,12 @@ It implements:
 <details>
 <summary><strong> Security & Privacy</strong></summary>
 
-#  Security & Privacy
+<h1>Security & Privacy</h1>
 
 
 EDMRN is designed to keep commander data local.
 
-##  What EDMRN Does
+<h2>What EDMRN Does</h2>
 
 * Reads Elite Dangerous journal files locally
 * Reads the journal in read-only fashion
@@ -898,7 +898,7 @@ EDMRN is designed to keep commander data local.
 * Checks GitHub for application version updates
 * Uses Spansh / EDSM / EDAstro APIs for supported features
 
-##  What EDMRN Does Not Do
+<h2>What EDMRN Does Not Do</h2>
 
 *  No telemetry collection
 *  No analytics collection
@@ -910,7 +910,7 @@ EDMRN is designed to keep commander data local.
 *  No online account required
 *  No background process remains after the application is closed
 
-## Local Data
+<h2>Local Data</h2>
 
 EDMRN stores data locally in:
 
@@ -935,7 +935,7 @@ There is no cloud storage for EDMRN route data.
 
 </details>
 
-#  Antivirus False Positives
+<h1>Antivirus False Positives</h1>
 
 Some antivirus programs may flag PyInstaller-built applications.
 
@@ -943,7 +943,7 @@ This does **not automatically mean the application is malicious**.
 
 PyInstaller applications bundle a Python runtime and can trigger heuristic detections, particularly when an executable is relatively new or has limited distribution.
 
-## Recommended verification
+<h2>Recommended verification</h2>
 
 1. Download EDMRN only from the official GitHub Releases page.
 2. Check the release hash when provided.
@@ -958,7 +958,7 @@ Never download EDMRN executables from unofficial mirrors.
 
 ---
 
-#  Performance Tips
+<h1>Performance Tips</h1>
 
 For large route optimizations:
 
@@ -970,11 +970,11 @@ For large route optimizations:
 
 ---
 
-#  Support & Community
+<h1>Support & Community</h1>
 
 Need help or want to report a problem?
 
-### Discord
+<h3>Discord</h3>
 
 **EDMRN Community**
 
@@ -982,15 +982,15 @@ https://discord.gg/DWvCEXH7ae
 
 Fastest place for support and community discussion.
 
-### GitHub Issues
+<h3>GitHub Issues</h3>
 
 Report bugs and technical problems through GitHub Issues.
 
-### Email
+<h3>Email</h3>
 
 **[ninurtakalhu@gmail.com](mailto:ninurtakalhu@gmail.com)**
 
-### Wiki
+<h3>Wiki</h3>
 
 Detailed documentation and tutorials are planned for the project wiki.
 
@@ -999,7 +999,7 @@ Detailed documentation and tutorials are planned for the project wiki.
 <details>
 <summary><strong> Project Architecture</strong></summary>
 
-#  Project Architecture
+<h1>Project Architecture</h1>
 
 
 EDMRN uses a modular architecture designed to separate UI, routing, journal processing, navigation and data services.
@@ -1086,10 +1086,10 @@ EDMRN_v3.3/
 <details>
 <summary><strong> Development Highlights</strong></summary>
 
-#  Development Highlights
+<h1>Development Highlights</h1>
 
 
-## v3.3.0
+<h2>v3.3.0</h2>
 
 * Fuel Tracker
 * Custom Route Planner
@@ -1105,7 +1105,7 @@ EDMRN_v3.3/
 * Autocomplete improvements
 * Journal-based jump-range detection
 
-## v3.2.x
+<h2>v3.2.x</h2>
 
 * Persistent Visit History
 * Smart Backup and Recovery
@@ -1115,7 +1115,7 @@ EDMRN_v3.3/
 * API rate limiting improvements
 * Request optimization
 
-## v3.0 Foundation
+<h2>v3.0 Foundation</h2>
 
 * Complete architecture redesign
 * 35+ independent modules
@@ -1133,10 +1133,10 @@ EDMRN_v3.3/
 <details>
 <summary><strong> Version History</strong></summary>
 
-#  Version History
+<h1>Version History</h1>
 
 
-## v3.3.0 - Current Release
+<h2>v3.3.0 - Current Release</h2>
 
 * System Info
 * Advanced Log Viewer
@@ -1150,7 +1150,7 @@ EDMRN_v3.3/
 * Improved stability
 * Modernized themes and UI
 
-## v3.1.0
+<h2>v3.1.0</h2>
 
 * Visit History
 * Smart Backup
@@ -1165,7 +1165,7 @@ EDMRN_v3.3/
 * Coriolis / EDSY ship build integration
 * Enhanced neutron routing
 
-## v3.0.0 - Major Redesign
+<h2>v3.0.0 - Major Redesign</h2>
 
 * Complete modular architecture
 * 11-theme system
@@ -1177,19 +1177,19 @@ EDMRN_v3.3/
 
 </details>
 
-#  Support Development
+<h1>Support Development</h1>
 
 EDMRN is free and open-source.
 
 If EDMRN improves your Elite Dangerous experience, you can support continued development.
 
-### Ko-fi
+<h3>Ko-fi</h3>
 
 One-time support:
 
 https://ko-fi.com/
 
-### Patreon
+<h3>Patreon</h3>
 
 Monthly support:
 
@@ -1207,22 +1207,22 @@ Your support helps fund:
 
 ---
 
-#  Developer
+<h1>Developer</h1>
 
-## CMDR Ninurta KALHU
+<h2>CMDR Ninurta KALHU</h2>
 
 Solo developer and Elite Dangerous commander.
 
 Passionate about exploration, route optimization and building tools for the Elite Dangerous community.
 
-### Connect
+<h3>Connect</h3>
 
 * **GitHub:** https://github.com/NinurtaKalhu
 * **Discord:** https://discord.gg/DWvCEXH7ae
 * **Email:** [ninurtakalhu@gmail.com](mailto:ninurtakalhu@gmail.com)
 * **X:** @NinurtaKalhu
 
-### Development Stats
+<h3>Development Stats</h3>
 
 * Project started: **2025**
 * 20,000+ lines of code
@@ -1232,25 +1232,25 @@ Passionate about exploration, route optimization and building tools for the Elit
 
 ---
 
-#  License
+<h1>License</h1>
 
 EDMRN is released under:
 
 **GNU Affero General Public License v3.0 - AGPL-3.0-only**
 
-## You CAN
+<h2>You CAN</h2>
 
 * Use EDMRN for personal or commercial purposes
 * Share EDMRN with others
 
-## You MUST
+<h2>You MUST</h2>
 
 * Keep derivative works under AGPL-3.0-only
 * Provide source code when distributing modified versions
 * Provide source code when running modified EDMRN as a network service
 * Include copyright and license notices
 
-## You CANNOT
+<h2>You CANNOT</h2>
 
 * Re-license the project under incompatible terms
 * Hold the developer liable for issues
@@ -1262,11 +1262,11 @@ https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/
 
 ---
 
-#  Screenshots & Visual Tour
+<h1>Screenshots & Visual Tour</h1>
 
 > A quick look at EDMRN's route planning, tracking, system information, log analysis, settings and in-game overlay.
 
-##  Route Planning & Tracking
+<h2>Route Planning & Tracking</h2>
 
 <p align="center">
   <img src="screenshots/SS001.png" alt="EDMRN Route Optimization" width="760">
@@ -1294,13 +1294,13 @@ https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/
 
 ---
 
-##  Advanced Navigation
+<h2>Advanced Navigation</h2>
 
-### Neutron Highway
+<h3>Neutron Highway</h3>
 
 The current README does not provide a dedicated Neutron Highway screenshot; no new image filename is invented here.
 
-### Galaxy Plotter
+<h3>Galaxy Plotter</h3>
 
 <p align="center">
   <img src="screenshots/SS006.png" alt="EDMRN Galaxy Plotter" width="760">
@@ -1308,7 +1308,7 @@ The current README does not provide a dedicated Neutron Highway screenshot; no n
 
 ---
 
-##  System Information
+<h2>System Information</h2>
 
 <p align="center">
   <img src="screenshots/SS007.png" alt="EDMRN System Information" width="760">
@@ -1336,7 +1336,7 @@ The current README does not provide a dedicated Neutron Highway screenshot; no n
 
 ---
 
-##  Log Viewer
+<h2>Log Viewer</h2>
 
 <p align="center">
   <img src="screenshots/SS011.png" alt="EDMRN Log Viewer" width="760">
@@ -1364,7 +1364,7 @@ The current README does not provide a dedicated Neutron Highway screenshot; no n
 
 ---
 
-##  Settings & Customization
+<h2>Settings & Customization</h2>
 
 <p align="center">
   <img src="screenshots/SS015.png" alt="EDMRN Settings Panel" width="760">
@@ -1374,7 +1374,7 @@ The current README does not provide a dedicated Neutron Highway screenshot; no n
 
 ---
 
-##  In-Game Experience
+<h2>In-Game Experience</h2>
 
 <p align="center">
   <img src="screenshots/SS000.png" alt="EDMRN In-Game Overlay" width="760">
@@ -1389,7 +1389,7 @@ Transparent in-game overlay with multiple tabs for:
 
 ---
 
-##  About
+<h2>About</h2>
 
 <p align="center">
   <img src="screenshots/SS017.png" alt="EDMRN About Window" width="600">
@@ -1398,7 +1398,7 @@ Transparent in-game overlay with multiple tabs for:
 *Version information and credits.*
 
 ---
-#  Quick Links
+<h1>Quick Links</h1>
 
 | Resource              | Link                                                                           |
 | --------------------- | ------------------------------------------------------------------------------ |
@@ -1411,9 +1411,9 @@ Transparent in-game overlay with multiple tabs for:
 
 ---
 
-#  Acknowledgments
+<h1>Acknowledgments</h1>
 
-## Data Providers
+<h2>Data Providers</h2>
 
 Special thanks to:
 
@@ -1423,7 +1423,7 @@ Special thanks to:
 
 Without these community services, many EDMRN features would not be possible.
 
-## Elite Dangerous Community
+<h2>Elite Dangerous Community</h2>
 
 * Frontier Developments - for creating Elite Dangerous
 * Elite Dangerous Community Developers (EDCD)
@@ -1431,7 +1431,7 @@ Without these community services, many EDMRN features would not be possible.
 * Community members who tested EDMRN
 * Everyone who shared the project with other commanders
 
-## Open Source
+<h2>Open Source</h2>
 
 EDMRN is built using open-source technologies including:
 
@@ -1445,7 +1445,7 @@ Special thanks to everyone who contributes to the open-source ecosystem.
 
 ---
 
-#  Built for Explorers
+<h1>Built for Explorers</h1>
 
 EDMRN was created with one simple idea:
 
@@ -1463,7 +1463,7 @@ And spend more time **exploring**, not managing spreadsheets.
 
 ---
 
-## Fly safe, Commander! o7
+<h2>Fly safe, Commander! o7</h2>
 
 > **"In the black, every lightyear counts."**
 
@@ -1475,7 +1475,3 @@ Made with  by **Ninurta Kalhu** for the Elite Dangerous community.
 ![About Window](screenshots/SS017.png)
 
 *Version info and credits*
-
-
-
-Made with care by Ninurta Kalhu
