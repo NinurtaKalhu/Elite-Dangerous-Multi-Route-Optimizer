@@ -1475,3 +1475,7 @@ Made with  by **Ninurta Kalhu** for the Elite Dangerous community.
 ![About Window](screenshots/SS017.png)
 
 *Version info and credits*
+
+
+
+Made with care by Ninurta Kalhu
