@@ -81,7 +81,7 @@ EDMRN is designed to solve that problem.
 <p align="center">
   <img src="screenshots/SS001.png" alt="EDMRN Route Optimization" width="41%">
   <img src="screenshots/SS004.png" alt="EDMRN Route Tracking" width="41%">
-  <img src="screenshots/SS000.png" alt="EDMRN In-Game Overlay" width="17%">
+  <img src="screenshots/SS000.png" alt="EDMRN In-Game Overlay" width="16%">
 </p>
 
 > Explore the full visual tour below, including System Info, Log Viewer, Galaxy Plotter, Settings and the in-game overlay.
