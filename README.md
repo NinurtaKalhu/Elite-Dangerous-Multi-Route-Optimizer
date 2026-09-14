@@ -106,7 +106,7 @@ EDMRN can run from any location because the pre-built executable includes its re
 
 ##  Exploration & Exobiology
 
-Build a route containing large numbers of systems wit [Spansh](https://www.spansh.co.uk/bodies) and let EDMRN optimize the order in which you visit them.
+Build a route containing large numbers of systems with [Spansh](https://www.spansh.co.uk/bodies) and let EDMRN optimize the order in which you visit them.
 
 Useful for:
 
