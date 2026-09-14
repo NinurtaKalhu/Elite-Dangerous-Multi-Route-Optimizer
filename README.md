@@ -572,7 +572,7 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 
 <h2>Step 1 - Create your route</h2>
 
-Use **Spansh.co.uk** to create your system list.
+Use **[Spansh.co.uk](https://www.spansh.co.uk/bodies)** to create your system list.
 
 Export a CSV containing:
 
