@@ -568,7 +568,7 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 > [!IMPORTANT]
 > This step of creating your ".CSV" file on [SPANSH](https://www.spansh.co.uk/bodies) is the most important part of being able to use EDMRN.
 
-<h1>Quick Start</h1>
+<h1>How to use</h1>
 
 <h2>Step 1 - Create your route</h2>
 
