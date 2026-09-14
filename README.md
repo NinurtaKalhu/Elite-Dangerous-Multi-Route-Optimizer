@@ -185,7 +185,6 @@ The Custom Route Planner gives you direct control over your route.
 
 ### Manage your route:
 
-* Drag to reorder systems
 * Click to select systems
 * Batch-remove selected systems
 * Clear all systems
@@ -202,9 +201,7 @@ The Custom Route Planner gives you direct control over your route.
 
 ### Import / Export:
 
-* JSON with full metadata
-* TXT system lists
-* Bidirectional compatibility
+* CSV with full metadata
 
 ### Overlay integration:
 
@@ -424,7 +421,10 @@ Long expeditions should not be lost because of a corrupted file.
 
 EDMRN includes a backup and recovery system.
 
-### Auto-save
+### Auto-save / Save / Backup
+
+> [!WARNING]
+> This is no longer necessary, because EDMRN uses an atomic recording system and every step is recorded instantly. Thanks to this, nothing is lost even in the event of a power outage.
 
 Choose:
 
@@ -474,13 +474,7 @@ EDMRN can calculate more precise fuel requirements based on the selected ship co
 
 System search integrates with community galaxy databases.
 
-### Primary source
-
-**Spansh**
-
-### Fallback
-
-**EDSM**
+**Spansh** and **EDSM**
 
 Features include:
 
@@ -541,6 +535,9 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 
 ## Auto-Save
 
+> [!WARNING]
+> This is no longer necessary, because EDMRN uses an atomic recording system and every step is recorded instantly. Thanks to this, nothing is lost even in the event of a power outage.
+
 * 1 / 5 / 10 minutes
 * Disable option
 * Countdown indicator
@@ -557,6 +554,9 @@ The interface is designed around a dark, high-contrast aesthetic suitable for lo
 * Log verbosity
 
 ---
+
+> [!IMPORTANT]
+> This step of creating your ".CSV" file on [SPANSH](https://www.spansh.co.uk/bodies) is the most important part of being able to use EDMRN.
 
 #  Quick Start
 
@@ -578,8 +578,8 @@ Optional:
 ```text
 Body Name
 ```
-
-`Body Name` is recommended for biological and geological exploration routes.
+> [!TIP]
+> `Body Name` is recommended for biological and geological exploration routes.
 
 Only `System Name`, `X`, `Y`, and `Z` are required.
 
@@ -685,7 +685,7 @@ EDMRN automatically restarts to apply the selected theme.
 
 * **OS:** Windows 10 / 11 64-bit
 * **RAM:** 4 GB
-* **Storage:** 200 MB free space
+* **Storage:** 200 MB or higher free space
 * **Elite Dangerous:** Journal logging enabled
 
 For source installation:
@@ -872,7 +872,7 @@ It implements:
 * Fallback mechanisms
 * Reduced redundant requests
 
-> **EDMRN is not affiliated with Spansh, EDSM, or EDAstro.**
+> **EDMRN is not affiliated with Spansh, EDSM or EDAstro.**
 >
 > We are grateful to these services and their maintainers.
 
