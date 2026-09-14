@@ -23,10 +23,29 @@
 
 
 <p align="center">
-  <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases"><img src="https://img.shields.io/github/v/release/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer?display_name=tag&label=release" alt="Latest release"></a>
-  <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="AGPL-3.0"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-2d2d2d" alt="Windows 10/11">
-  <img src="https://img.shields.io/badge/status-stable-success" alt="Stable">
+  <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases/latest">
+    <img src="https://img.shields.io/github/v/release/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer?style=for-the-badge&color=brightgreen" alt="Latest Release">
+  </a>
+  
+  <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases">
+    <img src="https://img.shields.io/github/downloads/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/total?style=for-the-badge&color=0078D4" alt="Total Downloads">
+  </a>
+  
+  <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/stargazers">
+    <img src="https://img.shields.io/github/stars/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer?style=for-the-badge&color=gold" alt="GitHub Stars">
+  </a>
+  
+  <a href="https://www.python.org/">
+    <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version">
+  </a>
+  
+  <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer?style=for-the-badge&color=red" alt="License: AGPL-3.0">
+  </a>
+  
+  <a href="https://discord.gg/DWvCEXH7ae">
+    <img src="https://img.shields.io/badge/Discord-EDMRN_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+  </a>
 </p>
 
 ---
