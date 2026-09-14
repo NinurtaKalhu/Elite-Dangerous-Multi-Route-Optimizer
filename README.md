@@ -34,7 +34,7 @@
 <p align="center">
   <a href="#why-edmrn">Why EDMRN</a> -
   <a href="#download-edmrn">Download</a> -
-  <a href="#quick-start">Quick Start</a> -
+  <a href="#How to use">How to use</a> -
   <a href="#what-can-edmrn-do">Features</a> -
   <a href="#screenshots-visual-tour">Screenshots</a> -
   <a href="#support-community">Support</a>
