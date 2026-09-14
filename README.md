@@ -6,6 +6,9 @@
 
 <p align="center"><strong>Plan smarter. Fly less. Explore more.</strong></p>
 
+------------
+
+
 <p align="center">
   <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases"><strong> Download EDMRN</strong></a>
   &nbsp;-&nbsp;
@@ -15,6 +18,9 @@
   &nbsp;-&nbsp;
   <a href="https://discord.gg/DWvCEXH7ae"><strong> Join Discord</strong></a>
 </p>
+
+------------
+
 
 <p align="center">
   <a href="https://github.com/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer/releases"><img src="https://img.shields.io/github/v/release/NinurtaKalhu/Elite-Dangerous-Multi-Route-Optimizer?display_name=tag&label=release" alt="Latest release"></a>
@@ -28,10 +34,14 @@
 <p align="center">
   <a href="#-why-edmrn">Why EDMRN</a> -
   <a href="#-download-edmrn">Download</a> -
+  <a href="#-Quick Start">How to use</a> -
   <a href="#-what-can-edmrn-do">Features</a> -
   <a href="#-screenshots--visual-tour">Screenshots</a> -
   <a href="#-support--community">Support</a>
 </p>
+
+------------
+
 
 **EDMRN is a free, open-source route planning, optimization, tracking and navigation tool for Elite Dangerous commanders.**
 
